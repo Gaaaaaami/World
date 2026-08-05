@@ -1,6 +1,0 @@
-[17708:17652:0803/211021.510:WARNING:chrome_main_delegate.cc(745)] This is Chrome version 128.0.6613.138 (not a warning)
-[17708:17652:0803/211021.860:WARNING:account_consistency_mode_manager.cc(77)] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
-[17708:17652:0803/211758.177:WARNING:page_discarding_helper.cc(138)] Discarding multiple pages with target (kb): 0
-[17708:17652:0803/211803.464:WARNING:page_discarding_helper.cc(138)] Discarding multiple pages with target (kb): 0
-[17708:17652:0803/212104.061:WARNING:page_discarding_helper.cc(138)] Discarding multiple pages with target (kb): 0
-[17708:17652:0803/212114.399:WARNING:page_discarding_helper.cc(138)] Discarding multiple pages with target (kb): 0

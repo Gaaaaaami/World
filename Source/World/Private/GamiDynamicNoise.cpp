@@ -36,11 +36,18 @@ float UGamiDynamicNoise::SampleDensity(const FVector& WorldPosition) const
 	// Z == TerrainHeight → 等值面（Surface Nets 提取这里）
 	float FinalDensity = WorldPosition.Z - TerrainHeight;
 
-
+	///return 1.f;
 	return FinalDensity;
 #else
 
-	if (WorldPosition.Z < (5.f * 6.f))
+	static float worldZ = 0;//WorldPosition.Z;
+
+	if (worldZ != WorldPosition.Z)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Z: %f"), WorldPosition.Z);
+		worldZ = WorldPosition.Z;
+	}
+	if (WorldPosition.Z < 200.f)
 	{
 		return -1.f;
 	}

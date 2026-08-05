@@ -68,7 +68,7 @@ void APlanetActor::InitializePlanet()
     NoiseGenerator->PlanetCenter = ActorPosition;
     
     // Generate all chunks immediately
-	MeshComponents.SetNum(this->ChunksPerAxis * this->ChunksPerAxis );
+	MeshComponents.SetNum(this->ChunksPerAxis * this->ChunksPerAxis * this->ChunksPerAxis);
     GenerateAllChunks();
     UE_LOG(LogSurfaceNets, Log, TEXT("Planet initialized at %s with radius %f and %d chunks"), 
            *ActorPosition.ToString(), PlanetRadius, PlanetChunks.Num());
@@ -125,9 +125,9 @@ void APlanetActor::GenerateAllChunks(UProceduralMeshComponent* component, FPlane
 
                     // Calculate chunk center (equivalent to Rust chunk_min calculation)
                     FVector ChunkCenter = StartPosition + FVector(
-                        (X * ChunkSize) + (ChunkSize * 0.5f),
-                        (Y * ChunkSize) + (ChunkSize * 0.5f),
-                        (Z * ChunkSize) + (ChunkSize * 0.5f)
+						(X * ChunkSize) + (ChunkSize * 0.5f),
+						(Y * ChunkSize) + (ChunkSize * 0.5f),
+						(Z * ChunkSize) + (ChunkSize * 0.5f)
                     );
 
                     // Debug: Check distance from planet center for a few chunks
@@ -198,6 +198,18 @@ bool APlanetActor::GenerateChunk(int32 X, int32 Y, int32 Z, const FVector& Chunk
     }
 
     UCxGamiProduralMeshComponent* MeshComponent = nullptr;
+	// Create mesh component
+	if (component)
+	{
+		MeshComponent = (UCxGamiProduralMeshComponent*)component;
+	}
+	else
+	{
+		MeshComponent = (UCxGamiProduralMeshComponent*)CreateMeshComponent();
+		MeshComponent->Location.X = X;
+		MeshComponent->Location.Y = Y;
+		MeshComponent->Location.Z = Z;
+	}
 
     // Generate mesh using the chunk's GenerateMesh method (equivalent to Rust generate_and_process_chunk)
     bool bMeshGenerated = NewChunk->GenerateMesh(NoiseGenerator);
@@ -205,19 +217,7 @@ bool APlanetActor::GenerateChunk(int32 X, int32 Y, int32 Z, const FVector& Chunk
     // Only create mesh component if chunk has valid mesh data (like Rust early return)
     if (bMeshGenerated && NewChunk->Vertices.Num() > 0 && NewChunk->Triangles.Num() > 0 )
     {
-        // Create mesh component
-        
-        if (component)
-        {
-            MeshComponent = (UCxGamiProduralMeshComponent*)component;
-        }
-        else
-        {
-            MeshComponent = (UCxGamiProduralMeshComponent*)CreateMeshComponent();
-            MeshComponent->Location.X = X;
-            MeshComponent->Location.Y = Y;
-            MeshComponent->Location.Z = Z;
-        }
+
         // Create mesh section using the chunk's mesh data
         TArray<FColor> VertexColors;
         TArray<FProcMeshTangent> Tangents;
@@ -239,17 +239,6 @@ bool APlanetActor::GenerateChunk(int32 X, int32 Y, int32 Z, const FVector& Chunk
         }
         
         // Store mesh component reference
-
-
-        {
-            // 将MeshComponent通过弱指针指向对方
-            int idx = Y * ChunksPerAxis + X;
-            if (MeshComponents.IsValidIndex(idx))
-            {
-                MeshComponents[idx] = MeshComponent;    /** < 分好区块 */
-            }
-        }
-
 
         UE_LOG(LogSurfaceNets, Log, TEXT("Generated chunk at (%d,%d,%d) with %d vertices, %d triangles"), 
                X, Y, Z, NewChunk->Vertices.Num(), NewChunk->Triangles.Num() / 3);
@@ -277,6 +266,15 @@ bool APlanetActor::GenerateChunk(int32 X, int32 Y, int32 Z, const FVector& Chunk
             MeshComponent->BindPlanetChunk(PlanetChunks.Last().Get());
             MeshComponent->BindPlanetActor(this);
         }
+
+		{
+			// 将MeshComponent通过弱指针指向对方
+			int idx = Z * (ChunksPerAxis * ChunksPerAxis) + Y * ChunksPerAxis + X;
+			if (MeshComponents.IsValidIndex(idx))
+			{
+				MeshComponents[idx] = MeshComponent;    /** < 分好区块 */
+			}
+		}
     }
 
     if (container_of_NewChunk)

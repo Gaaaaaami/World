@@ -1,4 +1,0 @@
-[16828:16176:0803/203021.887:WARNING:chrome_main_delegate.cc(745)] This is Chrome version 128.0.6613.138 (not a warning)
-[16828:16176:0803/203022.174:WARNING:account_consistency_mode_manager.cc(77)] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
-[19548:17844:0803/203034.950:WARNING:spdy_session.cc(2985)] Received HEADERS for invalid stream 1
-[19548:17844:0803/203037.251:WARNING:spdy_session.cc(2985)] Received HEADERS for invalid stream 1

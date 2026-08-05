@@ -25,7 +25,8 @@ public:
 	void BindPlanetActor(APlanetActor* InPlanetActor);
 
 	UFUNCTION(BlueprintCallable, Category = "Planet")
-	void Destruction(FVector InLocation, float BrushRadiusCm = 16.f, bool UpdateChunkCell = false);
+	void Destruction(FVector InLocation, float BrushRadiusCm = 16.f, float Strength = 3.f, bool UpdateChunkCell = false);
+	inline bool UpdateChunk(FVector ChunkLocation, FVector InLocation, float BrushRadiusCm, float Strength, bool UpdateChunkCell);
 
 public:
 	FPlanetChunk *NewChunk;

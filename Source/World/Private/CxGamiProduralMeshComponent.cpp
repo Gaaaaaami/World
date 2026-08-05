@@ -111,7 +111,7 @@ void UCxGamiProduralMeshComponent::Destruction(FVector InLocation, float BrushRa
 
 }
 #else
-void UCxGamiProduralMeshComponent::Destruction(FVector InLocation, float BrushRadiusCm, bool UpdateChunkCell)
+void UCxGamiProduralMeshComponent::Destruction(FVector InLocation, float BrushRadiusCm, float Strength, bool UpdateChunkCell)
 {
 	FVector VoxelPosition = InLocation / this->PlanetActor->ChunkSize;
 	VoxelPosition.X = std::floor(VoxelPosition.X);
@@ -128,8 +128,7 @@ void UCxGamiProduralMeshComponent::Destruction(FVector InLocation, float BrushRa
 	VoxelPosition.Z = FMath::Clamp(VoxelPosition.Z, 0.f, static_cast<float>(MAX_int32));
 	SubVoxelPosition.X = FMath::Clamp(SubVoxelPosition.X, 0.f, static_cast<float>(MAX_int32)) - (VoxelPosition.X * FPlanetChunk::UNPADDED_CHUNK_SIZE);
 	SubVoxelPosition.Y = FMath::Clamp(SubVoxelPosition.Y, 0.f, static_cast<float>(MAX_int32)) - (VoxelPosition.Y * FPlanetChunk::UNPADDED_CHUNK_SIZE);
-	SubVoxelPosition.Z = FMath::Clamp(SubVoxelPosition.Z, 0.f, static_cast<float>(MAX_int32));
-
+	SubVoxelPosition.Z = FMath::Clamp(SubVoxelPosition.Z, 0.f, static_cast<float>(MAX_int32)) - (VoxelPosition.Y * FPlanetChunk::UNPADDED_CHUNK_SIZE);
 	int32 OutPaddedSize = FPlanetChunk::PADDED_CHUNK_SIZE;
 	
 	if (this->NewChunk != nullptr)
@@ -137,7 +136,6 @@ void UCxGamiProduralMeshComponent::Destruction(FVector InLocation, float BrushRa
 
 		float S = std::sqrt(BrushRadiusCm);
 		float S_brushRadiuCm = BrushRadiusCm * BrushRadiusCm;
-		
 		for (int32 z = 0; z < OutPaddedSize; z++)
 		{
 			for (int32 y = 0; y < OutPaddedSize; y++)
@@ -146,131 +144,62 @@ void UCxGamiProduralMeshComponent::Destruction(FVector InLocation, float BrushRa
 				{
 					float WorldX = x * SubVoxelSize + (Location.X * PlanetActor->ChunkSize);
 					float WorldY = y * SubVoxelSize + (Location.Y * PlanetActor->ChunkSize);
-					float WorldZ = z * SubVoxelSize;
+					float WorldZ = z * SubVoxelSize + (Location.Z * PlanetActor->ChunkSize);
 
-					float D = FVector::DistSquared(FVector(WorldX - S, WorldY - S, WorldZ), InLocation);//FVector::Dist(FVector(WorldX - S, WorldY - S, WorldZ), InLocation);//FVector::DistSquared(FVector(WorldX - S, WorldY - S, WorldZ), InLocation);
+					float D = FVector::DistSquared(FVector(WorldX - S, WorldY - S, WorldZ - S), InLocation);//FVector::Dist(FVector(WorldX - S, WorldY - S, WorldZ), InLocation);//FVector::DistSquared(FVector(WorldX - S, WorldY - S, WorldZ), InLocation);
 					float P = D / S_brushRadiuCm;
 
 					int32 idx = x + y * OutPaddedSize + z * OutPaddedSize * OutPaddedSize;
 					if (this->NewChunk->DensityField.IsValidIndex(idx))
 					{
 						if (P < 1.f)
-							this->NewChunk->DensityField[idx] += FMath::Max(this->NewChunk->DensityField[idx], 1.0 - P);
+							this->NewChunk->DensityField[idx] += FMath::Max(this->NewChunk->DensityField[idx], (1.0 - P) * Strength);
 					}
-				}
-			}
-		}
-
-		int32 RightChunk = Location.Y * this->PlanetActor->ChunksPerAxis + (Location.X + 1);
-		int32 LeftChunk = Location.Y * this->PlanetActor->ChunksPerAxis + (Location.X - 1);
-		int32 TopChunk = (Location.Y + 1) * this->PlanetActor->ChunksPerAxis + Location.X;
-		int32 BottomChunk = (Location.Y - 1) * this->PlanetActor->ChunksPerAxis + Location.X;
-		int32 RightTopChunk = (Location.Y + 1) * this->PlanetActor->ChunksPerAxis + (Location.X + 1);
-		int32 RightBottomChunk = (Location.Y - 1) * this->PlanetActor->ChunksPerAxis + (Location.X + 1);
-		int32 LeftTopChunk = (Location.Y + 1) * this->PlanetActor->ChunksPerAxis + (Location.X - 1);
-		int32 LeftBottomChunk = (Location.Y - 1) * this->PlanetActor->ChunksPerAxis + (Location.X - 1);
-		if (PlanetActor->MeshComponents.IsValidIndex(RightChunk))
-		{
-			auto t = PlanetActor->MeshComponents[RightChunk];
-			if (t.IsValid())
-			{
-				UCxGamiProduralMeshComponent* Comp = Cast<UCxGamiProduralMeshComponent>(t.Get());
-				if (!UpdateChunkCell)
-				{
-					Comp->Destruction(InLocation, BrushRadiusCm, true);
-				}
-			}
-		}
-		if (PlanetActor->MeshComponents.IsValidIndex(RightTopChunk))
-		{
-			auto t = PlanetActor->MeshComponents[RightTopChunk];
-			if (t.IsValid())
-			{
-				UCxGamiProduralMeshComponent* Comp = Cast<UCxGamiProduralMeshComponent>(t.Get());
-				if (!UpdateChunkCell)
-				{
-					Comp->Destruction(InLocation, BrushRadiusCm, true);
-				}
-			}
-		}
-		if (PlanetActor->MeshComponents.IsValidIndex(RightBottomChunk))
-		{
-			auto t = PlanetActor->MeshComponents[RightBottomChunk];
-			if (t.IsValid())
-			{
-				UCxGamiProduralMeshComponent* Comp = Cast<UCxGamiProduralMeshComponent>(t.Get());
-				if (!UpdateChunkCell)
-				{
-					Comp->Destruction(InLocation, BrushRadiusCm, true);
-				}
-			}
-		}
-		if (PlanetActor->MeshComponents.IsValidIndex(LeftTopChunk))
-		{
-			auto t = PlanetActor->MeshComponents[LeftTopChunk];
-			if (t.IsValid())
-			{
-				UCxGamiProduralMeshComponent* Comp = Cast<UCxGamiProduralMeshComponent>(t.Get());
-				if (!UpdateChunkCell)
-				{
-					Comp->Destruction(InLocation, BrushRadiusCm, true);
-				}
-			}
-		}
-		if (PlanetActor->MeshComponents.IsValidIndex(LeftBottomChunk))
-		{
-			auto t = PlanetActor->MeshComponents[LeftBottomChunk];
-			if (t.IsValid())
-			{
-				UCxGamiProduralMeshComponent* Comp = Cast<UCxGamiProduralMeshComponent>(t.Get());
-				if (!UpdateChunkCell)
-				{
-					Comp->Destruction(InLocation, BrushRadiusCm, true);
-				}
-			}
-		}
-		if (PlanetActor->MeshComponents.IsValidIndex(LeftChunk))
-		{
-			auto t = PlanetActor->MeshComponents[LeftChunk];
-			if (t.IsValid())
-			{
-				UCxGamiProduralMeshComponent* Comp = Cast<UCxGamiProduralMeshComponent>(t.Get());
-				if (!UpdateChunkCell)
-				{
-					Comp->Destruction(InLocation, BrushRadiusCm, true);
-				}
-			}
-		}
-		if (PlanetActor->MeshComponents.IsValidIndex(TopChunk))
-		{
-			auto t = PlanetActor->MeshComponents[TopChunk];
-			if (t.IsValid())
-			{
-				UCxGamiProduralMeshComponent* Comp = Cast<UCxGamiProduralMeshComponent>(t.Get());
-				if (!UpdateChunkCell)
-				{
-					Comp->Destruction(InLocation, BrushRadiusCm, true);
-				}
-			}
-		}
-		if (PlanetActor->MeshComponents.IsValidIndex(BottomChunk))
-		{
-			auto t = PlanetActor->MeshComponents[BottomChunk];
-			if (t.IsValid())
-			{
-				UCxGamiProduralMeshComponent* Comp = Cast<UCxGamiProduralMeshComponent>(t.Get());
-				if (!UpdateChunkCell)
-				{
-					Comp->Destruction(InLocation, BrushRadiusCm, true);
 				}
 			}
 		}
 
 		this->PlanetActor->GenerateAllChunks(this, this->NewChunk);
 
-		
+
+		for (int32 x = -1; x <= 1; x++)
+		{
+			for (int32 y = -1; y <= 1; y++)
+			{
+				for (int32 z = -1; z <= 1; z++)
+				{
+
+					if (x == 0 && y == 0 && z == 0)
+					{
+						continue;
+					}
+
+					FVector ChunkLocation = Location + FVector(x, y, z);
+					this->UpdateChunk(ChunkLocation, InLocation, BrushRadiusCm, Strength, UpdateChunkCell);
+				}
+			}
+		}
 	}
 }
+
+bool UCxGamiProduralMeshComponent::UpdateChunk(FVector ChunkLocation, FVector InLocation, float BrushRadiusCm, float Strength, bool UpdateChunkCell)
+{
+	int idx = ChunkLocation.Z * (this->PlanetActor->ChunksPerAxis * this->PlanetActor->ChunksPerAxis) + ChunkLocation.Y * this->PlanetActor->ChunksPerAxis + ChunkLocation.X;
+	if (this->PlanetActor->MeshComponents.IsValidIndex(idx))
+	{
+		if (this->PlanetActor->MeshComponents[idx].IsValid())
+		{
+			UCxGamiProduralMeshComponent* component = Cast<UCxGamiProduralMeshComponent>(this->PlanetActor->MeshComponents[idx].Get());
+			if (!UpdateChunkCell)
+			{
+				component->Destruction(InLocation, BrushRadiusCm, Strength, true);
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 #endif
 
 

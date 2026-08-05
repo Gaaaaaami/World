@@ -26,20 +26,6 @@ public class World : ModuleRules
 
 
 
-        // 2. 关键：指定Brutus的路径
-        // ModuleDirectory 是当前 World.Build.cs 所在的目录（Source/World）
-        string ProjectRoot = Path.GetFullPath(Path.Combine(ModuleDirectory, "../.."));
-        string BrutusIncludePath = Path.Combine(ProjectRoot, "Brutus/include/");
-
-        // 3. 用 SystemIncludePaths！UBT不会扫描这里的源文件，只用来#include
-        PublicSystemIncludePaths.Add(BrutusIncludePath);
-        BrutusIncludePath = Path.Combine(ProjectRoot, "PolyVox/");
-        PublicSystemIncludePaths.Add(BrutusIncludePath);
-
-
-
-
-
         // Uncomment if you are using Slate UI
         // PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 
