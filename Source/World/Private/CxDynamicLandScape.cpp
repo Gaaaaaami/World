@@ -5,9 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <cmath>
 #include "Math/UnrealMathUtility.h"
 #include "StaticMeshOperations.h"
-#include "brutus/brutus.h"
 #include "Engine/DirectionalLight.h"
 #include "EngineUtils.h"       // 必须加，TActorIterator 需要
 #include "Components/LightComponent.h"
