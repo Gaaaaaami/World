@@ -44,7 +44,6 @@ float UGamiDynamicNoise::SampleDensity(const FVector& WorldPosition) const
 
 	if (worldZ != WorldPosition.Z)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Z: %f"), WorldPosition.Z);
 		worldZ = WorldPosition.Z;
 	}
 	if (WorldPosition.Z < 200.f)

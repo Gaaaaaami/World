@@ -45,7 +45,7 @@ bool FPlanetChunk::GenerateMesh(const UNoiseGenerator* NoiseGenerator)
         bIsGenerating = false;
         bIsEmpty = true;
         bIsGenerated = true;
-        UE_LOG(LogSurfaceNets, Warning, TEXT("Failed to generate density field for chunk at %s"), *Position.ToString());
+        //UE_LOG(LogSurfaceNets, Warning, TEXT("Failed to generate density field for chunk at %s"), *Position.ToString());
         return false;
     }
 
@@ -55,7 +55,7 @@ bool FPlanetChunk::GenerateMesh(const UNoiseGenerator* NoiseGenerator)
         bIsGenerating = false;
         bIsEmpty = true;
         bIsGenerated = true;
-        UE_LOG(LogSurfaceNets, Verbose, TEXT("Chunk at %s has no surface"), *Position.ToString());
+        //UE_LOG(LogSurfaceNets, Verbose, TEXT("Chunk at %s has no surface"), *Position.ToString());
         return false;
     }
 
@@ -89,8 +89,8 @@ bool FPlanetChunk::GenerateMesh(const UNoiseGenerator* NoiseGenerator)
     bIsGenerated = true;
     bIsEmpty = (Vertices.Num() == 0);
 
-    UE_LOG(LogSurfaceNets, Verbose, TEXT("Generated chunk at %s with %d vertices, %d triangles"), 
-           *Position.ToString(), Vertices.Num(), Triangles.Num() / 3);
+    //UE_LOG(LogSurfaceNets, Verbose, TEXT("Generated chunk at %s with %d vertices, %d triangles"), 
+           //*Position.ToString(), Vertices.Num(), Triangles.Num() / 3);
 
     return !bIsEmpty;
 }
@@ -126,7 +126,7 @@ bool FPlanetChunk::GeneratePaddedDensityField(
     OutPaddedSize = PADDED_CHUNK_SIZE;
     OutVoxelSize = Size / UNPADDED_CHUNK_SIZE;
     
-    OutPaddedOrigin = Position - FVector(Size * 0.5f) - FVector(OutVoxelSize);
+    OutPaddedOrigin = Position - FVector(OutVoxelSize / 2.f); //- FVector(Size * 0.5f) - FVector(OutVoxelSize);
 
 
     if (OutDensityField.IsEmpty())

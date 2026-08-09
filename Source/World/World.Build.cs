@@ -24,8 +24,9 @@ public class World : ModuleRules
             "SlateCore"});
         PublicDependencyModuleNames.Add("Core");
 
+        // PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "Library"));
 
-
+        PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "..", "..", "Library"));
         // Uncomment if you are using Slate UI
         // PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 

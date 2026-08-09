@@ -26,5 +26,5 @@ void ACxGamiDynamicLandscape::BeginPlay()
 void ACxGamiDynamicLandscape::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	APlanetActor::GenerateAllChunks();
 }

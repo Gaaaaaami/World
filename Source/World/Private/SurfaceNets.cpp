@@ -27,6 +27,10 @@ void FSurfaceNets::GenerateMesh(
     const FIntVector& MinBounds,
     const FIntVector& MaxBounds)
 {
+
+
+    //auto StartTimer = FPlatformTime::Seconds() ;
+
     OutVertices.Empty();
     OutTriangles.Empty();
     OutNormals.Empty();
@@ -39,11 +43,18 @@ void FSurfaceNets::GenerateMesh(
 
     // Create vertex grid to track vertex indices
     TArray<int32> VertexGrid;
+
+#if 0
     VertexGrid.SetNumZeroed(GridSize * GridSize * GridSize);
     for (int32& Index : VertexGrid)
     {
         Index = -1; // Initialize to invalid index
     }
+#else
+    const int32 TotalVoxels = GridSize * GridSize * GridSize;
+    VertexGrid.SetNumUninitialized(TotalVoxels);
+    FMemory::Memset(VertexGrid.GetData(), 0xFF, TotalVoxels * sizeof(int32));
+#endif
 
     // Phase 1: Estimate surface vertices
     EstimateSurface(DensityField, GridSize, ActualMinBounds, ActualMaxBounds, 
@@ -54,6 +65,7 @@ void FSurfaceNets::GenerateMesh(
 
     UE_LOG(LogSurfaceNets, Verbose, TEXT("Surface Nets generated %d vertices, %d triangles"), 
            OutVertices.Num(), OutTriangles.Num() / 3);
+
 }
 
 bool FSurfaceNets::HasSurfaceInChunk(const TArray<float>& DensityField)

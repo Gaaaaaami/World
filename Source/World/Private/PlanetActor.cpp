@@ -5,7 +5,9 @@
 #include "Components/StaticMeshComponent.h"
 #include "CxGamiProduralMeshComponent.h"
 #include "Engine/Engine.h"
-
+#include "SPSCQueue.h"
+#include <cmath>
+#include <thread>
 APlanetActor::APlanetActor()
 {
     PrimaryActorTick.bCanEverTick = false;
@@ -22,12 +24,15 @@ APlanetActor::APlanetActor()
     
     // Create noise generator
     // NoiseGenerator = CreateDefaultSubobject<UNoiseGenerator>(TEXT("NoiseGenerator"));
+
 }
 
 void APlanetActor::BeginPlay()
 {
     Super::BeginPlay();
-    
+    float Size = ChunkSize * ChunksPerAxis ;
+    LoadRadiu = Size * Size;
+
     UE_LOG(LogSurfaceNets, Log, TEXT("Planet spawned successfully at %s"), *GetActorLocation().ToString());
     
 	if (NoiseGeneratorClass)
@@ -38,7 +43,7 @@ void APlanetActor::BeginPlay()
 	}
 	else
 	{
-		// Ä¬ÈÏ¶µµ×
+		// Ä¬ï¿½Ï¶ï¿½ï¿½ï¿½
 		NoiseGenerator = NewObject<UNoiseGenerator>(this);
 	}
 
@@ -69,28 +74,14 @@ void APlanetActor::InitializePlanet()
     
     // Generate all chunks immediately
 	MeshComponents.SetNum(this->ChunksPerAxis * this->ChunksPerAxis * this->ChunksPerAxis);
-    GenerateAllChunks();
+    ///GenerateAllChunks();
     UE_LOG(LogSurfaceNets, Log, TEXT("Planet initialized at %s with radius %f and %d chunks"), 
            *ActorPosition.ToString(), PlanetRadius, PlanetChunks.Num());
 }
 
 void APlanetActor::GenerateAllChunks(UProceduralMeshComponent* component, FPlanetChunk* planet_chunk )
 {
-#if 0
-	PlanetChunks.Empty();
-
-
-    for (UProceduralMeshComponent* MeshComp : MeshComponents)
-    {
-        if (MeshComp && IsValid(MeshComp))
-        {
-            MeshComp->DestroyComponent();
-        }
-    }
-    MeshComponents.Empty();
-#endif
-    
-
+  
     if (component)
     {
         component->ClearAllMeshSections();
@@ -99,46 +90,37 @@ void APlanetActor::GenerateAllChunks(UProceduralMeshComponent* component, FPlane
     // Calculate chunk bounds exactly like Rust implementation
     // Rust uses: chunks_extent = Extent3i::from_min_and_lub(IVec3::from([-5; 3]), IVec3::from([5; 3]))
     // Which creates a 10x10x10 grid centered around origin
-    float HalfExtent = (ChunksPerAxis / 2) * ChunkSize;
+    // float HalfExtent = (ChunksPerAxis / 2) * ChunkSize;
     FVector PlanetCenter = GetActorLocation();
-    FVector StartPosition = PlanetCenter - FVector(HalfExtent, HalfExtent, HalfExtent);
+   // FVector StartPosition = FVector(0.f, 0.f, 0.f); //- FVector(HalfExtent, HalfExtent, HalfExtent);
     
-    UE_LOG(LogSurfaceNets, Log, TEXT("Generating chunks from %s to %s (ChunkSize: %f)"), 
-           *StartPosition.ToString(), 
-           *(StartPosition + FVector(ChunksPerAxis * ChunkSize)).ToString(),
-           ChunkSize);
+    //UE_LOG(LogSurfaceNets, Log, TEXT("Generating chunks from %s to %s (ChunkSize: %f)"), 
+    //       *StartPosition.ToString(), 
+    //       *(StartPosition + FVector(ChunksPerAxis * ChunkSize)).ToString(),
+    //       ChunkSize);
     
     // Generate chunks in a grid pattern (equivalent to Rust chunks_extent.iter3())
     int32 GeneratedChunks = 0;
-    int32 ProcessedChunks = 0;
-    
+
+
     if (!component)
     {
+        auto Start = FPlatformTime::Seconds() * 1000.0;
 
-        for (int32 X = 0; X < ChunksPerAxis; X++)
+        for (int32 X = -ChunksPerAxis; X < ChunksPerAxis ; X++)
         {
-            for (int32 Y = 0; Y < ChunksPerAxis; Y++)
+            for (int32 Y = -ChunksPerAxis; Y < ChunksPerAxis; Y++)
             {
-                for (int32 Z = 0; Z < ChunksPerAxis; Z++)
+                for (int32 Z = -ChunksPerAxis; Z < ChunksPerAxis; Z++)
                 {
-                    ProcessedChunks++;
-
+                    
                     // Calculate chunk center (equivalent to Rust chunk_min calculation)
-                    FVector ChunkCenter = StartPosition + FVector(
-						(X * ChunkSize) + (ChunkSize * 0.5f),
-						(Y * ChunkSize) + (ChunkSize * 0.5f),
-						(Z * ChunkSize) + (ChunkSize * 0.5f)
+                    FVector ChunkCenter = FVector(
+						(X * ChunkSize) /*+(ChunkSize * 0.5f)*/,
+						(Y * ChunkSize) /*+(ChunkSize * 0.5f)*/,
+						(Z * ChunkSize) /*+(ChunkSize * 0.5f)*/
                     );
 
-                    // Debug: Check distance from planet center for a few chunks
-                    float DistanceFromCenter = (ChunkCenter - PlanetCenter).Size();
-                    if (ProcessedChunks <= 10 || (ProcessedChunks % 100 == 0))
-                    {
-                        UE_LOG(LogSurfaceNets, Log, TEXT("Chunk (%d,%d,%d) at %s, distance from center: %f (radius: %f)"),
-                            X, Y, Z, *ChunkCenter.ToString(), DistanceFromCenter, PlanetRadius);
-                    }
-
-                    // Generate chunk - let the chunk itself determine if it has surface intersection
                     if (GenerateChunk(X, Y, Z, ChunkCenter))
                     {
                         GeneratedChunks++;
@@ -146,7 +128,7 @@ void APlanetActor::GenerateAllChunks(UProceduralMeshComponent* component, FPlane
                 }
             }
         }
-
+        auto End = FPlatformTime::Seconds() * 1000.0;
     }
     else
     {
@@ -155,26 +137,45 @@ void APlanetActor::GenerateAllChunks(UProceduralMeshComponent* component, FPlane
         int32 X = PMC->Location.X;
 		int32 Y = PMC->Location.Y;
 		int32 Z = PMC->Location.Z;
-		FVector ChunkCenter = StartPosition + FVector(
-			(X * ChunkSize) + (ChunkSize * 0.5f),
-			(Y * ChunkSize) + (ChunkSize * 0.5f),
-			(Z * ChunkSize) + (ChunkSize * 0.5f)
+		FVector ChunkCenter = FVector(
+			(X * ChunkSize) /*+ (ChunkSize * 0.5f)*/,
+			(Y * ChunkSize) /*+ (ChunkSize * 0.5f)*/,
+			(Z * ChunkSize) /*+ (ChunkSize * 0.5f)*/
 		);
         
         GenerateChunk(X, Y, Z, ChunkCenter, component, planet_chunk);
     }
 
-    UE_LOG(LogSurfaceNets, Log, TEXT("Generated %d chunks for sphere (out of %d total grid positions)"), 
-           GeneratedChunks, ProcessedChunks);
 }
 
-bool APlanetActor::GenerateChunk(int32 X, int32 Y, int32 Z, const FVector& ChunkCenter, UProceduralMeshComponent* component, FPlanetChunk* planet_chunk )
+bool APlanetActor::GenerateChunk(int32 X, int32 Y, int32 Z, FVector ChunkCenter, UProceduralMeshComponent* component, FPlanetChunk* planet_chunk )
 {
     // CRITICAL FIX: Null check before passing NoiseGenerator
     if (!NoiseGenerator)
     {
         UE_LOG(LogSurfaceNets, Error, TEXT("NoiseGenerator is null in GenerateChunk"));
         return false;
+    }
+    FVector ChunkLocation = this->PlayerLocation / ChunkSize;
+    ChunkLocation.X = std::floor(ChunkLocation.X);
+    ChunkLocation.Y = std::floor(ChunkLocation.Y);
+    ChunkLocation.Z = std::floor(ChunkLocation.Z);
+    FVector Local((X + ChunkLocation.X) * ChunkSize,
+                  (Y + ChunkLocation.Y) * ChunkSize,
+                  (Z + ChunkLocation.Z) * ChunkSize);
+    if (!component)
+    {
+        float R = this->LoadRadiu;
+        ChunkCenter += FVector(ChunkLocation.X * ChunkSize,
+                               ChunkLocation.Y * ChunkSize, 
+                               ChunkLocation.Z * ChunkSize);
+
+		float DistSquared = FVector::DistSquared(Local, this->PlayerLocation);
+		float Alpha = DistSquared / R;
+		if (Alpha >= 1.f || this->ChunkBox.Contains(FVector(X + ChunkLocation.X, Y + ChunkLocation.Y, Z + ChunkLocation.Z)))
+		{
+			return false;
+		}
     }
     
     // Create chunk with proper LOD level
@@ -205,12 +206,14 @@ bool APlanetActor::GenerateChunk(int32 X, int32 Y, int32 Z, const FVector& Chunk
 	}
 	else
 	{
-		MeshComponent = (UCxGamiProduralMeshComponent*)CreateMeshComponent();
-		MeshComponent->Location.X = X;
-		MeshComponent->Location.Y = Y;
-		MeshComponent->Location.Z = Z;
+        MeshComponent = (UCxGamiProduralMeshComponent*)CreateMeshComponent();
+		MeshComponent->Location.X = X + ChunkLocation.X;
+		MeshComponent->Location.Y = Y + ChunkLocation.Y;
+		MeshComponent->Location.Z = Z + ChunkLocation.Z;
+		FVector LocationKey(MeshComponent->Location.X, MeshComponent->Location.Y, MeshComponent->Location.Z);
+		this->ChunkBox.Add(LocationKey, MeshComponent);
 	}
-
+    
     // Generate mesh using the chunk's GenerateMesh method (equivalent to Rust generate_and_process_chunk)
     bool bMeshGenerated = NewChunk->GenerateMesh(NoiseGenerator);
     
@@ -240,8 +243,7 @@ bool APlanetActor::GenerateChunk(int32 X, int32 Y, int32 Z, const FVector& Chunk
         
         // Store mesh component reference
 
-        UE_LOG(LogSurfaceNets, Log, TEXT("Generated chunk at (%d,%d,%d) with %d vertices, %d triangles"), 
-               X, Y, Z, NewChunk->Vertices.Num(), NewChunk->Triangles.Num() / 3);
+
 
     }
     else
@@ -250,8 +252,7 @@ bool APlanetActor::GenerateChunk(int32 X, int32 Y, int32 Z, const FVector& Chunk
         static int32 LoggedFailures = 0;
         if (LoggedFailures < 5)
         {
-            UE_LOG(LogSurfaceNets, Warning, TEXT("Chunk at (%d,%d,%d) center %s skipped - no surface intersection"), 
-                   X, Y, Z, *ChunkCenter.ToString());
+         
             LoggedFailures++;
         }
     }
@@ -268,18 +269,18 @@ bool APlanetActor::GenerateChunk(int32 X, int32 Y, int32 Z, const FVector& Chunk
         }
 
 		{
-			// ½«MeshComponentÍ¨¹ýÈõÖ¸ÕëÖ¸Ïò¶Ô·½
+			// ï¿½ï¿½MeshComponentÍ¨ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½Ö¸ï¿½ï¿½Ô·ï¿½
 			int idx = Z * (ChunksPerAxis * ChunksPerAxis) + Y * ChunksPerAxis + X;
 			if (MeshComponents.IsValidIndex(idx))
 			{
-				MeshComponents[idx] = MeshComponent;    /** < ·ÖºÃÇø¿é */
+				MeshComponents[idx] = MeshComponent;    /** < ï¿½Öºï¿½ï¿½ï¿½ï¿½ï¿½ */
 			}
 		}
     }
 
     if (container_of_NewChunk)
     {
-        *container_of_NewChunk = MoveTemp(NewChunk);    /** < ½«Êý¾Ý·µ»¹¸øÔ­À´µÄÊý×é */
+        *container_of_NewChunk = MoveTemp(NewChunk);    /** < ï¿½ï¿½ï¿½ï¿½ï¿½Ý·ï¿½ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
     }
     return bMeshGenerated;
 }
@@ -305,4 +306,14 @@ void APlanetActor::LogPlanetStats()
     UE_LOG(LogSurfaceNets, Warning, TEXT("  Total Triangles: %d"), TotalTriangles);
     UE_LOG(LogSurfaceNets, Warning, TEXT("  Planet Radius: %f"), PlanetRadius);
     UE_LOG(LogSurfaceNets, Warning, TEXT("  Chunk Size: %f"), ChunkSize);
+}
+
+void APlanetActor::CircleChunk(FVector Location)
+{
+
+    if (this->ChunkBox.Find(Location) != nullptr)
+    {
+        this->ChunkBox.Find(Location)->Get()->DestroyComponent();
+        this->ChunkBox.Remove(Location);
+    }
 }

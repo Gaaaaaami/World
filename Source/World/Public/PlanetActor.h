@@ -27,7 +27,8 @@ public:
     /** Size of each chunk in world units */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Planet")
     float ChunkSize = 64.0f;
-    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Planet")
+    float LoadRadiu = 64.0f;
     /** Number of chunks per axis (creates ChunksPerAxis^3 total chunks) */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Planet")
     int32 ChunksPerAxis = 16;
@@ -43,7 +44,8 @@ public:
     /** Material to apply to planet surface */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rendering")
     UMaterialInterface* PlanetMaterial = nullptr;
-    
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
+	FVector PlayerLocation;
     /** Noise generator for terrain */
 	UPROPERTY()
     TObjectPtr<UNoiseGenerator> NoiseGenerator = nullptr;
@@ -57,7 +59,8 @@ public:
     /** Debug: Log planet generation statistics */
     UFUNCTION(BlueprintCallable, Category = "Debug")
     void LogPlanetStats();
-
+    UFUNCTION(BlueprintCallable, Category = "Circle")
+    void CircleChunk(FVector Location);
 public:
     /** Generated planet chunks */
     TArray<TUniquePtr<FPlanetChunk>> PlanetChunks;
@@ -73,6 +76,8 @@ public:
     void GenerateAllChunks( UProceduralMeshComponent* component = nullptr, FPlanetChunk* planet_chunk = nullptr);
     
     /** Generate a single chunk at the specified grid position */
-    bool GenerateChunk(int32 X, int32 Y, int32 Z, const FVector& ChunkCenter, UProceduralMeshComponent *component = nullptr, FPlanetChunk* planet_chunk = nullptr);
-
+    bool GenerateChunk(int32 X, int32 Y, int32 Z, FVector ChunkCenter, UProceduralMeshComponent *component = nullptr, FPlanetChunk* planet_chunk = nullptr);
+public:
+    UPROPERTY()
+	TMap<FVector, TWeakObjectPtr<UProceduralMeshComponent>> ChunkBox;
 };

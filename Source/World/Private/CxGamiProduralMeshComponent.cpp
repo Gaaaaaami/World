@@ -6,12 +6,24 @@
 
 UCxGamiProduralMeshComponent::UCxGamiProduralMeshComponent(const FObjectInitializer& ObjectInitializer):UProceduralMeshComponent(ObjectInitializer)
 {
-
+	PrimaryComponentTick.bCanEverTick = true;
 }
 
 UCxGamiProduralMeshComponent::~UCxGamiProduralMeshComponent()
 {
 
+}
+
+void UCxGamiProduralMeshComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	FVector AbsLocation = this->Location * this->PlanetActor->ChunkSize;
+	float dist = FVector::DistSquared(AbsLocation, this->PlanetActor->PlayerLocation);
+	float Alpha = dist / this->PlanetActor->LoadRadiu;
+
+	if (Alpha > 1.f)
+	{
+		this->PlanetActor->CircleChunk(Location);
+	}
 }
 
 void UCxGamiProduralMeshComponent::BindPlanetChunk(FPlanetChunk *InNewChunk)
