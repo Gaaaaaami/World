@@ -1,0 +1,8 @@
+{
+	"OutputFiles": [
+		"../../../a/UnrealGame/Shipping/RHITests/Module.RHITests.cpp.o",
+		"../../../a/UnrealGame/Shipping/RHITests/Module.RHITests.cpp.o",
+		"../../../x/UnrealGame/Shipping/RHITests/Module.RHITests.cpp.o",
+		"../../../x/UnrealGame/Shipping/RHITests/Module.RHITests.cpp.o"
+	]
+}

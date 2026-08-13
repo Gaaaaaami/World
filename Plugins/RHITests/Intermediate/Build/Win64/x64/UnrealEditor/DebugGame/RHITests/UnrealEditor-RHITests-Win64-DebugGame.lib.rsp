@@ -1,0 +1,26 @@
+/NOLOGO
+/errorReport:prompt
+/MACHINE:x64
+/SUBSYSTEM:WINDOWS
+/experimental:deterministic
+/DEF
+/NAME:"UnrealEditor-RHITests-Win64-DebugGame.dll"
+/IGNORE:4221
+/NODEFAULTLIB
+"D:/Users/Administrator/Documents/Unreal Projects/World/Intermediate/Build/Win64/x64/WorldEditor/DebugGame/UnrealEd/SharedPCH.UnrealEd.Project.NonOpt.ValApi.ValExpApi.Cpp20.InclOrderUnreal5_6.h.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/RHITests/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/RHITests/Module.RHITests.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/RHITests/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/RHITests/RHIAllocatorTests.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/RHITests/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/RHITests/RHIBindlessTests.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/RHITests/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/RHITests/RHIBufferTests.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/RHITests/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/RHITests/RHIClearTextureTests.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/RHITests/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/RHITests/RHIDrawTests.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/RHITests/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/RHITests/RHIGraphicsUAVTests.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/RHITests/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/RHITests/RHIReadbackTests.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/RHITests/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/RHITests/RHIReservedResourceTests.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/RHITests/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/RHITests/RHIRootConstantsTests.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/RHITests/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/RHITests/RHIShaderBundleTests.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/RHITests/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/RHITests/RHITests.spec.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/RHITests/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/RHITests/RHITestsCommon.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/RHITests/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/RHITests/RHITestsModule.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/RHITests/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/RHITests/RHITextureTests.cpp.obj"
+/OUT:"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/RHITests/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/RHITests/UnrealEditor-RHITests-Win64-DebugGame.lib"

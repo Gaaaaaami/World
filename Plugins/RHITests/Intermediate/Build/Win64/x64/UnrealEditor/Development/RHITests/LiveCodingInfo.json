@@ -1,0 +1,22 @@
+{
+	"RemapUnityFiles": 
+	{
+		"Module.RHITests.cpp.obj": [
+			"PerModuleInline.gen.cpp.obj",
+			"RHIAllocatorTests.cpp.obj",
+			"RHIBindlessTests.cpp.obj",
+			"RHIBufferTests.cpp.obj",
+			"RHIClearTextureTests.cpp.obj",
+			"RHIDrawTests.cpp.obj",
+			"RHIGraphicsUAVTests.cpp.obj",
+			"RHIReadbackTests.cpp.obj",
+			"RHIReservedResourceTests.cpp.obj",
+			"RHIRootConstantsTests.cpp.obj",
+			"RHIShaderBundleTests.cpp.obj",
+			"RHITests.spec.cpp.obj",
+			"RHITestsCommon.cpp.obj",
+			"RHITestsModule.cpp.obj",
+			"RHITextureTests.cpp.obj"
+		]
+	}
+}

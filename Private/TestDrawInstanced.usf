@@ -1,0 +1,20 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+
+#include "/Engine/Private/Common.ush"
+
+// VS：只负责把顶点位置传到裁剪空间，不需要InstanceID
+void TestDrawInstancedMainVS(
+    in float4 VertexPosition : ATTRIBUTE0,
+    out float4 OutPosition : SV_Position
+)
+{
+    OutPosition = VertexPosition;
+}
+
+// PS：只负责输出颜色到RT，不需要UAV
+void TestDrawInstancedMainPS(
+    out float4 OutColor : SV_Target0
+)
+{
+    OutColor = float4(0, 1, 0, 1);  // 白色三角形
+}

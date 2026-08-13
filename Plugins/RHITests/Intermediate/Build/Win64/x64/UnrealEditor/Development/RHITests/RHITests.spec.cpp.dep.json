@@ -1,0 +1,27 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\rhitests\\source\\rhitests\\private\\rhitests.spec.cpp",
+        "ProvidedModule": "",
+        "PCH": "d:\\users\\administrator\\documents\\unreal projects\\world\\intermediate\\build\\win64\\x64\\worldeditor\\development\\unrealed\\sharedpch.unrealed.project.valapi.valexpapi.cpp20.inclorderunreal5_6.h.pch",
+        "Includes": [
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\rhitests\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\rhitests\\definitions.rhitests.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\rhitests\\source\\rhitests\\public\\rhibuffertests.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\rhitests\\source\\rhitests\\public\\rhitestscommon.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\rhi\\public\\rhiresourceutils.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\rhitests\\source\\rhitests\\public\\rhitexturetests.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\core\\public\\math\\packedvector.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\rhi\\public\\rhisurfacedataconversion.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\rhitests\\source\\rhitests\\public\\rhidrawtests.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\rhitests\\source\\rhitests\\public\\rhicleartexturetests.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\rhitests\\source\\rhitests\\public\\rhireadbacktests.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\rhitests\\source\\rhitests\\public\\rhireservedresourcetests.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\rhitests\\source\\rhitests\\public\\rhigraphicsuavtests.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\rhitests\\source\\rhitests\\public\\rhiallocatortests.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\rhitests\\source\\rhitests\\private\\rhibindlesstests.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\rhitests\\source\\rhitests\\private\\rhirootconstantstests.h"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

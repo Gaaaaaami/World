@@ -1,0 +1,31 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\rhitests\\source\\rhitests\\private\\rhicleartexturetests.cpp",
+        "ProvidedModule": "",
+        "PCH": "d:\\users\\administrator\\documents\\unreal projects\\world\\intermediate\\build\\win64\\x64\\worldeditor\\development\\unrealed\\sharedpch.unrealed.project.valapi.valexpapi.cpp20.inclorderunreal5_6.h.pch",
+        "Includes": [
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\rhitests\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\rhitests\\definitions.rhitests.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\rhitests\\source\\rhitests\\public\\rhicleartexturetests.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\rhitests\\source\\rhitests\\public\\rhitestscommon.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\rhi\\public\\rhiresourceutils.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\rendercore\\public\\commonrenderresources.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\rendercore\\public\\shaderparameterstruct.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\rendercore\\public\\rendergraphresources.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\rhi\\public\\rhitransientresourceallocator.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\rendercore\\public\\rendergraphparameter.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\rendercore\\public\\rendergraphresources.inl",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\rendercore\\public\\rendercaptureinterface.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\rendercore\\public\\rendergraphevent.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\rendercore\\public\\rendergraphevent.inl",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\renderer\\public\\volumerendering.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\rendercore\\public\\shadercompilercore.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\rendercore\\public\\shadercompilerflags.inl",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\engine\\public\\screenrendering.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\rendercore\\public\\irendercaptureprovider.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\engine\\public\\dummyviewport.h"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

@@ -1,0 +1,14 @@
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/RHITests/Source/RHITests/Private/RHIBufferTests.cpp"
+@"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/RHITests/Intermediate/Build/Win64/x64/UnrealEditor/Development/RHITests/RHITests.Shared.rsp"
+/FI"D:/Users/Administrator/Documents/Unreal Projects/World/Intermediate/Build/Win64/x64/WorldEditor/Development/UnrealEd/SharedPCH.UnrealEd.Project.ValApi.ValExpApi.Cpp20.InclOrderUnreal5_6.h"
+/FI"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/RHITests/Intermediate/Build/Win64/x64/UnrealEditor/Development/RHITests/Definitions.RHITests.h"
+/Yu"D:/Users/Administrator/Documents/Unreal Projects/World/Intermediate/Build/Win64/x64/WorldEditor/Development/UnrealEd/SharedPCH.UnrealEd.Project.ValApi.ValExpApi.Cpp20.InclOrderUnreal5_6.h"
+/Fp"D:/Users/Administrator/Documents/Unreal Projects/World/Intermediate/Build/Win64/x64/WorldEditor/Development/UnrealEd/SharedPCH.UnrealEd.Project.ValApi.ValExpApi.Cpp20.InclOrderUnreal5_6.h.pch"
+/Fo"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/RHITests/Intermediate/Build/Win64/x64/UnrealEditor/Development/RHITests/RHIBufferTests.cpp.obj"
+/experimental:log "D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/RHITests/Intermediate/Build/Win64/x64/UnrealEditor/Development/RHITests/RHIBufferTests.cpp.sarif"
+/sourceDependencies "D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/RHITests/Intermediate/Build/Win64/x64/UnrealEditor/Development/RHITests/RHIBufferTests.cpp.dep.json"
+/nologo
+/TP
+/GR-
+/std:c++20
+/wd5054

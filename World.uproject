@@ -7,7 +7,7 @@
 		{
 			"Name": "World",
 			"Type": "Runtime",
-			"LoadingPhase": "Default",
+			"LoadingPhase": "PostConfigInit",
 			"AdditionalDependencies": [
 				"Engine",
 				"CoreUObject",
@@ -41,6 +41,18 @@
 		},
 		{
 			"Name": "AIAssistant",
+			"Enabled": true
+		},
+		{
+			"Name": "RHITests",
+			"Enabled": true
+		},
+		{
+			"Name": "EditorTests",
+			"Enabled": true
+		},
+		{
+			"Name": "RuntimeTests",
 			"Enabled": true
 		}
 	]

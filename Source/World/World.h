@@ -3,4 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-
+class WORLD_API FWorldModule : public FDefaultGameModuleImpl
+{
+public:
+    virtual void StartupModule() override;
+    virtual void ShutdownModule() override;
+};
