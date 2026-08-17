@@ -8,7 +8,8 @@
 #include "RHIAccess.h"
 #include "RHIGPUReadback.h"
 #include "DynamicRHI.h"
-
+#include "ShaderParameterStruct.h"
+#include "RHICommandList.h"
 // ---------- Shader ----------
 class FDensityNoiseVS : public FGlobalShader
 {
@@ -24,6 +25,12 @@ IMPLEMENT_SHADER_TYPE(, FDensityNoiseVS,
 
 class FDensityNoisePS : public FGlobalShader
 {
+
+public:
+    BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
+        SHADER_PARAMETER(FVector3f, PlayerPosition)
+    END_SHADER_PARAMETER_STRUCT()
+
     DECLARE_SHADER_TYPE(FDensityNoisePS, Global);
     FDensityNoisePS() {}
     FDensityNoisePS(const ShaderMetaType::CompiledShaderInitializerType& Initializer)
@@ -51,7 +58,7 @@ void URHIDensityTools::Init(int32 InSize)
 void URHIDensityTools::Draw()
 {
     // 必须投递到渲染线程
-    ENQUEUE_RENDER_COMMAND(URHITest_DrawTriangle)(
+    ENQUEUE_RENDER_COMMAND(URHIDensityToolsGPU)(
         [this](FRHICommandListImmediate& RHICmdList)
         {
             RenderTest2D(RHICmdList);
@@ -148,6 +155,18 @@ void URHIDensityTools::RenderTest2D(FRHICommandListImmediate& RHICmdList)
         TShaderRef<FDensityNoiseVS> VS = ShaderMap->GetShader<FDensityNoiseVS>();
         TShaderRef<FDensityNoisePS> PS = ShaderMap->GetShader<FDensityNoisePS>();
 
+
+        {
+
+            FDensityNoisePS::FParameters Params;
+            Params.PlayerPosition = FVector3f(1.f,0.f,1.f);
+            FRHIBatchedShaderParameters &BatchedShder = RHICmdList.GetScratchShaderParameters();
+            SetShaderParameters(BatchedShder, PS, Params);
+            RHICmdList.SetBatchedShaderParameters(PS.GetGraphicsShader(), BatchedShder);
+        }
+
+
+
         check(VS.IsValid());
         check(PS.IsValid());
 
@@ -182,14 +201,6 @@ void URHIDensityTools::RenderTest2D(FRHICommandListImmediate& RHICmdList)
         PSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
 
 
-        UE_LOG(LogTemp, Warning,
-            TEXT("PSO: RTCount=%u RT0Format=%d RT0Flags=0x%llx NumSamples=%u DepthFormat=%d"),
-            PSOInit.RenderTargetsEnabled,
-            PSOInit.RenderTargetFormats[0],
-            (uint64)PSOInit.RenderTargetFlags[0],
-            PSOInit.NumSamples,
-            PSOInit.DepthStencilTargetFormat
-        );
 
         // 5. 应用 PSO.
         SetGraphicsPipelineState(RHICmdList, PSOInit, 0);
