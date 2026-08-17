@@ -22,7 +22,7 @@ public:
 	// 普通 UFUNCTION，游戏线程调用，内部投递到渲染线程
 	UFUNCTION(BlueprintCallable)
 	void Draw();
-	void RenderTest(FRHICommandListImmediate& RHICmdList);
-	void SaveToRawRGBA(void* CpuData, int32 RowPitch, int32 Width, int32 Height, const FString& FilePath);
+	void RenderTest2D(FRHICommandListImmediate& RHICmdList);
+	void SaveToRawRGBA(void* CpuData, int32 RowPitch, int32 BufferHeight, int32 Width, int32 Height, const FString& FilePath);
 
 };

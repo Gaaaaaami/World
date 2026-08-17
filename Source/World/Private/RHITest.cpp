@@ -54,14 +54,14 @@ void URHITest::Draw()
     ENQUEUE_RENDER_COMMAND(URHITest_DrawTriangle)(
         [this](FRHICommandListImmediate& RHICmdList)
         {
-            RenderTest(RHICmdList);
+            RenderTest2D(RHICmdList);
         }
         );
 }
 // 保存为原始RGBA数据（Qt可以用QImage::loadFromData或直接解析）
-void URHITest::SaveToRawRGBA(void* CpuData, int32 RowPitch, int32 Width, int32 Height, const FString& FilePath)
+void URHITest::SaveToRawRGBA(void* CpuData, int32 RowPitch, int32 BufferHeight, int32 Width, int32 Height, const FString& FilePath)
 {
-    const int32 BytesPerPixel = 4; // BGRA
+    const int32 BytesPerPixel = 1; // BGRA
     const int32 SrcRowBytes = RowPitch;               // GPU每行真实字节数（含填充）
     const int32 DstRowBytes = Width * BytesPerPixel;  // 有效像素每行字节数（无填充）
 
@@ -69,9 +69,15 @@ void URHITest::SaveToRawRGBA(void* CpuData, int32 RowPitch, int32 Width, int32 H
     RawData.SetNumUninitialized(Width * Height * BytesPerPixel);
     check(RawData.Num() == DstRowBytes * Height); // 校验大小，防止算错
 
+    //! FMemory::Memcpy(RawData.GetData(), CpuData, Width * Height * BytesPerPixel);
+    
+    uint8* data = (uint8*)CpuData;
+    for (int y = 0; y < BufferHeight; y++)
+    {
+        FMemory::Memcpy(RawData.GetData() + (y * Width), data + (y * RowPitch), Width);
+    }
 
-    FMemory::Memcpy(RawData.GetData(), CpuData, Width * Height * BytesPerPixel);
-
+    uint8* RawDataBinrary = RawData.GetData();
 
     FFileHelper::SaveArrayToFile(RawData, *FilePath);
     UE_LOG(LogTemp, Log, TEXT("Raw RGBA保存成功: %s | RowPitch=%d, 有效行字节=%d, 总大小=%d"),
@@ -79,17 +85,17 @@ void URHITest::SaveToRawRGBA(void* CpuData, int32 RowPitch, int32 Width, int32 H
 }
 
 
-void URHITest::RenderTest(FRHICommandListImmediate& RHICmdList)
+void URHITest::RenderTest2D(FRHICommandListImmediate& RHICmdList)
 {
 
-    int w = 3;
-    int h = 3;
+    int w = 1024;
+    int h = w;
 
     FRHITextureDesc RenderTargetDesc(
         ETextureDimension::Texture2D,       // 2D纹理
         ETextureCreateFlags::RenderTargetable, // 标记为可渲染
-        PF_G16,                        // 像素格式，和官方一致
-        FClearValueBinding(FLinearColor::White), // 默认清屏为黑色
+        PF_G8,                                 // 像素格式，和官方一致
+        FClearValueBinding(FLinearColor::Transparent), // 默认清屏为黑色
         FIntPoint(w, h),                    // 分辨率，官方用4x4，足够小速度快
         1, 1, 1, 1, 0                       // Mip/数组/采样数等参数，直接抄官方
     );
@@ -143,8 +149,6 @@ void URHITest::RenderTest(FRHICommandListImmediate& RHICmdList)
 
     RHICmdList.SetViewport(0, 0, 0.0f, w, h, 1.0f);
 
-
-#if 1
     // 3. 获取 Shader（用我们之前写的 FIndirectTestVS/PS）
     auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
     TShaderRef<FIndirectTestVS> VS = ShaderMap->GetShader<FIndirectTestVS>();
@@ -181,9 +185,6 @@ void URHITest::RenderTest(FRHICommandListImmediate& RHICmdList)
         0 // Offset: 0
     );
 
-
-#endif
-
     RHICmdList.ImmediateFlush(EImmediateFlushType::FlushRHIThread);
     RHICmdList.EndRenderPass();
 
@@ -208,32 +209,6 @@ void URHITest::RenderTest(FRHICommandListImmediate& RHICmdList)
     int32 BufferHeight = 0;
     void* CpuData = TextureReadback->Lock(RowPitch, &BufferHeight);
     check(CpuData); // 肯定成功，因为已经强制刷新了
-
-
-
-#if 0
-    char *RgbData = (char*)CpuData;
-    for (int x = 0; x < RowPitch; x += 4)
-    {
-        FString n = "";
-        for (int y = 0; y < BufferHeight; y++)
-        {
-
-            int index = y* RowPitch + x;
-            unsigned char r = (unsigned char)RgbData[index];
-            unsigned char g = (unsigned char)RgbData[index + 1];
-            unsigned char b = (unsigned char)RgbData[index + 2];
-            unsigned char a = (unsigned char)RgbData[index + 3];
-
-            n = n + FString::Printf(TEXT("%d, %d, %d, %d"), r, g, b, a);
-
-        }
-        UE_LOG(LogTemp, Log, TEXT("%s"), *n);
-        UE_LOG(LogTemp, Log, TEXT("================================================================="));
-
-    }
-#else
- ///   SaveToRawRGBA(CpuData, RowPitch, w, h, "D:/Image.rgba");
-#endif
+    SaveToRawRGBA(CpuData, RowPitch, BufferHeight, w, h, FPaths::Combine(FPaths::ProjectDir(), "image.rgba"));
     TextureReadback->Unlock();
 }

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
 #include "RHITest.h"
+#include "RHIDensityTools.h"
 #include "CxGameMode.generated.h"
 
 /**
@@ -19,4 +20,8 @@ public:
 
 	UPROPERTY()
 	TObjectPtr<URHITest> RHITest = nullptr;
+
+
+	UPROPERTY()
+	TObjectPtr<URHIDensityTools> RHIDT = nullptr;
 };

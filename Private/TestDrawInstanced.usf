@@ -16,5 +16,5 @@ void TestDrawInstancedMainPS(
     out float4 OutColor : SV_Target0
 )
 {
-    OutColor = float4(0, 1, 0, 1);  // 白色三角形
+    OutColor = float4(1, 1, 1, 1);  // 白色三角形
 }
