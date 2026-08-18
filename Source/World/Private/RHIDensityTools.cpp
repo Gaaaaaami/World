@@ -11,6 +11,9 @@
 #include "ShaderParameterStruct.h"
 #include "RHICommandList.h"
 
+
+#define SAVE_NOISE_TODESK_U8_RED_FORMAT
+
 #if 1
 // ---------- Shader ----------
 class FDensityNoiseVS : public FGlobalShader
@@ -60,35 +63,58 @@ URHIDensityTools::~URHIDensityTools()
 void URHIDensityTools::Init(int32 InSize)
 {
     TextureDesc = FRHITextureDesc(ETextureDimension::Texture2D,
-    ETextureCreateFlags::RenderTargetable, EPixelFormat::PF_R8, FClearValueBinding::Transparent, FIntPoint(InSize, InSize), 1, 1, 1, 1, 0);
+    ETextureCreateFlags::RenderTargetable, EPixelFormat::PF_R32_FLOAT, FClearValueBinding::Transparent, FIntPoint(InSize, InSize), 1, 1, 1, 1, 0);
     TextureCreateDesc = FRHITextureCreateDesc(TextureDesc, ERHIAccess::RTV, TEXT("NoiseDensityGPU_Initialize"));
     Size = InSize;
 }
 void URHIDensityTools::Draw()
 {
     // 必须投递到渲染线程
-    ENQUEUE_RENDER_COMMAND(URHIDensityToolsGPU)(
-        [this](FRHICommandListImmediate& RHICmdList)
+#ifdef TEST_USED_TIME
+    auto s = FPlatformTime::Seconds() * 1000.f;
+
+    for (int i = 0; i < 32; i++)
+    {
+        for (int j = 0; j < 32; j++)
         {
-
-            InitlizeRender(RHICmdList);
-            RenderDensityNoise(RHICmdList, FVector3f(0.f, 0.f, 0.f));
-
+            for (int k = 0; k < 32; k++)
             {
-                TArray<uint8> buffer;
-                int32 RowPitch = 0;
-                int32 BufferHeight = 0;
-                buffer.SetNumUninitialized(this->Size * this->Size);
-                GetPixelBuffer(RHICmdList, buffer, RowPitch, BufferHeight);
-                SaveToRawRGBA(buffer.GetData(), 
-                    RowPitch, 
-                    BufferHeight, 
-                    this->Size, 
-                    this->Size, 
-                    FPaths::Combine(FPaths::ProjectDir(), "image.rgba"));
+
+#endif
+                ENQUEUE_RENDER_COMMAND(URHIDensityToolsGPU)(
+                    [this](FRHICommandListImmediate& RHICmdList)
+                    {
+
+                        InitlizeRender(RHICmdList);
+                        RenderDensityNoise(RHICmdList, FVector3f(1.f, 0.f, 0.f));
+                 
+                        int32 RowPitch = 0;
+                        int32 BufferHeight = 0;
+                        if(FloatBuffer.Num() == 0)
+                            FloatBuffer.SetNumUninitialized(this->Size * this->Size);
+                        GetPixelBuffer(RHICmdList, FloatBuffer, RowPitch, BufferHeight);
+
+#ifdef SAVE_NOISE_TODESK_U8_RED_FORMAT
+                            TArray<uint8> buffer;
+                            this->Float2Uint8(FloatBuffer, buffer);
+                            SaveToRawRGBA(buffer.GetData(),
+                                RowPitch,
+                                BufferHeight,
+                                this->Size,
+                                this->Size,
+                                FPaths::Combine(FPaths::ProjectDir(), "image.rgba"));
+#endif
+                    }
+                    );
+
+
+#ifdef TEST_USED_TIME
             }
         }
-        );
+    }
+    auto e = FPlatformTime::Seconds() * 1000.f;
+    return;
+#endif
 }
 
 // 保存为原始RGBA数据（Qt可以用QImage::loadFromData或直接解析）
@@ -113,6 +139,15 @@ void URHIDensityTools::SaveToRawRGBA(void* CpuData, int32 RowPitch, int32 Buffer
     FFileHelper::SaveArrayToFile(RawData, *FilePath);
     UE_LOG(LogTemp, Log, TEXT("Raw RGBA保存成功: %s | RowPitch=%d, 有效行字节=%d, 总大小=%d"),
         *FilePath, RowPitch, DstRowBytes, RawData.Num());
+}
+
+void URHIDensityTools::Float2Uint8(TArray<float>& src, TArray<uint8>& dst)
+{
+    for (const auto& it : src)
+    {
+        uint8 red = FMath::Clamp(it * 255, 0, 255);
+        dst.Push(red);
+    }
 }
 
 void URHIDensityTools::InitlizeRender(FRHICommandListImmediate& RHICmdList)
@@ -199,7 +234,7 @@ void URHIDensityTools::InitlizeRender(FRHICommandListImmediate& RHICmdList)
 
         // 注意：Indirect 测试通常需要 VertexDeclaration，但我们这次没自定义，先用 nullptr（如果报错我们再补）
         // PSOInit.BoundShaderState.VertexDeclarationRHI = nullptr;
-        PSOInit.BlendState = TStaticBlendState<CW_RED>::GetRHI();
+        PSOInit.BlendState = TStaticBlendState<CW_RGBA>::GetRHI();
         PSOInit.RasterizerState = TStaticRasterizerState<
             FM_Solid,
             CM_None,
@@ -234,7 +269,7 @@ void URHIDensityTools::InitlizeRender(FRHICommandListImmediate& RHICmdList)
         //    0 // Offset: 0
         //);
 
-        RHICmdList.ImmediateFlush(EImmediateFlushType::FlushRHIThread);
+        ///RHICmdList.ImmediateFlush(EImmediateFlushType::FlushRHIThread);
         RHICmdList.EndRenderPass();
     }   
 }
@@ -262,7 +297,7 @@ void URHIDensityTools::RenderDensityNoise(FRHICommandListImmediate& RHICmdList, 
 
 }
 
-void URHIDensityTools::GetPixelBuffer(FRHICommandListImmediate& RHICmdList, TArray<uint8>& buffer, int32& RowPitch, int32& BufferHeight)
+void URHIDensityTools::GetPixelBuffer(FRHICommandListImmediate& RHICmdList, TArray<float>& buffer, int32& RowPitch, int32& BufferHeight)
 {
 
     const int32 w = this->Size;
@@ -280,11 +315,13 @@ void URHIDensityTools::GetPixelBuffer(FRHICommandListImmediate& RHICmdList, TArr
     TextureReadback->EnqueueCopy(RHICmdList, TextureRef, FIntVector(0.f, 0.f, 0.f), 0, FIntVector(w, h, 1));
   /*  int32 RowPitch = 0;
     int32 BufferHeight = 0;*/
+
+
     void* CpuData = TextureReadback->Lock(RowPitch, &BufferHeight);
     check(CpuData); // 肯定成功，因为已经强制刷新了
 
     //SaveToRawRGBA(CpuData, RowPitch, BufferHeight, w, h, FPaths::Combine(FPaths::ProjectDir(), "image.rgba"));
-    memcpy(buffer.GetData(), CpuData, w * h);
+    memcpy(buffer.GetData(), CpuData, w * h * sizeof(float));
     TextureReadback->Unlock();
     TransitionInfo = FRHITransitionInfo(TextureRef, ERHIAccess::CopySrc, ERHIAccess::RTV);
     RHICmdList.Transition(TransitionInfo);
