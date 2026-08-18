@@ -1,7 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "/Engine/Private/Common.ush"
-
+float3 NoisePosition;
 void NoiseDensityMainVS(
     in float4 VertexPosition : ATTRIBUTE0,
     out float4 OutPosition : SV_Position,
@@ -19,6 +19,7 @@ void NoiseDensityMainFS(
     out float4 OutColor : SV_Target0
 )
 {
-    float Alpha = UVS.x + UVS.y;
+   
+    float Alpha = UVS.x + UVS.y * NoisePosition.x;
     OutColor = float4(saturate(Alpha), 0.f, 0.f, 1.f);
 }

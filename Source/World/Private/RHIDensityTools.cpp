@@ -10,6 +10,8 @@
 #include "DynamicRHI.h"
 #include "ShaderParameterStruct.h"
 #include "RHICommandList.h"
+
+#if 1
 // ---------- Shader ----------
 class FDensityNoiseVS : public FGlobalShader
 {
@@ -22,24 +24,31 @@ class FDensityNoiseVS : public FGlobalShader
 IMPLEMENT_SHADER_TYPE(, FDensityNoiseVS,
     TEXT("/Project/NoiseDensity.usf"),
     TEXT("NoiseDensityMainVS"), SF_Vertex);
-
 class FDensityNoisePS : public FGlobalShader
 {
 
 public:
-    BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
-        SHADER_PARAMETER(FVector3f, PlayerPosition)
-    END_SHADER_PARAMETER_STRUCT()
 
-    DECLARE_SHADER_TYPE(FDensityNoisePS, Global);
-    FDensityNoisePS() {}
-    FDensityNoisePS(const ShaderMetaType::CompiledShaderInitializerType& Initializer)
-        : FGlobalShader(Initializer) {
-    }
+   DECLARE_SHADER_TYPE(FDensityNoisePS, Global);
+
+   FDensityNoisePS() {}
+   FDensityNoisePS(const ShaderMetaType::CompiledShaderInitializerType& Initializer)
+       : FGlobalShader(Initializer) {
+
+       NoisePosition.Bind(Initializer.ParameterMap, TEXT("NoisePosition"));
+       check(NoisePosition.IsBound()); // 建议加这个，开发期直接暴露绑定
+   }
+
+    LAYOUT_FIELD(FShaderParameter, NoisePosition);
+
 };
 IMPLEMENT_SHADER_TYPE(, FDensityNoisePS,
     TEXT("/Project/NoiseDensity.usf"),
     TEXT("NoiseDensityMainFS"), SF_Pixel);
+
+#else
+
+#endif
 
 
 URHIDensityTools::URHIDensityTools()
@@ -61,7 +70,23 @@ void URHIDensityTools::Draw()
     ENQUEUE_RENDER_COMMAND(URHIDensityToolsGPU)(
         [this](FRHICommandListImmediate& RHICmdList)
         {
-            RenderTest2D(RHICmdList);
+
+            InitlizeRender(RHICmdList);
+            RenderDensityNoise(RHICmdList, FVector3f(0.f, 0.f, 0.f));
+
+            {
+                TArray<uint8> buffer;
+                int32 RowPitch = 0;
+                int32 BufferHeight = 0;
+                buffer.SetNumUninitialized(this->Size * this->Size);
+                GetPixelBuffer(RHICmdList, buffer, RowPitch, BufferHeight);
+                SaveToRawRGBA(buffer.GetData(), 
+                    RowPitch, 
+                    BufferHeight, 
+                    this->Size, 
+                    this->Size, 
+                    FPaths::Combine(FPaths::ProjectDir(), "image.rgba"));
+            }
         }
         );
 }
@@ -90,7 +115,7 @@ void URHIDensityTools::SaveToRawRGBA(void* CpuData, int32 RowPitch, int32 Buffer
         *FilePath, RowPitch, DstRowBytes, RawData.Num());
 }
 
-void URHIDensityTools::RenderTest2D(FRHICommandListImmediate& RHICmdList)
+void URHIDensityTools::InitlizeRender(FRHICommandListImmediate& RHICmdList)
 {
 
     const int32 &w = this->Size;
@@ -114,7 +139,7 @@ void URHIDensityTools::RenderTest2D(FRHICommandListImmediate& RHICmdList)
 
         // 2. 创建 Indirect Buffer，把参数塞进去
     // 注意 Flags 必须是 BUF_DrawIndirect
-        FBufferRHIRef DrawArgBuffer = UE::RHIResourceUtils::CreateBufferFromArray(
+        DrawArgBuffer = UE::RHIResourceUtils::CreateBufferFromArray(
             RHICmdList,
             TEXT("MyIndirectArgs"),
             EBufferUsageFlags::DrawIndirect, // 关键：标记为 Indirect 参数
@@ -123,7 +148,7 @@ void URHIDensityTools::RenderTest2D(FRHICommandListImmediate& RHICmdList)
         );
         const uint16 Indices[6] = { 0, 1, 2 , 1, 3, 2 };
         // 2. 创建 Index Buffer，把数据塞进去
-        FBufferRHIRef IndexBuffer = UE::RHIResourceUtils::CreateIndexBufferFromArray(
+        IndexBuffer = UE::RHIResourceUtils::CreateIndexBufferFromArray(
             RHICmdList,
             TEXT("MyIndexBuffer"),
             MakeConstArrayView(Indices)
@@ -137,7 +162,7 @@ void URHIDensityTools::RenderTest2D(FRHICommandListImmediate& RHICmdList)
         Vertices.Add(FVector4f(-1.0f, 1.0f, 0.f, 0.f));  // 左上
         Vertices.Add(FVector4f(1.0f, 1.0f,  1.f, 0.f));   // 右上
         //// 2. 创建 Vertex Buffer
-        FBufferRHIRef VertexBuffer = UE::RHIResourceUtils::CreateVertexBufferFromArray(
+        VertexBuffer = UE::RHIResourceUtils::CreateVertexBufferFromArray(
             RHICmdList,
             TEXT("MyVertexBuffer"),
             MakeConstArrayView(Vertices)
@@ -152,23 +177,11 @@ void URHIDensityTools::RenderTest2D(FRHICommandListImmediate& RHICmdList)
 
         // 3. 获取 Shader（用我们之前写的 FIndirectTestVS/PS）
         auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
-        TShaderRef<FDensityNoiseVS> VS = ShaderMap->GetShader<FDensityNoiseVS>();
-        TShaderRef<FDensityNoisePS> PS = ShaderMap->GetShader<FDensityNoisePS>();
-
-
-        {
-
-            FDensityNoisePS::FParameters Params;
-            Params.PlayerPosition = FVector3f(1.f,0.f,1.f);
-            FRHIBatchedShaderParameters &BatchedShder = RHICmdList.GetScratchShaderParameters();
-            SetShaderParameters(BatchedShder, PS, Params);
-            RHICmdList.SetBatchedShaderParameters(PS.GetGraphicsShader(), BatchedShder);
-        }
-
-
-
-        check(VS.IsValid());
-        check(PS.IsValid());
+        auto VS = ShaderMap->GetShader<FDensityNoiseVS>();
+        auto PS = ShaderMap->GetShader<FDensityNoisePS>();
+        GlobalPS = PS;
+        GlobalVS = VS;
+        
 
         FVertexDeclarationElementList Elements;
         Elements.Add(FVertexElement(0, 0, VET_Float4, 0, sizeof(FVector4f), false));
@@ -176,17 +189,13 @@ void URHIDensityTools::RenderTest2D(FRHICommandListImmediate& RHICmdList)
         // 创建RHI资源
         FVertexDeclarationRHIRef VertexDecl = RHICreateVertexDeclaration(Elements);
 
-
         // 4. 初始化 PSO（Pipeline State Object）
-        FGraphicsPipelineStateInitializer PSOInit;
+        // FGraphicsPipelineStateInitializer PSOInit;
         RHICmdList.ApplyCachedRenderTargets(PSOInit);           /** < 将RenderTargetDesc拷贝到PSOInit中 */
-        
         PSOInit.BoundShaderState.VertexDeclarationRHI = VertexDecl;
         PSOInit.BoundShaderState.VertexShaderRHI = VS.GetVertexShader();
         PSOInit.BoundShaderState.PixelShaderRHI = PS.GetPixelShader();
         PSOInit.PrimitiveType = PT_TriangleList;
-
-
 
         // 注意：Indirect 测试通常需要 VertexDeclaration，但我们这次没自定义，先用 nullptr（如果报错我们再补）
         // PSOInit.BoundShaderState.VertexDeclarationRHI = nullptr;
@@ -199,30 +208,65 @@ void URHIDensityTools::RenderTest2D(FRHICommandListImmediate& RHICmdList)
         >::GetRHI();
 
         PSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
-
-
-
         // 5. 应用 PSO.
         SetGraphicsPipelineState(RHICmdList, PSOInit, 0);
-        // 6. 绑定UV / Vertex Buffer（把顶点数据喂给 GPU）
         RHICmdList.SetStreamSource(0, VertexBuffer, 0);
 
-        RHICmdList.DrawIndexedPrimitiveIndirect(
-            IndexBuffer,
-            DrawArgBuffer,
-            0 // Offset: 0
-        );
+
+        //{
+        //    FVector3f Location(1.f, 1.f, 1.f);
+        //    // 1. 从 RHICmdList 获取一个已初始化的批量参数对象
+        //    FRHIBatchedShaderParameters& BatchedParameters = RHICmdList.GetScratchShaderParameters();
+
+        //    // 2. 往里塞参数
+        //    SetShaderValue(BatchedParameters, PS->NoisePosition, Location);
+
+        //    // 3. 一次性提交
+        //    RHICmdList.SetBatchedShaderParameters(PS.GetPixelShader(), BatchedParameters);
+        //}
+
+        
+        // 6. 绑定UV / Vertex Buffer（把顶点数据喂给 GPU）
+
+        //RHICmdList.DrawIndexedPrimitiveIndirect(
+        //    IndexBuffer,
+        //    DrawArgBuffer,
+        //    0 // Offset: 0
+        //);
 
         RHICmdList.ImmediateFlush(EImmediateFlushType::FlushRHIThread);
         RHICmdList.EndRenderPass();
-    }
+    }   
+}
+void URHIDensityTools::RenderDensityNoise(FRHICommandListImmediate& RHICmdList, FVector3f InNoisePosition)
+{
+    FRHIRenderPassInfo RenderPassInfo(this->TextureRef, ERenderTargetActions::Clear_Store);
+    RHICmdList.BeginRenderPass(RenderPassInfo, TEXT("DrawDensityNoise"));
+    SetGraphicsPipelineState(RHICmdList, this->PSOInit, 0);
+    RHICmdList.SetStreamSource(0, VertexBuffer, 0);
+    auto PS = static_cast<FDensityNoisePS *>(GlobalPS.GetShader());
+    auto VS = static_cast<FDensityNoiseVS *>(GlobalVS.GetShader());
 
-    // 资源屏障：告诉GPU "RT写完啦，现在我要读它了"
-    // 从RT状态转成CopySrc(拷贝源)状态
-    // 
-    // FRHITransitionInfo(class FRHIBuffer* InRHIBuffer, 
-    // ERHIAccess InPreviousState, ERHIAccess InNewState, 
-    // EResourceTransitionFlags InFlags = EResourceTransitionFlags::None)
+    FRHIBatchedShaderParameters& BatchedParameters = RHICmdList.GetScratchShaderParameters();
+    SetShaderValue(BatchedParameters, PS->NoisePosition, InNoisePosition);
+    RHICmdList.SetBatchedShaderParameters(GlobalPS.GetPixelShader(), BatchedParameters);
+
+
+    RHICmdList.DrawIndexedPrimitiveIndirect(
+        IndexBuffer,
+        DrawArgBuffer,
+        0 // Offset: 0
+    );
+    RHICmdList.ImmediateFlush(EImmediateFlushType::FlushRHIThread);
+    RHICmdList.EndRenderPass();
+
+}
+
+void URHIDensityTools::GetPixelBuffer(FRHICommandListImmediate& RHICmdList, TArray<uint8>& buffer, int32& RowPitch, int32& BufferHeight)
+{
+
+    const int32 w = this->Size;
+    const int32 h = this->Size;
 
     FRHITransitionInfo TransitionInfo(TextureRef, ERHIAccess::RTV, ERHIAccess::CopySrc);
     RHICmdList.Transition(TransitionInfo);
@@ -234,15 +278,14 @@ void URHIDensityTools::RenderTest2D(FRHICommandListImmediate& RHICmdList)
         TextureReadback = MakeUnique<FRHIGPUTextureReadback>(TEXT("MyRTReadback"));
     }
     TextureReadback->EnqueueCopy(RHICmdList, TextureRef, FIntVector(0.f, 0.f, 0.f), 0, FIntVector(w, h, 1));
-    int32 RowPitch = 0;
-    int32 BufferHeight = 0;
+  /*  int32 RowPitch = 0;
+    int32 BufferHeight = 0;*/
     void* CpuData = TextureReadback->Lock(RowPitch, &BufferHeight);
     check(CpuData); // 肯定成功，因为已经强制刷新了
 
-    SaveToRawRGBA(CpuData, RowPitch, BufferHeight, w, h, FPaths::Combine(FPaths::ProjectDir(), "image.rgba"));
+    //SaveToRawRGBA(CpuData, RowPitch, BufferHeight, w, h, FPaths::Combine(FPaths::ProjectDir(), "image.rgba"));
+    memcpy(buffer.GetData(), CpuData, w * h);
     TextureReadback->Unlock();
-
     TransitionInfo = FRHITransitionInfo(TextureRef, ERHIAccess::CopySrc, ERHIAccess::RTV);
     RHICmdList.Transition(TransitionInfo);
-    
 }

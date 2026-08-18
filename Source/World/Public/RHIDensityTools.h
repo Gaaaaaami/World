@@ -10,6 +10,7 @@
  * 
  */
 UCLASS()
+
 class WORLD_API URHIDensityTools : public UObject
 {
 	GENERATED_BODY()
@@ -19,14 +20,23 @@ public:
 public:
 	void Init(int32 InSize);
 	void Draw();
-	void RenderTest2D(FRHICommandListImmediate& RHICmdList);
+	void InitlizeRender(FRHICommandListImmediate& RHICmdList);
+	void RenderDensityNoise(FRHICommandListImmediate& RHICmdList, FVector3f InNoisePosition );
+	void GetPixelBuffer(FRHICommandListImmediate& RHICmdList, TArray<uint8>& buffer, int32 &RowPitch, int32 &BufferHeight);
 	void SaveToRawRGBA(void* CpuData, int32 RowPitch, int32 BufferHeight, int32 Width, int32 Height, const FString& FilePath);
-
 
 public:
 	FRHITextureDesc TextureDesc;
 	FTextureRHIRef TextureRef;
 	FRHITextureCreateDesc TextureCreateDesc;
-public:
+	FBufferRHIRef IndexBuffer;
+	FBufferRHIRef DrawArgBuffer;
+
+	FGraphicsPipelineStateInitializer PSOInit;
+	FBufferRHIRef VertexBuffer;
+
+	TShaderRef<FGlobalShader> GlobalPS;
+	TShaderRef<FGlobalShader> GlobalVS;
+
 	int32 Size;
 };
