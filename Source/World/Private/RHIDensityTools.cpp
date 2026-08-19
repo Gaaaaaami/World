@@ -12,8 +12,8 @@
 #include "RHICommandList.h"
 
 
-#define SAVE_NOISE_TODESK_U8_RED_FORMAT
-
+//#define SAVE_NOISE_TODESK_U8_RED_FORMAT
+//#define TEST_USED_TIME
 #if 1
 // ---------- Shader ----------
 class FDensityNoiseVS : public FGlobalShader
@@ -92,7 +92,7 @@ void URHIDensityTools::Draw()
                         int32 BufferHeight = 0;
                         if(FloatBuffer.Num() == 0)
                             FloatBuffer.SetNumUninitialized(this->Size * this->Size);
-                        GetPixelBuffer(RHICmdList, FloatBuffer, RowPitch, BufferHeight);
+                        //GetPixelBuffer(RHICmdList, FloatBuffer, RowPitch, BufferHeight);
 
 #ifdef SAVE_NOISE_TODESK_U8_RED_FORMAT
                             TArray<uint8> buffer;
@@ -113,6 +113,9 @@ void URHIDensityTools::Draw()
         }
     }
     auto e = FPlatformTime::Seconds() * 1000.f;
+
+    UE_LOG(LogTemp, Log, TEXT("ms: %lf"), (e - s));
+
     return;
 #endif
 }
@@ -292,7 +295,7 @@ void URHIDensityTools::RenderDensityNoise(FRHICommandListImmediate& RHICmdList, 
         DrawArgBuffer,
         0 // Offset: 0
     );
-    RHICmdList.ImmediateFlush(EImmediateFlushType::FlushRHIThread);
+    ///RHICmdList.ImmediateFlush(EImmediateFlushType::FlushRHIThread);
     RHICmdList.EndRenderPass();
 
 }
@@ -313,16 +316,20 @@ void URHIDensityTools::GetPixelBuffer(FRHICommandListImmediate& RHICmdList, TArr
         TextureReadback = MakeUnique<FRHIGPUTextureReadback>(TEXT("MyRTReadback"));
     }
     TextureReadback->EnqueueCopy(RHICmdList, TextureRef, FIntVector(0.f, 0.f, 0.f), 0, FIntVector(w, h, 1));
-  /*  int32 RowPitch = 0;
-    int32 BufferHeight = 0;*/
+    /*  int32 RowPitch = 0;
+      int32 BufferHeight = 0;*/
 
+    if (TextureReadback->IsReady())
+    {
+    
+        void* CpuData = TextureReadback->Lock(RowPitch, &BufferHeight);
+        check(CpuData); // 肯定成功，因为已经强制刷新了
 
-    void* CpuData = TextureReadback->Lock(RowPitch, &BufferHeight);
-    check(CpuData); // 肯定成功，因为已经强制刷新了
+        //SaveToRawRGBA(CpuData, RowPitch, BufferHeight, w, h, FPaths::Combine(FPaths::ProjectDir(), "image.rgba"));
+        memcpy(buffer.GetData(), CpuData, w * h * sizeof(float));
+        TextureReadback->Unlock();
+        TransitionInfo = FRHITransitionInfo(TextureRef, ERHIAccess::CopySrc, ERHIAccess::RTV);
+        RHICmdList.Transition(TransitionInfo);
 
-    //SaveToRawRGBA(CpuData, RowPitch, BufferHeight, w, h, FPaths::Combine(FPaths::ProjectDir(), "image.rgba"));
-    memcpy(buffer.GetData(), CpuData, w * h * sizeof(float));
-    TextureReadback->Unlock();
-    TransitionInfo = FRHITransitionInfo(TextureRef, ERHIAccess::CopySrc, ERHIAccess::RTV);
-    RHICmdList.Transition(TransitionInfo);
+    }
 }
