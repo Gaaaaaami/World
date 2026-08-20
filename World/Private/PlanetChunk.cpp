@@ -1,0 +1,247 @@
+#include "PlanetChunk.h"
+#include "NoiseGenerator.h"
+#include "SurfaceNets.h"
+#include "SurfaceNetsUE.h"
+#include "CxGameMode.h"
+#include "CxGamiDynamicLandscape.h"
+#include "Kismet/GameplayStatics.h"
+
+///#define DEBUG_TEST
+
+FPlanetChunk::FPlanetChunk()
+    : Position(FVector::ZeroVector)
+    , LODLevel(0)
+    , Size(1000.0f)
+    , bIsGenerated(false)
+    , bIsGenerating(false)
+    , bIsEmpty(false)
+    , DistanceFromCamera(0.0f)
+{
+}
+
+FPlanetChunk::FPlanetChunk(const FVector& InPosition, int32 InLODLevel, float InSize)
+    : Position(InPosition)
+    , LODLevel(InLODLevel)
+    , Size(InSize)
+    , bIsGenerated(false)
+    , bIsGenerating(false)
+    , bIsEmpty(false)
+    , DistanceFromCamera(0.0f)
+{
+}
+
+bool FPlanetChunk::GenerateMesh(const UNoiseGenerator* NoiseGenerator, UObject* thiz , TObjectPtr<URHIDensityTools> InRHIDT)
+{
+    if (!NoiseGenerator || bIsGenerating)
+    {
+        return false;
+    }
+
+    bIsGenerating = true;
+    ClearMesh();
+
+    int32 PaddedSize;
+    FVector PaddedOrigin;
+    float VoxelSize;
+
+    // Generate density field with padding (like Rust implementation)
+    if (!GeneratePaddedDensityField(NoiseGenerator, DensityField, PaddedSize, PaddedOrigin, VoxelSize))
+    {
+        bIsGenerating = false;
+        bIsEmpty = true;
+        bIsGenerated = true;
+        //UE_LOG(LogSurfaceNets, Warning, TEXT("Failed to generate density field for chunk at %s"), *Position.ToString());
+        return false;
+    }
+#undef DEBUG_TEST
+#ifdef DEBUG_TEST
+
+    if (thiz && InRHIDT )
+    {
+        memcpy(DensityField.GetData(), InRHIDT->FloatBuffer.GetData(), InRHIDT->FloatBuffer.Num() * sizeof(float));
+    }
+
+#endif
+
+    // Early exit if no surface (like Rust optimization)
+    if (!FSurfaceNets::HasSurfaceInChunk(DensityField))
+    {
+        bIsGenerating = false;
+        bIsEmpty = true;
+        bIsGenerated = true;
+        //UE_LOG(LogSurfaceNets, Verbose, TEXT("Chunk at %s has no surface"), *Position.ToString());
+        return false;
+    }
+
+    // Generate mesh using Surface Nets with Rust-like bounds
+    FSurfaceNets SurfaceNets;
+    SurfaceNets.GenerateMesh(
+        DensityField,
+        PaddedSize,
+        VoxelSize,
+        PaddedOrigin,
+        Vertices,
+        Triangles,
+        Normals,
+        FIntVector(0, 0, 0),                    // Min bounds
+        FIntVector(UNPADDED_CHUNK_SIZE + 1)     // Max bounds (17,17,17) like Rust [0;3], [17;3]
+    );
+
+    // Generate UVs
+    UVs.SetNum(Vertices.Num());
+    for (int32 i = 0; i < Vertices.Num(); i++)
+    {
+        // Simple planar UV mapping
+        FVector LocalPos = Vertices[i] - Position;
+        UVs[i] = FVector2D(
+            (LocalPos.X / Size) + 0.5f,
+            (LocalPos.Y / Size) + 0.5f
+        );
+    }
+
+    bIsGenerating = false;
+    bIsGenerated = true;
+    bIsEmpty = (Vertices.Num() == 0);
+
+    //UE_LOG(LogSurfaceNets, Verbose, TEXT("Generated chunk at %s with %d vertices, %d triangles"), 
+           //*Position.ToString(), Vertices.Num(), Triangles.Num() / 3);
+
+    return !bIsEmpty;
+}
+
+bool FPlanetChunk::RHIGenerateMesh(TArray<float> InDensityField, UObject* thiz)
+{
+
+    if (bIsGenerating)
+    {
+        return false;
+    }
+
+    bIsGenerating = true;
+    ClearMesh();
+
+    this->DensityField = MoveTemp(InDensityField);
+    int32 PaddedSize = PADDED_CHUNK_SIZE;
+    float VoxelSize = Size / UNPADDED_CHUNK_SIZE;
+    FVector PaddedOrigin = Position - FVector(VoxelSize / 2.f);
+
+
+    //OutPaddedSize = PADDED_CHUNK_SIZE;
+    //OutVoxelSize = Size / UNPADDED_CHUNK_SIZE;
+    //OutPaddedOrigin = Position - FVector(OutVoxelSize / 2.f);
+
+    if (!FSurfaceNets::HasSurfaceInChunk(DensityField))
+    {
+        bIsGenerating = false;
+        bIsEmpty = true;
+        bIsGenerated = true;
+        return false;
+    }
+
+    FSurfaceNets SurfaceNets;
+    SurfaceNets.GenerateMesh(
+        DensityField,
+        PaddedSize,
+        VoxelSize,
+        PaddedOrigin,
+        Vertices,
+        Triangles,
+        Normals,
+        FIntVector(0, 0, 0),                    
+        FIntVector(UNPADDED_CHUNK_SIZE + 1)     
+    );
+
+    // Generate UVs
+    UVs.SetNum(Vertices.Num());
+    for (int32 i = 0; i < Vertices.Num(); i++)
+    {
+        // Simple planar UV mapping
+        FVector LocalPos = Vertices[i] - Position;
+        UVs[i] = FVector2D(
+            (LocalPos.X / Size) + 0.5f,
+            (LocalPos.Y / Size) + 0.5f
+        );
+    }
+
+    bIsGenerating = false;
+    bIsGenerated = true;
+    bIsEmpty = (Vertices.Num() == 0);
+
+    return !bIsEmpty;
+}
+
+void FPlanetChunk::ClearMesh()
+{
+    Vertices.Empty();
+    Triangles.Empty();
+    Normals.Empty();
+    UVs.Empty();
+    bIsGenerated = false;
+    bIsEmpty = false;
+}
+
+int32 FPlanetChunk::GetVoxelResolution() const
+{
+    // LOD-based resolution like original design
+    return FMath::Max(8, UNPADDED_CHUNK_SIZE >> LODLevel);
+}
+
+bool FPlanetChunk::GeneratePaddedDensityField(
+    const UNoiseGenerator* NoiseGenerator,
+    TArray<float>& OutDensityField,
+    int32& OutPaddedSize,
+    FVector& OutPaddedOrigin,
+    float& OutVoxelSize)
+{
+    if (!NoiseGenerator)
+    {
+        return false;
+    }
+
+    OutPaddedSize = PADDED_CHUNK_SIZE;
+    OutVoxelSize = Size / UNPADDED_CHUNK_SIZE;
+    
+    OutPaddedOrigin = Position - FVector(OutVoxelSize / 2.f); //- FVector(Size * 0.5f) - FVector(OutVoxelSize);
+
+
+    if (OutDensityField.IsEmpty())
+    {
+		OutDensityField.SetNum(OutPaddedSize * OutPaddedSize * OutPaddedSize);
+        for (int32 z = 0; z < OutPaddedSize; z++)
+        {
+            for (int32 y = 0; y < OutPaddedSize; y++)
+            {
+                for (int32 x = 0; x < OutPaddedSize; x++)
+                {
+
+                    FVector WorldPos = OutPaddedOrigin + FVector(
+                        x * OutVoxelSize,
+                        y * OutVoxelSize,
+                        z * OutVoxelSize
+                    );
+
+                    float Density = NoiseGenerator->SampleDensity(WorldPos);
+                    int32 Index = x + y * OutPaddedSize + z * OutPaddedSize * OutPaddedSize;
+                    OutDensityField[Index] = Density;
+
+                    if (Density > 0.0f)
+                    {
+                        HasPositive = true;
+                    }
+                    else
+                    {
+                        HasNegativeOrZero = true;
+                    }
+
+                    if (HasPositive && HasNegativeOrZero)
+                    {
+                        HasSurface = true;
+                    }
+                }
+            }
+        }
+
+    }
+
+    return HasSurface;
+}
