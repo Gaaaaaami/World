@@ -1,30 +1,22 @@
 #include "PlanetActor.h"
 #include "NoiseGenerator.h"
 #include "PlanetChunk.h"
-#include "SurfaceNetsUE.h"
 #include "Components/StaticMeshComponent.h"
 #include "CxGamiProduralMeshComponent.h"
 #include "Engine/Engine.h"
-#include "SPSCQueue.h"
 #include <cmath>
 #include <thread>
 APlanetActor::APlanetActor()
 {
     PrimaryActorTick.bCanEverTick = false;
     
-    // Create root component
     RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
-    
-    // Match Rust example parameters more closely
-    PlanetRadius = 1000.0f;
+
     ChunkSize = 128.0f;  // Larger chunks like Rust (16 voxels * 8 = 128 units)
     ChunksPerAxis = 16;
     VoxelsPerChunk = 16; // Same as Rust
     bEnableCollision = false;
     
-    // Create noise generator
-    // NoiseGenerator = CreateDefaultSubobject<UNoiseGenerator>(TEXT("NoiseGenerator"));
-
 }
 
 void APlanetActor::BeginPlay()
@@ -32,8 +24,6 @@ void APlanetActor::BeginPlay()
     Super::BeginPlay();
     float Size = ChunkSize * ChunksPerAxis ;
     LoadRadiu = Size * Size;
-
-    UE_LOG(LogSurfaceNets, Log, TEXT("Planet spawned successfully at %s"), *GetActorLocation().ToString());
     
 	if (NoiseGeneratorClass)
 	{
@@ -63,20 +53,9 @@ void APlanetActor::InitializePlanet()
 {
     if (!NoiseGenerator)
     {
-        UE_LOG(LogSurfaceNets, Error, TEXT("Missing noise generator for planet initialization"));
         return;
     }
-    
-    // Set up noise generator with actor's world position as planet center
-    FVector ActorPosition = GetActorLocation();
-    NoiseGenerator->PlanetRadius = PlanetRadius;
-    NoiseGenerator->PlanetCenter = ActorPosition;
-    
-    // Generate all chunks immediately
-	MeshComponents.SetNum(this->ChunksPerAxis * this->ChunksPerAxis * this->ChunksPerAxis);
-    ///GenerateAllChunks();
-    UE_LOG(LogSurfaceNets, Log, TEXT("Planet initialized at %s with radius %f and %d chunks"), 
-           *ActorPosition.ToString(), PlanetRadius, PlanetChunks.Num());
+    FVector ActorPosition = GetActorLocation();   
 }
 
 void APlanetActor::GenerateAllChunks(UProceduralMeshComponent* component, FPlanetChunk* planet_chunk )
@@ -145,7 +124,6 @@ void APlanetActor::GenerateAllChunks(UProceduralMeshComponent* component, FPlane
         
         GenerateChunk(X, Y, Z, ChunkCenter, component, planet_chunk);
     }
-
 }
 
 bool APlanetActor::GenerateChunk(int32 X, int32 Y, int32 Z, FVector ChunkCenter, UProceduralMeshComponent* component, FPlanetChunk* planet_chunk )
@@ -153,7 +131,6 @@ bool APlanetActor::GenerateChunk(int32 X, int32 Y, int32 Z, FVector ChunkCenter,
     // CRITICAL FIX: Null check before passing NoiseGenerator
     if (!NoiseGenerator)
     {
-        UE_LOG(LogSurfaceNets, Error, TEXT("NoiseGenerator is null in GenerateChunk"));
         return false;
     }
     FVector ChunkLocation = this->PlayerLocation / ChunkSize;
@@ -178,49 +155,34 @@ bool APlanetActor::GenerateChunk(int32 X, int32 Y, int32 Z, FVector ChunkCenter,
 		}
     }
     
-    // Create chunk with proper LOD level
     TUniquePtr<FPlanetChunk> NewChunk = nullptr;    
-    TUniquePtr<FPlanetChunk>* container_of_NewChunk = nullptr;
     if (!planet_chunk)
     {
         NewChunk = MakeUnique<FPlanetChunk>(ChunkCenter, 0, ChunkSize);
     }
-    else
-    {
-        for (auto& it : this->PlanetChunks)
-		{
-			if (it.Get() == planet_chunk)
-			{
-				NewChunk = MoveTemp(it);
-                container_of_NewChunk = &it;
-				break;
-			}
-		}
-    }
 
     UCxGamiProduralMeshComponent* MeshComponent = nullptr;
-	// Create mesh component
-	if (component)
-	{
-		MeshComponent = (UCxGamiProduralMeshComponent*)component;
-	}
-	else
-	{
-        MeshComponent = (UCxGamiProduralMeshComponent*)CreateMeshComponent();
-		MeshComponent->Location.X = X + ChunkLocation.X;
-		MeshComponent->Location.Y = Y + ChunkLocation.Y;
-		MeshComponent->Location.Z = Z + ChunkLocation.Z;
-		FVector LocationKey(MeshComponent->Location.X, MeshComponent->Location.Y, MeshComponent->Location.Z);
-		this->ChunkBox.Add(LocationKey, MeshComponent);
-	}
     
-    // Generate mesh using the chunk's GenerateMesh method (equivalent to Rust generate_and_process_chunk)
+    FVector LocationKey(X + ChunkLocation.X, Y + ChunkLocation.Y, Z + ChunkLocation.Z);
+    this->ChunkBox.Add(LocationKey, TWeakObjectPtr<UProceduralMeshComponent>());
+
+    
     bool bMeshGenerated = NewChunk->GenerateMesh(NoiseGenerator);
-    
-    // Only create mesh component if chunk has valid mesh data (like Rust early return)
     if (bMeshGenerated && NewChunk->Vertices.Num() > 0 && NewChunk->Triangles.Num() > 0 )
     {
-
+        // Create mesh component
+        if (component)
+        {
+            MeshComponent = (UCxGamiProduralMeshComponent*)component;
+        }
+        else
+        {
+            MeshComponent = (UCxGamiProduralMeshComponent*)CreateMeshComponent();
+            MeshComponent->Location.X = X + ChunkLocation.X;
+            MeshComponent->Location.Y = Y + ChunkLocation.Y;
+            MeshComponent->Location.Z = Z + ChunkLocation.Z;
+            *this->ChunkBox.Find(LocationKey) = MeshComponent;
+        }
         // Create mesh section using the chunk's mesh data
         TArray<FColor> VertexColors;
         TArray<FProcMeshTangent> Tangents;
@@ -235,85 +197,43 @@ bool APlanetActor::GenerateChunk(int32 X, int32 Y, int32 Z, FVector ChunkCenter,
             bEnableCollision
         );
         
-        // Apply material
         if (PlanetMaterial)
         {
             MeshComponent->SetMaterial(0, PlanetMaterial);
         }
-        
-        // Store mesh component reference
-
-
-
     }
-    else
-    {
-        // Debug logging for first few failed chunks
-        static int32 LoggedFailures = 0;
-        if (LoggedFailures < 5)
-        {
-         
-            LoggedFailures++;
-        }
-    }
-    
-    // Always store the chunk (even if it has no mesh) for consistency
 
+   
     if (!component)
     {
-        PlanetChunks.Add(MoveTemp(NewChunk));
         if (MeshComponent)
         {
-            MeshComponent->BindPlanetChunk(PlanetChunks.Last().Get());
             MeshComponent->BindPlanetActor(this);
         }
 
 		{
-			// ��MeshComponentͨ����ָ��ָ��Է�
 			int idx = Z * (ChunksPerAxis * ChunksPerAxis) + Y * ChunksPerAxis + X;
 			if (MeshComponents.IsValidIndex(idx))
 			{
-				MeshComponents[idx] = MeshComponent;    /** < �ֺ����� */
+				MeshComponents[idx] = MeshComponent;   
 			}
 		}
     }
 
-    if (container_of_NewChunk)
-    {
-        *container_of_NewChunk = MoveTemp(NewChunk);    /** < �����ݷ�����ԭ�������� */
-    }
     return bMeshGenerated;
 }
 
-void APlanetActor::LogPlanetStats()
-{
-    int32 TotalVertices = 0;
-    int32 TotalTriangles = 0;
-    
-    for (const auto& Chunk : PlanetChunks)
-    {
-        if (Chunk.IsValid())
-        {
-            TotalVertices += Chunk->Vertices.Num();
-            TotalTriangles += Chunk->Triangles.Num() / 3;
-        }
-    }
-    
-    UE_LOG(LogSurfaceNets, Warning, TEXT("Planet Stats:"));
-    UE_LOG(LogSurfaceNets, Warning, TEXT("  Generated Chunks: %d"), PlanetChunks.Num());
-    UE_LOG(LogSurfaceNets, Warning, TEXT("  Active Mesh Components: %d"), MeshComponents.Num());
-    UE_LOG(LogSurfaceNets, Warning, TEXT("  Total Vertices: %d"), TotalVertices);
-    UE_LOG(LogSurfaceNets, Warning, TEXT("  Total Triangles: %d"), TotalTriangles);
-    UE_LOG(LogSurfaceNets, Warning, TEXT("  Planet Radius: %f"), PlanetRadius);
-    UE_LOG(LogSurfaceNets, Warning, TEXT("  Chunk Size: %f"), ChunkSize);
-}
 
 void APlanetActor::CircleChunk(FVector Location)
 {
 
     if (this->ChunkBox.Find(Location) != nullptr)
     {
-        this->ChunkBox.Find(Location)->Get()->DestroyComponent();
-        this->ChunkBox.Remove(Location);
+        auto it = this->ChunkBox.Find(Location);
+        if (it->IsValid())
+        {
+            this->ChunkBox.Find(Location)->Get()->DestroyComponent();
+            this->ChunkBox.Remove(Location);
+        }
     }
 }

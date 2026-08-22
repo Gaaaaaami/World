@@ -20,9 +20,6 @@ protected:
     virtual void BeginPlay() override;
 
 public:
-    /** Planet radius in world units */
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Planet")
-    float PlanetRadius = 1000.0f;
     
     /** Size of each chunk in world units */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Planet")
@@ -56,28 +53,22 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Planet")
     void InitializePlanet();
 
-    /** Debug: Log planet generation statistics */
-    UFUNCTION(BlueprintCallable, Category = "Debug")
-    void LogPlanetStats();
     UFUNCTION(BlueprintCallable, Category = "Circle")
     void CircleChunk(FVector Location);
 public:
-    /** Generated planet chunks */
-    TArray<TUniquePtr<FPlanetChunk>> PlanetChunks;
-    
-    /** Mesh components for rendering chunks */
+
     UPROPERTY()
     TArray<TWeakObjectPtr<UProceduralMeshComponent>> MeshComponents;
     
-    /** Create a new mesh component */
     UProceduralMeshComponent* CreateMeshComponent();
     
-    /** Generate all chunks for the planet */
     void GenerateAllChunks( UProceduralMeshComponent* component = nullptr, FPlanetChunk* planet_chunk = nullptr);
     
-    /** Generate a single chunk at the specified grid position */
     bool GenerateChunk(int32 X, int32 Y, int32 Z, FVector ChunkCenter, UProceduralMeshComponent *component = nullptr, FPlanetChunk* planet_chunk = nullptr);
 public:
     UPROPERTY()
 	TMap<FVector, TWeakObjectPtr<UProceduralMeshComponent>> ChunkBox;
+public:
+
+    TArray<TArray<uint8>> NoiseTables;
 };

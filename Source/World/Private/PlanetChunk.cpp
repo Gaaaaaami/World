@@ -1,7 +1,6 @@
 #include "PlanetChunk.h"
 #include "NoiseGenerator.h"
 #include "SurfaceNets.h"
-#include "SurfaceNetsUE.h"
 
 FPlanetChunk::FPlanetChunk()
     : Position(FVector::ZeroVector)
@@ -49,6 +48,8 @@ bool FPlanetChunk::GenerateMesh(const UNoiseGenerator* NoiseGenerator)
         return false;
     }
 
+
+#if 0
     // Early exit if no surface (like Rust optimization)
     if (!FSurfaceNets::HasSurfaceInChunk(DensityField))
     {
@@ -58,6 +59,7 @@ bool FPlanetChunk::GenerateMesh(const UNoiseGenerator* NoiseGenerator)
         //UE_LOG(LogSurfaceNets, Verbose, TEXT("Chunk at %s has no surface"), *Position.ToString());
         return false;
     }
+#endif
 
     // Generate mesh using Surface Nets with Rust-like bounds
     FSurfaceNets SurfaceNets;
@@ -70,10 +72,12 @@ bool FPlanetChunk::GenerateMesh(const UNoiseGenerator* NoiseGenerator)
         Triangles,
         Normals,
         FIntVector(0, 0, 0),                    // Min bounds
-        FIntVector(UNPADDED_CHUNK_SIZE + 1)     // Max bounds (17,17,17) like Rust [0;3], [17;3]
-    );
+        FIntVector(UNPADDED_CHUNK_SIZE + 1),     // Max bounds (17,17,17) like Rust [0;3], [17;3]
+        UVs
+     );
 
     // Generate UVs
+#if 0
     UVs.SetNum(Vertices.Num());
     for (int32 i = 0; i < Vertices.Num(); i++)
     {
@@ -84,7 +88,7 @@ bool FPlanetChunk::GenerateMesh(const UNoiseGenerator* NoiseGenerator)
             (LocalPos.Y / Size) + 0.5f
         );
     }
-
+#endif
     bIsGenerating = false;
     bIsGenerated = true;
     bIsEmpty = (Vertices.Num() == 0);

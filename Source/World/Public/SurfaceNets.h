@@ -18,8 +18,9 @@ public:
         TArray<FVector>& OutVertices,
         TArray<int32>& OutTriangles,
         TArray<FVector>& OutNormals,
-        const FIntVector& MinBounds = FIntVector(0, 0, 0),
-        const FIntVector& MaxBounds = FIntVector(0, 0, 0)
+        const FIntVector& MinBounds,
+        const FIntVector& MaxBounds,
+        TArray<FVector2D>& UVS
     );
 
     /** Check if chunk contains surface (optimization like Rust early exit) */
@@ -36,7 +37,8 @@ private:
         TArray<FVector>& OutVertices,
         TArray<FVector>& OutNormals,
         float VoxelSize,
-        const FVector& Origin
+        const FVector& Origin,
+        TArray<FVector2D> &UVS
     );
     
     /** Phase 2: Create all quads from surface vertices (equivalent to make_all_quads in Rust) */

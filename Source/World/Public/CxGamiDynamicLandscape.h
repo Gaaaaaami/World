@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "PlanetActor.h"
+#include "Engine/Texture2D.h"
 #include "CxGamiDynamicLandscape.generated.h"
 
 UCLASS()
@@ -23,6 +24,12 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+public:
+	inline double Now();
+public:
+	double PrevMS = 0.0;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Noise2DTexture")
+	UTexture2D* Noise2DTexture = nullptr;
 
 };

@@ -1,5 +1,4 @@
 #include "NoiseGenerator.h"
-#include "SurfaceNetsUE.h"
 #include "Engine/Engine.h"
 
 UNoiseGenerator::UNoiseGenerator()
@@ -35,8 +34,6 @@ float UNoiseGenerator::SampleDensity(const FVector& WorldPosition) const
     static int32 SampleCount = 0;
     if (SampleCount < 10)
     {
-        UE_LOG(LogSurfaceNets, VeryVerbose, TEXT("Sample at %s: Distance=%f, Sphere=%f, Noise=%f, Final=%f"), 
-               *WorldPosition.ToString(), DistanceFromCenter, SphereDensity, TerrainHeight, FinalDensity);
         SampleCount++;
     }
     
@@ -56,7 +53,7 @@ float UNoiseGenerator::FractalNoise(const FVector& Position) const
     
     for (int32 i = 0; i < Octaves; i++)
     {
-        Value += SimplexNoise(Position * Frequency) * Amplitude;
+        Value += FMath::PerlinNoise2D(FVector2D(Position) * Frequency) * Amplitude;
         Frequency *= Lacunarity;
         Amplitude *= Persistence;
     }

@@ -1,5 +1,4 @@
 #include "SurfaceNets.h"
-#include "SurfaceNetsUE.h"
 
 // Static data
 const FIntVector FSurfaceNets::CubeCorners[8] = {
@@ -25,16 +24,9 @@ void FSurfaceNets::GenerateMesh(
     TArray<int32>& OutTriangles,
     TArray<FVector>& OutNormals,
     const FIntVector& MinBounds,
-    const FIntVector& MaxBounds)
+    const FIntVector& MaxBounds,
+    TArray<FVector2D> &UVS)
 {
-
-
-    //auto StartTimer = FPlatformTime::Seconds() ;
-
-    OutVertices.Empty();
-    OutTriangles.Empty();
-    OutNormals.Empty();
-
     // Use provided bounds or default to full grid
     FIntVector ActualMinBounds = (MinBounds == FIntVector(0, 0, 0) && MaxBounds == FIntVector(0, 0, 0)) ? 
         FIntVector(0, 0, 0) : MinBounds;
@@ -56,16 +48,10 @@ void FSurfaceNets::GenerateMesh(
     FMemory::Memset(VertexGrid.GetData(), 0xFF, TotalVoxels * sizeof(int32));
 #endif
 
-    // Phase 1: Estimate surface vertices
     EstimateSurface(DensityField, GridSize, ActualMinBounds, ActualMaxBounds, 
-                   VertexGrid, OutVertices, OutNormals, VoxelSize, Origin);
+                   VertexGrid, OutVertices, OutNormals, VoxelSize, Origin, UVS);
 
-    // Phase 2: Generate triangles
     MakeAllQuads(DensityField, GridSize, ActualMinBounds, ActualMaxBounds, VertexGrid, OutTriangles);
-
-    UE_LOG(LogSurfaceNets, Verbose, TEXT("Surface Nets generated %d vertices, %d triangles"), 
-           OutVertices.Num(), OutTriangles.Num() / 3);
-
 }
 
 bool FSurfaceNets::HasSurfaceInChunk(const TArray<float>& DensityField)
@@ -107,9 +93,11 @@ void FSurfaceNets::EstimateSurface(
     TArray<FVector>& OutVertices,
     TArray<FVector>& OutNormals,
     float VoxelSize,
-    const FVector& Origin)
+    const FVector& Origin, 
+    TArray<FVector2D> &UVS)
 {
     int32 VertexIndex = 0;
+    const float TextureScale = 1.0f / 50.0f;
 
     for (int32 z = MinBounds.Z; z < MaxBounds.Z; z++)
     {
@@ -123,16 +111,18 @@ void FSurfaceNets::EstimateSurface(
                     FVector VertexPos = CalculateVertexPosition(DensityField, GridSize, x, y, z, VoxelSize, Origin);
                     OutVertices.Add(VertexPos);
 
-                    // Calculate normal from gradient
-         
-#ifdef NORMAL_CACULATE
-                    FVector Normal = CalculateGradient(DensityField, GridSize, x, y, z);
-                    Normal.Normalize();
-                    OutNormals.Add(-Normal); // Negative for outward-pointing normals
-#endif
-                    // Store vertex index in grid
+                    //FVector Normal = CalculateGradient(DensityField, GridSize, x, y, z);
+                    //Normal.Normalize();
+                    //OutNormals.Add(Normal);
                     int32 GridIndex = x + y * GridSize + z * GridSize * GridSize;
                     VertexGrid[GridIndex] = VertexIndex;
+
+                    FVector2D UV;
+
+
+                    UV.X = VertexPos.X * TextureScale;
+                    UV.Y = VertexPos.Y * TextureScale;
+                    UVS.Add(UV); // 直接塞进数组
 
                     VertexIndex++;
                 }

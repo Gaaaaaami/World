@@ -20,5 +20,6 @@ public:
 public:
 	//UFUNCTION(BlueprintCallable, Category = "Noise")
 	virtual float SampleDensity(const FVector& WorldPosition) const;
-
+	/** Generate fractal noise */
+	virtual float FractalNoise(const FVector& Position) const;
 };

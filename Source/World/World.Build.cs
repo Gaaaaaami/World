@@ -15,7 +15,7 @@ public class World : ModuleRules
             "Engine", 
             "InputCore", 
             "ProceduralMeshComponent", 
-            "Kismet",
+            //"Kismet",
             "RenderCore",
             "RHI"
         });
@@ -27,12 +27,9 @@ public class World : ModuleRules
         // PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "Library"));
 
         PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "..", "..", "Library"));
-        // Uncomment if you are using Slate UI
-        // PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
+        //string ThirdPartyPath = Path.Combine(ModuleDirectory, "Private/ThirdParty/FastNoiseSIMD");
+        //PublicIncludePaths.Add(ThirdPartyPath);
 
-        // Uncomment if you are using online features
-        // PrivateDependencyModuleNames.Add("OnlineSubsystem");
 
-        // To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
     }
 }

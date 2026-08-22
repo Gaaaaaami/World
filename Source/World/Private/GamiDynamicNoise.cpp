@@ -2,17 +2,30 @@
 
 
 #include "GamiDynamicNoise.h"
-
 UGamiDynamicNoise::UGamiDynamicNoise():UNoiseGenerator()
 {
-
 }
 
 UGamiDynamicNoise::~UGamiDynamicNoise()
 {
 
 }
+float UGamiDynamicNoise::FractalNoise(const FVector& Position) const
+{
+	float Value = 0.0f;
+	float Amplitude = 1.0f;
+	float Frequency = NoiseScale;
 
+	for (int32 i = 0; i < Octaves; i++)
+	{
+		Value += FMath::PerlinNoise2D(FVector2D(Position) * Frequency) * Amplitude;
+		Frequency *= Lacunarity;
+		Amplitude *= Persistence;
+	}
+
+	return Value;
+
+}
 float UGamiDynamicNoise::SampleDensity(const FVector& WorldPosition) const
 {
 
@@ -40,17 +53,9 @@ float UGamiDynamicNoise::SampleDensity(const FVector& WorldPosition) const
 	return FinalDensity;
 #else
 
-	static float worldZ = 0;//WorldPosition.Z;
-
-	if (worldZ != WorldPosition.Z)
-	{
-		worldZ = WorldPosition.Z;
-	}
-	if (WorldPosition.Z < 200.f)
-	{
+	if (WorldPosition.Z < 1000)
 		return -1.f;
-	}
-	else
-		return 1.f;
+	return 1.f;
+
 #endif
 }
