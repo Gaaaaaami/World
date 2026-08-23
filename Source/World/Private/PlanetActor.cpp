@@ -65,23 +65,7 @@ void APlanetActor::GenerateAllChunks(UProceduralMeshComponent* component, FPlane
     {
         component->ClearAllMeshSections();
     }
-
-    // Calculate chunk bounds exactly like Rust implementation
-    // Rust uses: chunks_extent = Extent3i::from_min_and_lub(IVec3::from([-5; 3]), IVec3::from([5; 3]))
-    // Which creates a 10x10x10 grid centered around origin
-    // float HalfExtent = (ChunksPerAxis / 2) * ChunkSize;
     FVector PlanetCenter = GetActorLocation();
-   // FVector StartPosition = FVector(0.f, 0.f, 0.f); //- FVector(HalfExtent, HalfExtent, HalfExtent);
-    
-    //UE_LOG(LogSurfaceNets, Log, TEXT("Generating chunks from %s to %s (ChunkSize: %f)"), 
-    //       *StartPosition.ToString(), 
-    //       *(StartPosition + FVector(ChunksPerAxis * ChunkSize)).ToString(),
-    //       ChunkSize);
-    
-    // Generate chunks in a grid pattern (equivalent to Rust chunks_extent.iter3())
-    int32 GeneratedChunks = 0;
-
-
     if (!component)
     {
         auto Start = FPlatformTime::Seconds() * 1000.0;
@@ -93,17 +77,13 @@ void APlanetActor::GenerateAllChunks(UProceduralMeshComponent* component, FPlane
                 for (int32 Z = -ChunksPerAxis; Z < ChunksPerAxis; Z++)
                 {
                     
-                    // Calculate chunk center (equivalent to Rust chunk_min calculation)
                     FVector ChunkCenter = FVector(
-						(X * ChunkSize) /*+(ChunkSize * 0.5f)*/,
-						(Y * ChunkSize) /*+(ChunkSize * 0.5f)*/,
-						(Z * ChunkSize) /*+(ChunkSize * 0.5f)*/
+						(X * ChunkSize),
+						(Y * ChunkSize),
+						(Z * ChunkSize)
                     );
 
-                    if (GenerateChunk(X, Y, Z, ChunkCenter))
-                    {
-                        GeneratedChunks++;
-                    }
+                    GenerateChunk(X, Y, Z, ChunkCenter);
                 }
             }
         }

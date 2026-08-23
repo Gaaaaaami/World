@@ -2,6 +2,9 @@
 
 
 #include "GamiDynamicNoise.h"
+#include "Kismet/GameplayStatics.h"
+#include "CxGlobalData.h"
+
 UGamiDynamicNoise::UGamiDynamicNoise():UNoiseGenerator()
 {
 }
@@ -12,6 +15,7 @@ UGamiDynamicNoise::~UGamiDynamicNoise()
 }
 float UGamiDynamicNoise::FractalNoise(const FVector& Position) const
 {
+#if 0
 	float Value = 0.0f;
 	float Amplitude = 1.0f;
 	float Frequency = NoiseScale;
@@ -24,12 +28,40 @@ float UGamiDynamicNoise::FractalNoise(const FVector& Position) const
 	}
 
 	return Value;
+#else
+	extern TArray<TTuple<TArray<float>, int, int>>& GlobalNoiseContainer();
+	auto& data = GlobalNoiseContainer();
+	auto& noise = data[0];
+	auto& NoiseBuffer = noise.Get<0>();
+	auto& Width = noise.Get<1>();
+	auto& Height = noise.Get<2>();
+	auto TransformPosition = Position / 100.f;
+	float u = FMath::Frac(Position.X);
+	float v = FMath::Frac(Position.Y);
+	int x = FMath::Floor(u * Width);
+	int y = FMath::Floor(v * Height);
+	int index = y * Width + x;
+	float red = NoiseBuffer[index];
+
+	float Value = 0.0f;
+	float Amplitude = 1.0f;
+	float Frequency = NoiseScale;
+
+	for (int32 i = 0; i < Octaves; i++)
+	{
+		Value += red * Frequency * Amplitude;
+		Frequency *= Lacunarity;
+		Amplitude *= Persistence;
+	}
+
+	return Value;
+#endif
 
 }
 float UGamiDynamicNoise::SampleDensity(const FVector& WorldPosition) const
 {
 
-#if 0
+#if 1
 		// 基础地面高度（你可以设个非零值让地面浮在空中）
 	//UE_LOG(LogTemp, Log, TEXT("X:%f, Y:%f, Z%f"), WorldPosition.X, WorldPosition.Y, WorldPosition.Z);
 
@@ -49,8 +81,12 @@ float UGamiDynamicNoise::SampleDensity(const FVector& WorldPosition) const
 	// Z == TerrainHeight → 等值面（Surface Nets 提取这里）
 	float FinalDensity = WorldPosition.Z - TerrainHeight;
 
-	///return 1.f;
-	return FinalDensity;
+	
+	if (WorldPosition.Z < 1000)
+		return -1.f;
+	return 1.f;
+
+///	return FinalDensity;
 #else
 
 	if (WorldPosition.Z < 1000)
