@@ -31,6 +31,12 @@ float UGamiDynamicNoise::FractalNoise(const FVector& Position) const
 #else
 	extern TArray<TTuple<TArray<float>, int, int>>& GlobalNoiseContainer();
 	auto& data = GlobalNoiseContainer();
+
+	if (data.Num() <= 0)
+	{
+		return 1.f;
+	}
+
 	auto& noise = data[0];
 	auto& NoiseBuffer = noise.Get<0>();
 	auto& Width = noise.Get<1>();

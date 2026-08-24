@@ -1,14 +1,5 @@
-[21512:18352:0823/211151.046:WARNING:chrome_main_delegate.cc(745)] This is Chrome version 128.0.6613.138 (not a warning)
-[21512:18352:0823/211151.107:WARNING:account_consistency_mode_manager.cc(77)] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
-[21512:18352:0823/211700.924:WARNING:page_discarding_helper.cc(138)] Discarding multiple pages with target (kb): 0
-[21512:18352:0823/211705.972:WARNING:page_discarding_helper.cc(138)] Discarding multiple pages with target (kb): 0
-[21512:18352:0823/211725.997:WARNING:page_discarding_helper.cc(138)] Discarding multiple pages with target (kb): 0
-[2636:18596:0823/214925.578:WARNING:chrome_main_delegate.cc(745)] This is Chrome version 128.0.6613.138 (not a warning)
-[2636:18596:0823/214925.955:WARNING:account_consistency_mode_manager.cc(77)] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
-[22300:1720:0823/214936.316:WARNING:spdy_session.cc(2985)] Received HEADERS for invalid stream 1
-[16440:20556:0823/215625.852:WARNING:chrome_main_delegate.cc(745)] This is Chrome version 128.0.6613.138 (not a warning)
-[16440:20556:0823/215625.926:WARNING:account_consistency_mode_manager.cc(77)] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
-[22088:20184:0823/215635.395:WARNING:spdy_session.cc(2985)] Received HEADERS for invalid stream 3
-[22088:20184:0823/215635.835:WARNING:spdy_session.cc(2985)] Received HEADERS for invalid stream 1
-[22088:20184:0823/215636.317:WARNING:spdy_session.cc(2985)] Received HEADERS for invalid stream 7
-[22088:20184:0823/215636.718:WARNING:spdy_session.cc(2985)] Received HEADERS for invalid stream 5
+[20676:21548:0824/113410.163:WARNING:chrome_main_delegate.cc(745)] This is Chrome version 128.0.6613.138 (not a warning)
+[20676:21548:0824/113410.235:WARNING:account_consistency_mode_manager.cc(77)] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
+[21520:9884:0824/113418.397:WARNING:spdy_session.cc(2985)] Received HEADERS for invalid stream 3
+[21520:9884:0824/113418.398:WARNING:spdy_session.cc(2985)] Received HEADERS for invalid stream 5
+[20676:21548:0824/114730.309:ERROR:device_event_log_impl.cc(196)] [11:47:30.284] USB: usb_service_win.cc:105 SetupDiGetDeviceProperty({{A45C254E-DF1C-4EFD-8020-67D146A850E0}, 6}) failed: 找不到元素。 (0x490)

@@ -50,7 +50,6 @@ void UCxGlobalData::AddNoise(UTexture2D& t)
     auto Height = CPUCopy->GetHeight();
     if (Format == ERawImageFormat::BGRA8)
     {
-        //FFloatArray data;
         TArray<float> noise;
         noise.SetNumUninitialized(Width * Height);
         for (int i = 0; i < Width; i++)
