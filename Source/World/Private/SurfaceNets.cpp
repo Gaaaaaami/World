@@ -114,6 +114,7 @@ void FSurfaceNets::EstimateSurface(
                     //FVector Normal = CalculateGradient(DensityField, GridSize, x, y, z);
                     //Normal.Normalize();
                     //OutNormals.Add(Normal);
+
                     int32 GridIndex = x + y * GridSize + z * GridSize * GridSize;
                     VertexGrid[GridIndex] = VertexIndex;
 

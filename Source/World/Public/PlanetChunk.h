@@ -45,8 +45,8 @@ public:
     float DistanceFromCamera;
 
     // Chunk dimensions (matching Rust implementation)
-    static const int32 UNPADDED_CHUNK_SIZE = 16;
-    static const int32 PADDED_CHUNK_SIZE = 18;
+    int32 UNPADDED_CHUNK_SIZE = 16;
+    int32 PADDED_CHUNK_SIZE = 18;
 
     /** Generate mesh for this chunk (equivalent to Rust chunk processing) */
     bool GenerateMesh(const UNoiseGenerator* NoiseGenerator);

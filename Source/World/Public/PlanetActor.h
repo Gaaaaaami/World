@@ -4,6 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "ProceduralMeshComponent.h"
 #include "PlanetChunk.h"  // Include the complete definition
+#include "Templates/Tuple.h" // 或者看版本，有时自动引入
 #include "PlanetActor.generated.h"
 
 class UNoiseGenerator;
@@ -56,19 +57,9 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Circle")
     void CircleChunk(FVector Location);
 public:
-
-    UPROPERTY()
-    TArray<TWeakObjectPtr<UProceduralMeshComponent>> MeshComponents;
-    
     UProceduralMeshComponent* CreateMeshComponent();
-    
-    void GenerateAllChunks( UProceduralMeshComponent* component = nullptr, FPlanetChunk* planet_chunk = nullptr);
-    
-    bool GenerateChunk(int32 X, int32 Y, int32 Z, FVector ChunkCenter, UProceduralMeshComponent *component = nullptr, FPlanetChunk* planet_chunk = nullptr);
+    void GenerateAllChunks();
+    bool GenerateChunk(int32 X, int32 Y, int32 Z, FVector ChunkCenter, int32 PaddingSize = 16);
 public:
-    UPROPERTY()
-	TMap<FVector, TWeakObjectPtr<UProceduralMeshComponent>> ChunkBox;
-public:
-
-    TArray<TArray<uint8>> NoiseTables;
+	TMap<FVector, TPair<TWeakObjectPtr<UProceduralMeshComponent>, bool>> ChunkBox;
 };

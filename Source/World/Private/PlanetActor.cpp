@@ -58,57 +58,29 @@ void APlanetActor::InitializePlanet()
     FVector ActorPosition = GetActorLocation();   
 }
 
-void APlanetActor::GenerateAllChunks(UProceduralMeshComponent* component, FPlanetChunk* planet_chunk )
+void APlanetActor::GenerateAllChunks()
 {
-  
-    if (component)
-    {
-        component->ClearAllMeshSections();
-    }
-    FVector PlanetCenter = GetActorLocation();
-    if (!component)
-    {
-        auto Start = FPlatformTime::Seconds() * 1000.0;
+    const FVector PlanetCenter = GetActorLocation();
 
-        for (int32 X = -ChunksPerAxis; X < ChunksPerAxis ; X++)
+    for (int32 X = -ChunksPerAxis; X < ChunksPerAxis; X++)
+    {
+        for (int32 Y = -ChunksPerAxis; Y < ChunksPerAxis; Y++)
         {
-            for (int32 Y = -ChunksPerAxis; Y < ChunksPerAxis; Y++)
+            for (int32 Z = -ChunksPerAxis; Z < ChunksPerAxis; Z++)
             {
-                for (int32 Z = -ChunksPerAxis; Z < ChunksPerAxis; Z++)
-                {
-                    
-                    FVector ChunkCenter = FVector(
-						(X * ChunkSize),
-						(Y * ChunkSize),
-						(Z * ChunkSize)
-                    );
-
-                    GenerateChunk(X, Y, Z, ChunkCenter);
-                }
+                FVector ChunkCenter = FVector(
+                    (X * ChunkSize),
+                    (Y * ChunkSize),
+                    (Z * ChunkSize)
+                );
+                GenerateChunk(X, Y, Z, ChunkCenter);
             }
         }
-        auto End = FPlatformTime::Seconds() * 1000.0;
-    }
-    else
-    {
-    
-        UCxGamiProduralMeshComponent* PMC = static_cast<UCxGamiProduralMeshComponent*>(component);
-        int32 X = PMC->Location.X;
-		int32 Y = PMC->Location.Y;
-		int32 Z = PMC->Location.Z;
-		FVector ChunkCenter = FVector(
-			(X * ChunkSize) /*+ (ChunkSize * 0.5f)*/,
-			(Y * ChunkSize) /*+ (ChunkSize * 0.5f)*/,
-			(Z * ChunkSize) /*+ (ChunkSize * 0.5f)*/
-		);
-        
-        GenerateChunk(X, Y, Z, ChunkCenter, component, planet_chunk);
     }
 }
 
-bool APlanetActor::GenerateChunk(int32 X, int32 Y, int32 Z, FVector ChunkCenter, UProceduralMeshComponent* component, FPlanetChunk* planet_chunk )
+bool APlanetActor::GenerateChunk(int32 X, int32 Y, int32 Z, FVector ChunkCenter, int32 PaddingSize)
 {
-    // CRITICAL FIX: Null check before passing NoiseGenerator
     if (!NoiseGenerator)
     {
         return false;
@@ -120,52 +92,80 @@ bool APlanetActor::GenerateChunk(int32 X, int32 Y, int32 Z, FVector ChunkCenter,
     FVector Local((X + ChunkLocation.X) * ChunkSize,
                   (Y + ChunkLocation.Y) * ChunkSize,
                   (Z + ChunkLocation.Z) * ChunkSize);
-    if (!component)
-    {
-        float R = this->LoadRadiu;
-        ChunkCenter += FVector(ChunkLocation.X * ChunkSize,
-                               ChunkLocation.Y * ChunkSize, 
-                               ChunkLocation.Z * ChunkSize);
-
-		float DistSquared = FVector::DistSquared(Local, this->PlayerLocation);
-		float Alpha = DistSquared / R;
-		if (Alpha >= 1.f || this->ChunkBox.Contains(FVector(X + ChunkLocation.X, Y + ChunkLocation.Y, Z + ChunkLocation.Z)))
-		{
-			return false;
-		}
-    }
     
-    TUniquePtr<FPlanetChunk> NewChunk = nullptr;    
-    if (!planet_chunk)
+    float R = this->LoadRadiu;
+    ChunkCenter += FVector(ChunkLocation.X * ChunkSize,
+                           ChunkLocation.Y * ChunkSize, 
+                           ChunkLocation.Z * ChunkSize);
+
+    FVector LocationKEY(X + ChunkLocation.X, Y + ChunkLocation.Y, Z + ChunkLocation.Z);
+	float DistSquared = FVector::DistSquared(Local, this->PlayerLocation);
+	float Alpha = DistSquared / R;
+    if (Alpha >= 1.f)
     {
-        NewChunk = MakeUnique<FPlanetChunk>(ChunkCenter, 0, ChunkSize);
+        return false;
     }
+    int32 NewPaddingSize = PaddingSize;
+
+    if (Alpha > 0.2f && Alpha < 0.5f)
+    {
+        NewPaddingSize = PaddingSize / 2;
+    }
+    else if (Alpha > 0.5f)
+    {
+        NewPaddingSize = PaddingSize / 4;
+    }
+
 
     UCxGamiProduralMeshComponent* MeshComponent = nullptr;
-    
-    FVector LocationKey(X + ChunkLocation.X, Y + ChunkLocation.Y, Z + ChunkLocation.Z);
-    this->ChunkBox.Add(LocationKey, TWeakObjectPtr<UProceduralMeshComponent>());
+    if (this->ChunkBox.Contains(LocationKEY))
+	{
+        auto it = this->ChunkBox.Find(LocationKEY);
+        bool IsValid = it->Value;
+        if(IsValid)
+           MeshComponent = Cast<UCxGamiProduralMeshComponent>(this->ChunkBox.Find(LocationKEY)->Key.Get());
+        if (!IsValid)
+        {
+            return false;
+        }
+        else if (IsValid && MeshComponent && MeshComponent->PlanetChunk->UNPADDED_CHUNK_SIZE == NewPaddingSize)
+        {
+            return false;
+        }
+	}
 
-    
+    TUniquePtr<FPlanetChunk> NewChunk = MakeUnique<FPlanetChunk>(ChunkCenter, 0, ChunkSize);
+    NewChunk->UNPADDED_CHUNK_SIZE = NewPaddingSize;
+    NewChunk->PADDED_CHUNK_SIZE = NewPaddingSize + 2;
+
+    this->ChunkBox.Add(LocationKEY,
+        TPair<TWeakObjectPtr<UProceduralMeshComponent>, bool>(TWeakObjectPtr<UProceduralMeshComponent>(), false));
+
     bool bMeshGenerated = NewChunk->GenerateMesh(NoiseGenerator);
     if (bMeshGenerated && NewChunk->Vertices.Num() > 0 && NewChunk->Triangles.Num() > 0 )
-    {
-        // Create mesh component
-        if (component)
-        {
-            MeshComponent = (UCxGamiProduralMeshComponent*)component;
-        }
-        else
-        {
-            MeshComponent = (UCxGamiProduralMeshComponent*)CreateMeshComponent();
-            MeshComponent->Location.X = X + ChunkLocation.X;
-            MeshComponent->Location.Y = Y + ChunkLocation.Y;
-            MeshComponent->Location.Z = Z + ChunkLocation.Z;
-            *this->ChunkBox.Find(LocationKey) = MeshComponent;
-        }
-        // Create mesh section using the chunk's mesh data
+    {        
+
+        if (!MeshComponent)
+             MeshComponent = (UCxGamiProduralMeshComponent*)CreateMeshComponent();
+
+        MeshComponent->Location.X = X + ChunkLocation.X;
+        MeshComponent->Location.Y = Y + ChunkLocation.Y;
+        MeshComponent->Location.Z = Z + ChunkLocation.Z;
+        MeshComponent->PlanetActor = this;
+        auto item = this->ChunkBox.Find(LocationKEY);
+        item->Key = MeshComponent;
+        item->Value = true;
+        
         TArray<FColor> VertexColors;
         TArray<FProcMeshTangent> Tangents;
+
+
+        bool Collision = this->bEnableCollision;
+        if (NewPaddingSize != PaddingSize)
+        {
+            Collision = false;
+        }
+
         MeshComponent->CreateMeshSection(
             0,
             NewChunk->Vertices,
@@ -174,30 +174,13 @@ bool APlanetActor::GenerateChunk(int32 X, int32 Y, int32 Z, FVector ChunkCenter,
             NewChunk->UVs,
             VertexColors,
             Tangents,
-            bEnableCollision
+            Collision
         );
-        
         if (PlanetMaterial)
         {
             MeshComponent->SetMaterial(0, PlanetMaterial);
         }
-    }
-
-   
-    if (!component)
-    {
-        if (MeshComponent)
-        {
-            MeshComponent->BindPlanetActor(this);
-        }
-
-		{
-			int idx = Z * (ChunksPerAxis * ChunksPerAxis) + Y * ChunksPerAxis + X;
-			if (MeshComponents.IsValidIndex(idx))
-			{
-				MeshComponents[idx] = MeshComponent;   
-			}
-		}
+        MeshComponent->PlanetChunk = MoveTemp(NewChunk);
     }
 
     return bMeshGenerated;
@@ -206,13 +189,13 @@ bool APlanetActor::GenerateChunk(int32 X, int32 Y, int32 Z, FVector ChunkCenter,
 
 void APlanetActor::CircleChunk(FVector Location)
 {
+    auto it = this->ChunkBox.Find(Location);
 
-    if (this->ChunkBox.Find(Location) != nullptr)
+    if (it != nullptr)
     {
-        auto it = this->ChunkBox.Find(Location);
-        if (it->IsValid())
+        if (it->Key.IsValid())
         {
-            this->ChunkBox.Find(Location)->Get()->DestroyComponent();
+            it->Key->DestroyComponent();
             this->ChunkBox.Remove(Location);
         }
     }

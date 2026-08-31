@@ -21,12 +21,10 @@ public:
 public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-public:
-	void BindPlanetActor(APlanetActor* InPlanetActor);
-
 	
 public:
-	APlanetActor* PlanetActor;
+	TWeakObjectPtr<APlanetActor> PlanetActor;
+	TUniquePtr<FPlanetChunk> PlanetChunk;
+
 	FVector Location;
-	double PrevMS = 0.0;
 };
