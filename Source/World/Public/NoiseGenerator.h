@@ -72,4 +72,8 @@ private:
     
     /** Linear interpolation */
     float Lerp(float a, float b, float t) const;
+public:
+
+    TArray<float> Density;
+    FVector DensitySize;
 };

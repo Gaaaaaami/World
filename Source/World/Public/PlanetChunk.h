@@ -12,7 +12,7 @@ struct WORLD_API FPlanetChunk
 {
 public:
     FPlanetChunk();
-    FPlanetChunk(const FVector& InPosition, int32 InLODLevel, float InSize);
+    FPlanetChunk(const FVector& InPosition, int32 InLODLevel, FVector InSize, float InVoxelSize);
 
     /** Chunk center position in world coordinates */
     FVector Position;
@@ -20,9 +20,11 @@ public:
     /** LOD level (0 = highest detail) */
     int32 LODLevel;
     
-    /** Size of the chunk in world units */
-    float Size;
+    FVector Size;
     
+    float VoxelSize;
+
+
 	TArray<float> DensityField;
 
     /** Generated mesh data */

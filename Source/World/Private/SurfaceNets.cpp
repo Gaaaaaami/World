@@ -39,8 +39,9 @@ void FSurfaceNets::GenerateMesh(
     FIntVector ActualMinBounds = (MinBounds == FIntVector(0, 0, 0) && MaxBounds == FIntVector(0, 0, 0)) ? 
         FIntVector(0, 0, 0) : MinBounds;
     FIntVector ActualMaxBounds = (MinBounds == FIntVector(0, 0, 0) && MaxBounds == FIntVector(0, 0, 0)) ? 
-        FIntVector(GridSize - 1, GridSize - 1, GridSize - 1) : MaxBounds;
-
+        FIntVector(MaxBounds.X - 1, MaxBounds.Y - 1, MaxBounds.Z- 1) : MaxBounds;
+    this->GlobalMinBounds = MinBounds;
+    this->GlobalMaxBounds = MaxBounds;
     // Create vertex grid to track vertex indices
     TArray<int32> VertexGrid;
 
@@ -51,7 +52,7 @@ void FSurfaceNets::GenerateMesh(
         Index = -1; // Initialize to invalid index
     }
 #else
-    const int32 TotalVoxels = GridSize * GridSize * GridSize;
+    const int32 TotalVoxels = MaxBounds.X * MaxBounds.Y * MaxBounds.Z;
     VertexGrid.SetNumUninitialized(TotalVoxels);
     FMemory::Memset(VertexGrid.GetData(), 0xFF, TotalVoxels * sizeof(int32));
 #endif
@@ -62,9 +63,6 @@ void FSurfaceNets::GenerateMesh(
 
     // Phase 2: Generate triangles
     MakeAllQuads(DensityField, GridSize, ActualMinBounds, ActualMaxBounds, VertexGrid, OutTriangles);
-
-    UE_LOG(LogSurfaceNets, Verbose, TEXT("Surface Nets generated %d vertices, %d triangles"), 
-           OutVertices.Num(), OutTriangles.Num() / 3);
 
 }
 
@@ -111,6 +109,9 @@ void FSurfaceNets::EstimateSurface(
 {
     int32 VertexIndex = 0;
 
+
+
+
     for (int32 z = MinBounds.Z; z < MaxBounds.Z; z++)
     {
         for (int32 y = MinBounds.Y; y < MaxBounds.Y; y++)
@@ -125,13 +126,11 @@ void FSurfaceNets::EstimateSurface(
 
                     // Calculate normal from gradient
          
-#ifdef NORMAL_CACULATE
                     FVector Normal = CalculateGradient(DensityField, GridSize, x, y, z);
                     Normal.Normalize();
-                    OutNormals.Add(-Normal); // Negative for outward-pointing normals
-#endif
+                    OutNormals.Add(Normal); // Negative for outward-pointing normals
                     // Store vertex index in grid
-                    int32 GridIndex = x + y * GridSize + z * GridSize * GridSize;
+                    int32 GridIndex = x + y * MaxBounds.X + z * MaxBounds.X * MaxBounds.Y;
                     VertexGrid[GridIndex] = VertexIndex;
 
                     VertexIndex++;
@@ -165,10 +164,10 @@ void FSurfaceNets::MakeAllQuads(
                 FIntVector CubePos(x, y, z);
                 
                 // Do edges parallel with the X axis
-                if (y > 0 && z > 0 && x < GridSize - 2)
+                if (y > 0 && z > 0 && x < MaxBounds.X - 1)
                 {
                     MaybeCreateQuad(
-                        DensityField, GridSize, VertexGrid,
+                        DensityField, MaxBounds.X, VertexGrid,
                         CubePos,
                         CubePos + XYZStrides[0],
                         XYZStrides[1],
@@ -179,10 +178,10 @@ void FSurfaceNets::MakeAllQuads(
                 }
                 
                 // Do edges parallel with the Y axis
-                if (x > 0 && z > 0 && y < GridSize - 2)
+                if (x > 0 && z > 0 && y < MaxBounds.Y - 1)
                 {
                     MaybeCreateQuad(
-                        DensityField, GridSize, VertexGrid,
+                        DensityField, MaxBounds.Y, VertexGrid,
                         CubePos,
                         CubePos + XYZStrides[1],
                         XYZStrides[2],
@@ -193,10 +192,10 @@ void FSurfaceNets::MakeAllQuads(
                 }
                 
                 // Do edges parallel with the Z axis
-                if (x > 0 && y > 0 && z < GridSize - 2)
+                if (x > 0 && y > 0 && z < MaxBounds.Z - 1)
                 {
                     MaybeCreateQuad(
-                        DensityField, GridSize, VertexGrid,
+                        DensityField, MaxBounds.Z, VertexGrid,
                         CubePos,
                         CubePos + XYZStrides[2],
                         XYZStrides[0],
@@ -369,12 +368,18 @@ FVector FSurfaceNets::CalculateGradient(
 
 float FSurfaceNets::GetDensity(const TArray<float>& DensityField, int32 GridSize, int32 x, int32 y, int32 z)
 {
-    if (x < 0 || x >= GridSize || y < 0 || y >= GridSize || z < 0 || z >= GridSize)
+#if 0
+    if (x < 0 || x >= this->GlobalMaxBounds.X || y < 0 || y >= this->GlobalMaxBounds.Y || z < 0 || z >= this->GlobalMaxBounds.Z)
     {
         return 1.0f; // Outside bounds is considered positive (exterior)
     }
+#endif
     
-    int32 Index = x + y * GridSize + z * GridSize * GridSize;
+    int32 Index = x + y * this->GlobalMaxBounds.X + z * this->GlobalMaxBounds.X * this->GlobalMaxBounds.Y;
+    if (!DensityField.IsValidIndex(Index))
+    {
+        return 1.f;
+    }
     return DensityField[Index];
 }
 
@@ -409,11 +414,18 @@ bool FSurfaceNets::ContainsSurface(const TArray<float>& DensityField, int32 Grid
 
 int32 FSurfaceNets::GetVertexIndex(const TArray<int32>& VertexGrid, int32 GridSize, int32 x, int32 y, int32 z)
 {
-    if (x < 0 || x >= GridSize || y < 0 || y >= GridSize || z < 0 || z >= GridSize)
+
+#if 0
+    if (x < 0 || x >= this->GlobalMaxBounds.X || y < 0 || y >= this->GlobalMaxBounds.Y || z < 0 || z >= this->GlobalMaxBounds.Z)
     {
-        return -1;
+        return 1.0f; // Outside bounds is considered positive (exterior)
     }
-    
-    int32 Index = x + y * GridSize + z * GridSize * GridSize;
+#endif
+
+    int32 Index = x + y * this->GlobalMaxBounds.X + z * this->GlobalMaxBounds.X * this->GlobalMaxBounds.Y;
+    if (!VertexGrid.IsValidIndex(Index))
+    {
+        return 1.f;
+    }
     return VertexGrid[Index];
 }

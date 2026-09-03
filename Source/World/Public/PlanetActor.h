@@ -73,10 +73,10 @@ public:
     UProceduralMeshComponent* CreateMeshComponent();
     
     /** Generate all chunks for the planet */
-    void GenerateAllChunks( UProceduralMeshComponent* component = nullptr, FPlanetChunk* planet_chunk = nullptr);
+    void GenerateAllChunks();
     
     /** Generate a single chunk at the specified grid position */
-    bool GenerateChunk(int32 X, int32 Y, int32 Z, FVector ChunkCenter, UProceduralMeshComponent *component = nullptr, FPlanetChunk* planet_chunk = nullptr);
+    bool GenerateChunk(int32 X, int32 Y, int32 Z, FVector ChunkCenter, FVector InSize, TArray<float> &InDensity, FVector InDensitySize);
 public:
     UPROPERTY()
 	TMap<FVector, TWeakObjectPtr<UProceduralMeshComponent>> ChunkBox;

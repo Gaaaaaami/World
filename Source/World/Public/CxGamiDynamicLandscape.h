@@ -16,6 +16,8 @@ public:
 	// Sets default values for this actor's properties
 	ACxGamiDynamicLandscape();
 	virtual ~ACxGamiDynamicLandscape();
+public:
+	void GetDistanceFieldFromStaticMesh(UStaticMesh *InSourceMesh, TArray<float> &InDensity, int32 &InX, int32 &InY, int32 &InZ);
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -23,6 +25,7 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Voxelizer")
+	UStaticMesh* SourceMesh;
 
 };

@@ -101,4 +101,8 @@ private:
     
     /** Cube edges */
     static const int32 CubeEdges[12][2];
+
+
+    FIntVector GlobalMinBounds;
+    FIntVector GlobalMaxBounds;
 };
