@@ -61,5 +61,5 @@ public:
     void GenerateAllChunks();
     bool GenerateChunk(int32 X, int32 Y, int32 Z, FVector ChunkCenter, int32 PaddingSize = 16);
 public:
-	TMap<FVector, TPair<TWeakObjectPtr<UProceduralMeshComponent>, int32>> ChunkBox;
+	TMap<FVector, TPair<TWeakObjectPtr<UProceduralMeshComponent>, bool>> ChunkBox;
 };

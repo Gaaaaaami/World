@@ -120,25 +120,18 @@ bool APlanetActor::GenerateChunk(int32 X, int32 Y, int32 Z, FVector ChunkCenter,
     UCxGamiProduralMeshComponent* MeshComponent = nullptr;
     if (this->ChunkBox.Contains(LocationKEY))
 	{
-        const auto it = this->ChunkBox.Find(LocationKEY);
-        auto MeshComponentWeakPointer = it->Key;
-
-        bool IsValid = it->Key.IsValid();
-
-        if (!IsValid && it->Value == NewPaddingSize)
+        auto it = this->ChunkBox.Find(LocationKEY);
+        bool IsValid = it->Value;
+        if(IsValid)
+           MeshComponent = Cast<UCxGamiProduralMeshComponent>(this->ChunkBox.Find(LocationKEY)->Key.Get());
+        if (!IsValid)
         {
             return false;
         }
-        else
-        {
-            MeshComponent = (UCxGamiProduralMeshComponent *)it->Key.Get();
-        }
-
-        if (IsValid && MeshComponent && MeshComponent->PlanetChunk->UNPADDED_CHUNK_SIZE == NewPaddingSize)
+        else if (IsValid && MeshComponent && MeshComponent->PlanetChunk->UNPADDED_CHUNK_SIZE == NewPaddingSize)
         {
             return false;
         }
-
 	}
 
     TUniquePtr<FPlanetChunk> NewChunk = MakeUnique<FPlanetChunk>(ChunkCenter, 0, ChunkSize);
@@ -146,7 +139,7 @@ bool APlanetActor::GenerateChunk(int32 X, int32 Y, int32 Z, FVector ChunkCenter,
     NewChunk->PADDED_CHUNK_SIZE = NewPaddingSize + 2;
 
     this->ChunkBox.Add(LocationKEY,
-        TPair<TWeakObjectPtr<UProceduralMeshComponent>, int32>(TWeakObjectPtr<UProceduralMeshComponent>(), NewPaddingSize));
+        TPair<TWeakObjectPtr<UProceduralMeshComponent>, bool>(TWeakObjectPtr<UProceduralMeshComponent>(), false));
 
     bool bMeshGenerated = NewChunk->GenerateMesh(NoiseGenerator);
     if (bMeshGenerated && NewChunk->Vertices.Num() > 0 && NewChunk->Triangles.Num() > 0 )
