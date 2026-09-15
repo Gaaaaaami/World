@@ -19,7 +19,7 @@ void ADebugTransvoxel::BuildTransition_MultiUnit(
 
 	FVector pos[13];
 	float Density[13] = { 1.f };
-	float VoxelSize = 105.f;
+	float VoxelSize = 100.f;
 
 	int32 Count = InHighResSize.Z / 2;
 	Count *= Count;

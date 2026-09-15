@@ -47,6 +47,10 @@ public:
 	Mesh generate_mesh(const size_t x, const size_t y, const size_t z); ///< Generates a mesh for the given chunk
 	Size3D total_size() const; ///< Returns the total size of the grid in voxels
 	Size3D chunk_size() const; ///< Returns the size of the grid in chunks
+
+
+	int DeleteVoxel = 1;
+
 };
 
 inline size_t Grid::index(const size_t x, const size_t y, const size_t z) const {
@@ -254,9 +258,9 @@ inline Mesh Grid::generate_mesh(const size_t x, const size_t y, const size_t z) 
 	int end_z = static_cast<int>( (z+1) * Chunk::size );
 
 	// For each dimmension go an extra step if there is an adjacent chunk
-	int border_x = x == size_x - 1;
-	int border_y = y == size_y - 1;
-	int border_z = z == size_z - 1;
+	int border_x = x == size_x - 1 ? DeleteVoxel : 0;
+	int border_y = y == size_y - 1 ? DeleteVoxel : 0;
+	int border_z = z == size_z - 1 ? DeleteVoxel : 0;
 
 	// Loop over each neighborhood
 	for (int i = start_x; i < end_x - border_x; i++)

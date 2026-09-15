@@ -55,7 +55,7 @@ void ACxDynamicLandScape::CreateDensityField(int32 Padding)
 	Brutus::Grid& grid = *this->BrutusGrid;
 	Brutus::Size3D total = grid.total_size();  // 64, 64, 64
 	const FVector worldOffset = GetActorLocation();
-	const float noiseHeight = 400.f;
+	const float noiseHeight = 200.f;
 	const float noiseFreq = 0.2f;
 	const float BaseHeight = 200.f;
 	float DensityMin = -BaseHeight - noiseHeight;
@@ -85,16 +85,8 @@ void ACxDynamicLandScape::CreateDensityField(int32 Padding)
 
 				grid(x, y, z).weight = Weight;
 
-				if (this->LandscapeDimension == FVector(2))
-				{
 
 #if 0
-					grid(15, 15, 7).weight = -11;
-					grid(15, 15, 8).weight = 3;
-					grid(15, 15, 9).weight = 18;
-#endif
-
-				}
 
 				if (x == 0 && this->LandscapeDimension == FVector(4))
 				{
@@ -110,7 +102,7 @@ void ACxDynamicLandScape::CreateDensityField(int32 Padding)
 					//DrawDebugString(this->GetWorld(), worldOffset + FVector(x * this->VoxelSize, y * this->VoxelSize, z * this->VoxelSize), n, 0, FColor::Blue, -1.f, false, 1.f);
 					//DrawDebugSphere(this->GetWorld(), worldOffset + FVector(x * this->VoxelSize, y * this->VoxelSize, z * this->VoxelSize), 2.f, 0, FColor::Green, true);
 				}
-
+#endif
 				
 			}
 		}
@@ -134,8 +126,7 @@ void ACxDynamicLandScape::UpdateMeshFromDensityMC()
 	const int32 chunksY = LandscapeDimension.Y;
 	const int32 chunksZ = LandscapeDimension.Z;
 	Brutus::Grid& grid = *this->BrutusGrid;
-
-
+	grid.DeleteVoxel = this->DeleteVoxel;
 
 	// ========== 2. 填充密度场（临时，函数结束自动释放） 
 	// 密度场会另外提供接口生成

@@ -77,10 +77,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Voxel|Debug")
 	TObjectPtr<UStaticMesh> RuntimeMeshAsset; // 这个就是你在 Edit 里能点开看的资产
 
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Voxel|Debug")
+	int32 DeleteVoxel = 1;
+
 	TArray<float> m_DensityData;  // 密度场数据
 private:
 	/* ========== 数据缓存 ========== */
 	bool          m_initialize = false;
 
 	Brutus::Grid* BrutusGrid = nullptr;
+
 };
