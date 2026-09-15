@@ -73,7 +73,7 @@ void ACxDynamicLandScape::CreateDensityField(int32 Padding)
 				sampleX *= noiseFreq;
 				sampleY *= noiseFreq;
 				sampleZ *= noiseFreq;
-#if 1
+#if 0
 				float noiseValue = FMath::PerlinNoise2D(FVector2D(sampleX, sampleY)) * noiseHeight;
 				float Density = (z * this->VoxelSize) - (BaseHeight + noiseValue);
 
@@ -85,8 +85,22 @@ void ACxDynamicLandScape::CreateDensityField(int32 Padding)
 
 				grid(x, y, z).weight = Weight;
 #else
-				float noiseValue = FMath::PerlinNoise3D(FVector(sampleX, sampleY, sampleZ));
-				grid(x, y, z).weight = noiseValue * 20.f; //Weight;
+
+				// 3D Perlin 噪声（UE 内置）
+				// 返回范围 [-1, 1]，乘以 noiseHeight 得到高度偏移
+				float noiseValue = FMath::PerlinNoise3D(FVector(sampleX, sampleY, sampleZ)) * noiseHeight;
+
+				// 计算密度值：z轴高度减去基础高度和噪声偏移
+				float Density = (z * this->VoxelSize) - (BaseHeight + noiseValue);
+
+				// 映射到权重范围 [-127, 127]
+				float Weight = FMath::GetMappedRangeValueClamped(
+					FVector2D(DensityMin, DensityMax),
+					FVector2D(-127.0f, 127.0f),
+					Density
+				);
+
+				grid(x, y, z).weight = Weight;
 #endif
 			}
 		}
