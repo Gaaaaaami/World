@@ -27,9 +27,10 @@ public class World : ModuleRules
         // PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "Library"));
 
         PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "..", "..", "Library"));
-        //string ThirdPartyPath = Path.Combine(ModuleDirectory, "Private/ThirdParty/FastNoiseSIMD");
-        //PublicIncludePaths.Add(ThirdPartyPath);
-
+        string ThirdPartyPath = Path.Combine(ModuleDirectory, "Private/ThirdParty/Brutus");
+        PublicIncludePaths.Add(ThirdPartyPath);
+        ThirdPartyPath = Path.Combine(ModuleDirectory, "Private/ThirdParty/Transvoxel");
+        PublicIncludePaths.Add(ThirdPartyPath);
 
     }
 }

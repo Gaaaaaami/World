@@ -6,7 +6,19 @@
 #include "GameFramework/Actor.h"
 #include "ProceduralMeshComponent/Public/ProceduralMeshComponent.h"
 #include "ProceduralMeshComponent/Public/KismetProceduralMeshLibrary.h"
+#include "brutus.h"
+#include "Transvoxel.h"
 #include "CxDynamicLandScape.generated.h"
+
+USTRUCT(BlueprintType)
+struct FDensityInformation
+{
+	GENERATED_BODY()
+	UPROPERTY(BlueprintReadWrite)
+	TArray<float> Density;
+	UPROPERTY(BlueprintReadWrite)
+	TArray<FVector> Position;
+};
 
 UCLASS()
 class WORLD_API ACxDynamicLandScape : public AActor
@@ -28,50 +40,39 @@ public:
 
 public:
 	/* ========== 体素核心功能 ========== */
+	UFUNCTION(BlueprintCallable, Category = "Voxel")
+	void CreateDensityField(int32 Padding);
+	UFUNCTION(BlueprintCallable, Category = "Voxel")
+	inline void SetDensityField(int32 x, int32 y, int32 z, int Weight);
+	UFUNCTION(BlueprintCallable, Category = "Voxel") 
+	void UpdateMeshFromDensityMC();
+	UFUNCTION(BlueprintCallable, Category = "Voxel")
+	FDensityInformation GetDensityX(int32 x);
+	UFUNCTION(BlueprintCallable, Category = "Voxel")
+	FDensityInformation GetDensity();
+	UFUNCTION(BlueprintCallable, Category = "Voxel")
+	FDensityInformation GetLODDensity(int32 InX, int32 InLodLevel, FString InLogName);
+	UFUNCTION(BlueprintCallable, Category = "Voxel")
+	inline void DebugWriteArray2Desk(FString InLogName);
 
-	// 在指定的世界坐标处挖洞（Blueprint 也可调用）
-	UFUNCTION(BlueprintCallable, Category = "Voxel")
-	void DigHoleAtWorldLocation(FVector WorldLocation, float BrushRadiusCm = 150.f);
-	UFUNCTION(BlueprintCallable, Category = "Voxel")
-	void DigHoleAtWorldUnitLocation(FVector WorldLocation);
-	// （可选）重新生成初始密度场
-	UFUNCTION(BlueprintCallable, Category = "Voxel")
-	void ResetLandscape();
 
-	UFUNCTION(BlueprintCallable, Category = "Voxel")
-	void DigHoleAtWorldLocation_Directed(
-		FVector WorldLocation,
-		float BrushRadiusCm,
-		float Strength /*0~1*/,
-		FVector Direction);
-	// 根据当前密度场提取等值面并更新 ProceduralMesh
-	void UpdateMeshFromDensity();
-	/* ========== 内部方法 ========== */
-
-// 生成/重置 Perlin 噪声密度场
-	void GenerateDensityField(FVector dimSize);
 
 
 public:
 	/* ========== 属性 ========== */
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ProceduralMesh")
-	UProceduralMeshComponent* m_procedural_mesh = nullptr;
+	UProceduralMeshComponent* ProduralMeshComponent = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Voxel|Material")
 	UMaterialInterface* VoxelMaterial = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Voxel|Settings")
-	FVector LandscapeDimension = FVector(10, 10, 64); // 体素分辨率
+	FVector LandscapeDimension = FVector(4, 4, 4); // 体素分辨率
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Voxel|Settings")
 	float  VoxelSize = 100.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Voxel|Settings")
-	float  NoiseHeight = 40.f;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Voxel|Settings")
 	float  FadeStrength = 0.4f;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Voxel|Settings")
-	bool  test = false;
-
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Voxel|Debug")
 	TObjectPtr<UStaticMesh> RuntimeMeshAsset; // 这个就是你在 Edit 里能点开看的资产
@@ -80,4 +81,6 @@ public:
 private:
 	/* ========== 数据缓存 ========== */
 	bool          m_initialize = false;
+
+	Brutus::Grid* BrutusGrid = nullptr;
 };

@@ -1,6 +1,6 @@
 #include "NoiseGenerator.h"
 #include "Engine/Engine.h"
-
+#include "Transvoxel.h"
 UNoiseGenerator::UNoiseGenerator()
 {
     PlanetRadius = 1000.0f;
