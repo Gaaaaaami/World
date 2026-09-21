@@ -3,8 +3,6 @@
 
 #include "CoreMinimal.h"
 #include "ProceduralMeshComponent.h"
-#include "PlanetChunk.h"
-#include "PlanetActor.h"
 #include "CxGamiProduralMeshComponent.generated.h"
 
 /**
@@ -23,8 +21,8 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	
 public:
-	TWeakObjectPtr<APlanetActor> PlanetActor;
-	TUniquePtr<FPlanetChunk> PlanetChunk;
-
 	FVector Location;
+	AActor* DynamicLandScape = nullptr;
+	int32 LOD = 0;
+
 };

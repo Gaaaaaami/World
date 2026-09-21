@@ -1,5 +1,5 @@
 #ifndef BRUTUS_CHUNK_SIZE
-#define BRUTUS_CHUNK_SIZE 8
+#define BRUTUS_CHUNK_SIZE 4
 #endif
 
 /// This is used to store voxels. It does not need to be instanced directly.

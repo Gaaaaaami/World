@@ -2,6 +2,7 @@
 
 
 #include "CxGamiProduralMeshComponent.h"
+#include "CxDynamicLandScape.h"
 #include <cmath>
 
 UCxGamiProduralMeshComponent::UCxGamiProduralMeshComponent(const FObjectInitializer& ObjectInitializer):UProceduralMeshComponent(ObjectInitializer)
@@ -16,21 +17,18 @@ UCxGamiProduralMeshComponent::~UCxGamiProduralMeshComponent()
 
 void UCxGamiProduralMeshComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
-
 	UProceduralMeshComponent::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	
-	if (!this->PlanetActor.IsValid())
+#if 1
+	auto DynamicLandScapeCast = Cast<ACxDynamicLandScape>(this->DynamicLandScape);
+	float DistSquared = FVector2D::DistSquared(FVector2D(Location), FVector2D(DynamicLandScapeCast->PlayerLocation));
+	if(DistSquared >= DynamicLandScapeCast->LoadedRangeSqared)
 	{
-		return;	
+		DynamicLandScapeCast->CircleChunk(this->Location);
+		return;
 	}
 
-	FVector AbsLocation = this->Location * this->PlanetActor->ChunkSize;
-	float dist = FVector::DistSquared(AbsLocation, this->PlanetActor->PlayerLocation);
-	float Alpha = dist / this->PlanetActor->LoadRadiu;
-	if (Alpha > 1.f)
-	{
-		this->PlanetActor->CircleChunk(Location);
-	}
+	DynamicLandScapeCast->UpdateLOD(this->Location, DistSquared);
+#endif
 }
 
 

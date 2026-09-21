@@ -4,7 +4,6 @@
 #include "GamiDynamicNoise.h"
 #include "Kismet/GameplayStatics.h"
 #include "CxGlobalData.h"
-
 UGamiDynamicNoise::UGamiDynamicNoise():UNoiseGenerator()
 {
 }

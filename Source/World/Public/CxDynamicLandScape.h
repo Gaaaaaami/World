@@ -4,10 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "CxGamiProduralMeshComponent.h"
 #include "ProceduralMeshComponent/Public/ProceduralMeshComponent.h"
 #include "ProceduralMeshComponent/Public/KismetProceduralMeshLibrary.h"
 #include "brutus.h"
 #include "Transvoxel.h"
+#include <functional>
 #include "CxDynamicLandScape.generated.h"
 
 USTRUCT(BlueprintType)
@@ -19,6 +21,23 @@ struct FDensityInformation
 	UPROPERTY(BlueprintReadWrite)
 	TArray<FVector> Position;
 };
+
+USTRUCT(BlueprintType)
+struct FChunkManagerInformation
+{
+	GENERATED_BODY()
+	Brutus::Grid* BrutusGrid = nullptr;
+	UPROPERTY()
+
+	TObjectPtr<UCxGamiProduralMeshComponent> MeshComponent;
+
+	UPROPERTY()
+	FVector LandscapeDimension;
+	UPROPERTY()
+	float VoxelSize;
+};
+
+
 
 UCLASS()
 class WORLD_API ACxDynamicLandScape : public AActor
@@ -33,33 +52,34 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	virtual void OnConstruction(const FTransform& Transform) override;
-
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
 public:
-	/* ========== 体素核心功能 ========== */
 	UFUNCTION(BlueprintCallable, Category = "Voxel")
-	void CreateDensityField(int32 Padding);
-	UFUNCTION(BlueprintCallable, Category = "Voxel")
-	inline void SetDensityField(int32 x, int32 y, int32 z, int Weight);
-	UFUNCTION(BlueprintCallable, Category = "Voxel") 
-	void UpdateMeshFromDensityMC();
-	UFUNCTION(BlueprintCallable, Category = "Voxel")
-	FDensityInformation GetDensityX(int32 x);
-	UFUNCTION(BlueprintCallable, Category = "Voxel")
-	FDensityInformation GetDensity();
-	UFUNCTION(BlueprintCallable, Category = "Voxel")
-	FDensityInformation GetLODDensity(int32 InX, int32 InLodLevel, FString InLogName);
-	UFUNCTION(BlueprintCallable, Category = "Voxel")
-	inline void DebugWriteArray2Desk(FString InLogName);
-
+	void SetPlayerLocation(FVector InLocation);
+public:
+	inline float GetNoise(float InX, float InY, float InZ, const Brutus::Size3D &InTotal,const FVector &InComponentLocation, float InVoxelSize, uint8 InLOD);
+public:
+	bool CircleChunk(FVector InKey);
 
 
 
 public:
-	/* ========== 属性 ========== */
+	void CreateTransitionMesh(const Brutus::Size3D InTotal,
+		FVector InVector, 
+		FVector InLocation,
+		float InLength,
+		float InVoxelSize,
+		TArray<FVector> &OutVertices, 
+		TArray<int32> &OutTriangle);
+
+	void CreateDensityField(const FChunkManagerInformation & InChunkManagerInformation);
+	void UpdateMeshFromDensityMC(const FChunkManagerInformation &InChunkManagerInformation);
+	void UpdateLOD(FVector InKEY, float InDistSqared);
+	void ChunkExec();
+
+public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ProceduralMesh")
 	UProceduralMeshComponent* ProduralMeshComponent = nullptr;
@@ -74,18 +94,25 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Voxel|Settings")
 	float  FadeStrength = 0.4f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Voxel|Debug")
-	TObjectPtr<UStaticMesh> RuntimeMeshAsset; // 这个就是你在 Edit 里能点开看的资产
-
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Voxel")
+	float LoadedRange = 10000.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Voxel|Debug")
 	int32 DeleteVoxel = 1;
+	UPROPERTY()
+	TMap<FVector, FChunkManagerInformation>	ChunkManager;
+	UPROPERTY()
+	FVector PlayerLocation;
+	UPROPERTY()
+	float LoadedRangeSqared = 0.f;
+	UPROPERTY()
 
-	TArray<float> m_DensityData;  // 密度场数据
-private:
-	/* ========== 数据缓存 ========== */
-	bool          m_initialize = false;
+	float NoiseHeight = 200.f;
+	UPROPERTY()
 
-	Brutus::Grid* BrutusGrid = nullptr;
+	float BaseHeight = 200.f;
+	UPROPERTY()
+
+	float NoiseFreq = 0.002f;
+
 
 };

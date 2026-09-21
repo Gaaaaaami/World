@@ -49,7 +49,15 @@ public:
 	Size3D chunk_size() const; ///< Returns the size of the grid in chunks
 
 
-	int DeleteVoxel = 1;
+
+	static TMap<int, vec3i>& GetMapInstance();
+
+	void MeshEnd();
+
+
+	int XEndDeleteVoxel = 1;
+	int YEndDeleteVoxel = 1;
+	int ZEndDeleteVoxel = 1;
 
 };
 
@@ -113,8 +121,10 @@ inline void Grid::neighborhood_mesh(Mesh& mesh, const vec3i voxel) {
 			vertex = vertex_from_edge(voxel, edges[v]);
 			mesh.add_vertex(vertex);
 
+			GetMapInstance().Add(mesh.vertex_count * 3 + 0, voxel);
+
 			if (calculate_normals) {
-				normal = normal_from_edge(voxel, edges[v]);
+				//normal = normal_from_edge(voxel, edges[v]);
 				mesh.add_normal(normal);
 			}
 
@@ -246,7 +256,9 @@ inline Mesh Grid::generate_mesh(const size_t x, const size_t y, const size_t z) 
 	Mesh mesh;
 
 	mesh.vertices = new float[11 * Chunk::size * Chunk::size * Chunk::size]();
-	if (calculate_normals) mesh.normals = new float[11 * Chunk::size * Chunk::size * Chunk::size]();
+	if (calculate_normals)
+		mesh.normals = new float[11 * Chunk::size * Chunk::size * Chunk::size]();
+
 	// mesh.tex_coords = new float[11 * Chunk::size * Chunk::size * Chunk::size]();
 
 	// Get the start coordinates
@@ -258,9 +270,9 @@ inline Mesh Grid::generate_mesh(const size_t x, const size_t y, const size_t z) 
 	int end_z = static_cast<int>( (z+1) * Chunk::size );
 
 	// For each dimmension go an extra step if there is an adjacent chunk
-	int border_x = x == size_x - 1 ? DeleteVoxel : 0;
-	int border_y = y == size_y - 1 ? DeleteVoxel : 0;
-	int border_z = z == size_z - 1 ? DeleteVoxel : 0;
+	int border_x = x == size_x - 1 ? XEndDeleteVoxel : 0;
+	int border_y = y == size_y - 1 ? YEndDeleteVoxel : 0;
+	int border_z = z == size_z - 1 ? ZEndDeleteVoxel : 0;
 
 	// Loop over each neighborhood
 	for (int i = start_x; i < end_x - border_x; i++)
@@ -279,4 +291,15 @@ inline Size3D Grid::total_size() const {
 
 inline Size3D Grid::chunk_size() const {
 	return {size_x, size_y, size_z};
+}
+
+inline TMap<int, vec3i>& Grid::GetMapInstance()
+{
+	static TMap<int, vec3i> m;
+	return m;
+}
+
+inline void Grid::MeshEnd()
+{
+	Brutus::Grid::GetMapInstance().Empty();
 }

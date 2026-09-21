@@ -44,7 +44,10 @@ public:
 		const TArray<FVector>& InHighPos,
 		const TArray<FVector>& InLowPos,
 		FVector InHighResSize,
-		FVector InLowResSize);
+		FVector InLowResSize,
+		FVector InVector,
+		int32 InLength,
+		int32 VoxelSize);
 	
 public:
 	inline int32 CaculateLowLODDensityFieldIndex(int32 z, int32 y);

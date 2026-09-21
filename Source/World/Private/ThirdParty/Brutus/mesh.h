@@ -1,9 +1,12 @@
 /// This class stores vertex data.
 /// It is returned by `Grid::generate_mesh()`
+#pragma once
+
 struct Mesh {
 	float* vertices = nullptr;
 	float* normals = nullptr;
 	float* tex_coords = nullptr;
+
 
 	size_t vertex_count = 0, face_count = 0;
 
@@ -28,6 +31,7 @@ struct Mesh {
 		if (vertices != nullptr) delete[] vertices;
 		if (normals != nullptr) delete[] normals;
 		if (tex_coords != nullptr) delete[] tex_coords;
+		//position.Empty();
 	}
 
 	void add_vertex(const vec3f& vertex) {

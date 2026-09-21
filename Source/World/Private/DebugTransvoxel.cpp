@@ -14,12 +14,15 @@ void ADebugTransvoxel::BuildTransition_MultiUnit(
 	const TArray<FVector>& InHighPos,
 	const TArray<FVector>& InLowPos,
 	FVector InHighResSize,             
-	FVector InLowResSize)             
+	FVector InLowResSize,
+	FVector InVector,
+	int32 InLength,
+	int32 VoxelSize)
 {
 
 	FVector pos[13];
 	float Density[13] = { 1.f };
-	float VoxelSize = 100.f;
+	///float VoxelSize = 100.f;
 
 	int32 Count = InHighResSize.Z / 2;
 	Count *= Count;
@@ -43,10 +46,10 @@ void ADebugTransvoxel::BuildTransition_MultiUnit(
 			}
 		}
 
-		pos[9] =  pos[0] + (FVector(-1, 0, 0) * VoxelSize);
-		pos[10] = pos[2] + (FVector(-1, 0, 0) * VoxelSize);
-		pos[11] = pos[6] + (FVector(-1, 0, 0) * VoxelSize);
-		pos[12] = pos[8] + (FVector(-1, 0, 0) * VoxelSize);
+		pos[9] =  pos[0] + (InVector * InLength);
+		pos[10] = pos[2] + (InVector * InLength);
+		pos[11] = pos[6] + (InVector * InLength);
+		pos[12] = pos[8] + (InVector * InLength);
 		Density[9] = Density[0];
 		Density[10] = Density[2];
 		Density[11] = Density[6];
