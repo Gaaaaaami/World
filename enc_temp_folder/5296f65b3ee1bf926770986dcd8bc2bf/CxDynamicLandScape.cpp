@@ -31,7 +31,7 @@ void ACxDynamicLandScape::BeginPlay()
 	Super::BeginPlay();
 	this->LoadedRangeSqared = this->LoadedRange * this->LoadedRange;
 	
-#if 1
+#if 0
 	FChunkManagerInformation ChunkManagerInformation;
 	ChunkManagerInformation.LandscapeDimension = this->LandscapeDimension;
 	ChunkManagerInformation.BrutusGrid = new Brutus::Grid(ChunkManagerInformation.LandscapeDimension.X,
@@ -245,7 +245,7 @@ void ACxDynamicLandScape::ChunkExec()
 void ACxDynamicLandScape::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	///this->ChunkExec();
+	this->ChunkExec();
 }
 
 void ACxDynamicLandScape::CreateTransitionMesh( 
@@ -439,7 +439,6 @@ void ACxDynamicLandScape::CreateDensityField(const FChunkManagerInformation& InC
 				grid(x, y, z).weight = Weight;
 #endif
 
-#ifdef DEBUG_GAMI_CHUNK
 				if (x == 0)
 				{
 					auto Position = FVector(x, y, z)* FVector(InChunkManagerInformation.VoxelSize) + InChunkManagerInformation.MeshComponent->Location;
@@ -448,7 +447,6 @@ void ACxDynamicLandScape::CreateDensityField(const FChunkManagerInformation& InC
 						Position,
 						FString::Printf(TEXT("%s|%f"), *Position.ToString(), Weight), 0, FColor::Green);
 				}
-#endif
 			}
 		}
 	}

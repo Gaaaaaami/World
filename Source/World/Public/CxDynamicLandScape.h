@@ -60,9 +60,13 @@ public:
 	void SetPlayerLocation(FVector InLocation);
 public:
 	inline float GetNoise(float InX, float InY, float InZ, const Brutus::Size3D &InTotal,const FVector &InComponentLocation, float InVoxelSize, uint8 InLOD);
+	inline float GetNoise(FVector InLocation, const Brutus::Size3D& InTotal, const FVector& InComponentLocation, float InVoxelSize, uint8 InLOD);
+
 public:
 	bool CircleChunk(FVector InKey);
 
+public:
+	FDensityInformation GetDensityX(int32 InX, const FChunkManagerInformation & InChunkManagerInformation);
 
 
 public:
@@ -74,7 +78,7 @@ public:
 		TArray<FVector> &OutVertices, 
 		TArray<int32> &OutTriangle);
 
-	void CreateDensityField(const FChunkManagerInformation & InChunkManagerInformation);
+	void CreateDensityField(const FChunkManagerInformation &InChunkManagerInformation);
 	void UpdateMeshFromDensityMC(const FChunkManagerInformation &InChunkManagerInformation);
 	void UpdateLOD(FVector InKEY, float InDistSqared);
 	void ChunkExec();

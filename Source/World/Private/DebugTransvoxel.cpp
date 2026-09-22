@@ -42,7 +42,15 @@ void ADebugTransvoxel::BuildTransition_MultiUnit(
 				int HighResindex = (z + (uz * 2)) * (InHighResSize.Y + 1) + y + (uy * 2);
 				int DensityIndex = y * 3 + z;
 				Density[DensityIndex] = InHighRes[HighResindex];
-				pos[DensityIndex] = InHighPos[HighResindex];
+				pos[DensityIndex] = InHighPos[HighResindex] - FVector(10,0,0);
+
+				DrawDebugString(this->GetWorld(), 
+							pos[DensityIndex], 
+					FString::Printf(TEXT("%f"), 
+						Density[DensityIndex]),
+					0, 
+					FColor::Red);
+
 			}
 		}
 
@@ -50,6 +58,7 @@ void ADebugTransvoxel::BuildTransition_MultiUnit(
 		pos[10] = pos[2] + (InVector * InLength);
 		pos[11] = pos[6] + (InVector * InLength);
 		pos[12] = pos[8] + (InVector * InLength);
+
 		Density[9] = Density[0];
 		Density[10] = Density[2];
 		Density[11] = Density[6];
@@ -130,7 +139,7 @@ void ADebugTransvoxel::BuildTransition_MultiUnit(
 		// ========== 6. 输出三角形（从表读索引） ==========
 		const unsigned char* triIndices = cellData.vertexIndex; // ← 如果成员名不对请改成你项目里实际的名字
 
-		if (bFlip)
+		if (!bFlip)
 		{
 		
 			for (int t = 0; t < TriangleCount * 3; ++t)
