@@ -50,15 +50,19 @@ public:
 
 
 
-	static TMap<int, vec3i>& GetMapInstance();
+	//static TMap<int, vec3i>& GetMapInstance();
 
-	void MeshEnd();
+	//void MeshEnd();
 
 
 	int XEndDeleteVoxel = 1;
 	int YEndDeleteVoxel = 1;
 	int ZEndDeleteVoxel = 1;
+	int XBeginDeleteVoxel = 0;
+	int YBeginDeleteVoxel = 0;
+	int ZBeginDeleteVoxel = 0;
 
+	TSet<FIntVector> SkipVoxelLocation;	// 用于跳过（不创建）单个体素网格、
 };
 
 inline size_t Grid::index(const size_t x, const size_t y, const size_t z) const {
@@ -120,8 +124,8 @@ inline void Grid::neighborhood_mesh(Mesh& mesh, const vec3i voxel) {
 
 			vertex = vertex_from_edge(voxel, edges[v]);
 			mesh.add_vertex(vertex);
-
-			GetMapInstance().Add(mesh.vertex_count * 3 + 0, voxel);
+			
+			//GetMapInstance().Add(mesh.vertex_count * 3 + 0, voxel);
 
 			if (calculate_normals) {
 				//normal = normal_from_edge(voxel, edges[v]);
@@ -274,10 +278,27 @@ inline Mesh Grid::generate_mesh(const size_t x, const size_t y, const size_t z) 
 	int border_y = y == size_y - 1 ? YEndDeleteVoxel : 0;
 	int border_z = z == size_z - 1 ? ZEndDeleteVoxel : 0;
 
+	if (start_x == 0)
+		start_x += this->XBeginDeleteVoxel;
+	if (start_y == 0)
+		start_y += this->YBeginDeleteVoxel;
+	if (start_z == 0)
+		start_z += this->ZBeginDeleteVoxel;
+
 	// Loop over each neighborhood
 	for (int i = start_x; i < end_x - border_x; i++)
 	for (int j = start_y; j < end_y - border_y; j++)
 	for (int k = start_z; k < end_z - border_z; k++) {
+
+		if (SkipVoxelLocation.Contains(FIntVector(i, j, k)))
+		{
+			continue;
+		}
+		else if (SkipVoxelLocation.Contains(FIntVector(i, j, -1)))
+		{
+			continue;
+		}
+
 		vec3i voxel = {i, j, k};
 		neighborhood_mesh(mesh, voxel);
 	}
@@ -293,13 +314,13 @@ inline Size3D Grid::chunk_size() const {
 	return {size_x, size_y, size_z};
 }
 
-inline TMap<int, vec3i>& Grid::GetMapInstance()
-{
-	static TMap<int, vec3i> m;
-	return m;
-}
+//inline TMap<int, vec3i>& Grid::GetMapInstance()
+//{
+//	static TMap<int, vec3i> m;
+//	return m;
+//}
 
-inline void Grid::MeshEnd()
-{
-	Brutus::Grid::GetMapInstance().Empty();
-}
+//inline void Grid::MeshEnd()
+//{
+//	Brutus::Grid::GetMapInstance().Empty();
+//}

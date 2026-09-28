@@ -35,6 +35,8 @@ struct FChunkManagerInformation
 	FVector LandscapeDimension;
 	UPROPERTY()
 	float VoxelSize;
+	UPROPERTY()
+	FColor DebugColor = FColor::Black;
 };
 
 
@@ -61,7 +63,8 @@ public:
 public:
 	inline float GetNoise(float InX, float InY, float InZ, const Brutus::Size3D &InTotal,const FVector &InComponentLocation, float InVoxelSize, uint8 InLOD);
 	inline float GetNoise(FVector InLocation, const Brutus::Size3D& InTotal, const FVector& InComponentLocation, float InVoxelSize, uint8 InLOD);
-
+public:
+	inline bool TransitionMeshCheck(FVector InKEY, int32 InLOD);
 public:
 	bool CircleChunk(FVector InKey);
 
@@ -77,12 +80,26 @@ public:
 		float InVoxelSize,
 		TArray<FVector> &OutVertices, 
 		TArray<int32> &OutTriangle);
+	void CreateTransitionMesh(const FVector *InPos,
+		const float *InDensity,
+		FVector InVector,
+		TArray<FVector>& OutVertices,
+		TArray<int32>& OutTriangle);
 
 	void CreateDensityField(const FChunkManagerInformation &InChunkManagerInformation);
 	void UpdateMeshFromDensityMC(const FChunkManagerInformation &InChunkManagerInformation);
 	void UpdateLOD(FVector InKEY, float InDistSqared);
 	void ChunkExec();
-
+	
+	void ConvertSquareToNineGrid(const TArray<float> &InDensity, 
+		const TArray<FVector> &InPos, 
+		TArray<float> &OutDensity, 
+		TArray<FVector> &OutPos);
+	void GetInnerRectDensity(
+		const TArray<FVector>& InPos,
+		const TArray<float>& InDensity,
+		const TArray<FVector>& InnerPos,
+		TArray<float>& OutInnerDensity);
 public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ProceduralMesh")

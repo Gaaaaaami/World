@@ -18,7 +18,7 @@ UCxGamiProduralMeshComponent::~UCxGamiProduralMeshComponent()
 void UCxGamiProduralMeshComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	UProceduralMeshComponent::TickComponent(DeltaTime, TickType, ThisTickFunction);
-#if 1
+#if 0
 	auto DynamicLandScapeCast = Cast<ACxDynamicLandScape>(this->DynamicLandScape);
 	float DistSquared = FVector2D::DistSquared(FVector2D(Location), FVector2D(DynamicLandScapeCast->PlayerLocation));
 	if(DistSquared >= DynamicLandScapeCast->LoadedRangeSqared)
