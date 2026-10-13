@@ -25,6 +25,12 @@ public:
     UPROPERTY(EditAnywhere, Category = "Voxel")
     int32 ViewRadius = 4;
 
+    UPROPERTY(EditAnywhere, Category = "Voxel")
+    int32 UnloadRadius = 3;
+
+    UPROPERTY(EditAnywhere, Category = "Voxel")
+    float UnloadDelay = 5.0f;
+
     virtual FPrimitiveSceneProxy* CreateSceneProxy() override;
     virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override;
     virtual void GetUsedMaterials(TArray<UMaterialInterface*>& OutMaterials,
@@ -36,14 +42,13 @@ protected:
 
 private:
     void GenerateOneChunk(const FChunkKey& Key);
-    void PushAllChunksToRenderThread();
+    //void PushAllChunksToRenderThread();
     FVector ChunkOriginWorld(const FChunkKey& Key) const;
 
     void StreamTick();
     void OnChunkGenerated(FChunkKey Key,
         TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> Mesh);
 
-    // ⭐ 之前漏的 3 个
     TSet<FChunkKey> RequestedChunks;
     FTSTicker::FDelegateHandle TickHandle;
 
@@ -53,5 +58,9 @@ private:
     TObjectPtr<UProceduralMeshComponent> CollisionProxy;
 
     FBox LocalBounds = FBox(ForceInit);
-    bool bMeshDirty = false;
+    bool bBoundsDirty = false;
+
+    // 每个 chunk 的最后活跃时间（用于延迟卸载）
+    TMap<FChunkKey, double> ChunkLastActiveTime;
+
 };

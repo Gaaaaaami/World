@@ -1,171 +1,202 @@
-#include "VoxelSceneProxy.h"
+ï»¿#include "VoxelSceneProxy.h"
 #include "VoxelTerrainComponent.h"
 #include "MaterialDomain.h"
 #include "Materials/Material.h"
 #include "SceneManagement.h"
 
+// ============================================================
+// æ„é€  / ææ„
+// ============================================================
 FVoxelSceneProxy::FVoxelSceneProxy(const UVoxelTerrainComponent* InComponent,
     UMaterialInterface* InMaterial)
     : FPrimitiveSceneProxy(InComponent)
-    , VertexFactory(GetScene().GetFeatureLevel(), "FVoxelSceneProxy")
 {
     bWillEverBeLit = true;
     bCastDynamicShadow = true;
     bCastStaticShadow = false;
 
-    // ÓÃ´«ÈëµÄ²ÄÖÊ£»Èç¹ûÃ»ÓĞ£¬ÍË»Øµ½Ä¬ÈÏ²ÄÖÊ
     UMaterialInterface* UseMat = InMaterial;
     if (!UseMat)
         UseMat = UMaterial::GetDefaultMaterial(MD_Surface);
-
     if (UseMat)
         MaterialProxy = UseMat->GetRenderProxy();
 }
+
+FVoxelSceneProxy::~FVoxelSceneProxy()
+{
+    // èµ„æºç”± DestroyRenderThreadResources é‡Šæ”¾
+}
+
 SIZE_T FVoxelSceneProxy::GetTypeHash() const
 {
     static size_t UniquePointer;
     return reinterpret_cast<size_t>(&UniquePointer);
 }
 
+// ============================================================
+// RT èµ„æºç”Ÿå‘½å‘¨æœŸ
+// ============================================================
 void FVoxelSceneProxy::CreateRenderThreadResources(FRHICommandListBase& RHICmdList)
 {
-    // UE5.8 ÒªÇó FLocalVertexFactory µÄ position SRV ·Ç¿Õ¡£
-    // ÓÃÒ»¸ö dummy ¶¥µãÕ¼Î»£¬µÈµ½ÕæÕıÊı¾İÀ´£¨UploadMeshData_RenderThread£©ÔÙÖØ½¨¡£
-    PositionVertexBuffer.Init(1);
-    PositionVertexBuffer.VertexPosition(0) = FVector3f(0, 0, 0);
-
-    StaticMeshVertexBuffer.Init(1, 1);
-    StaticMeshVertexBuffer.SetVertexTangents(
-        0, FVector3f(1, 0, 0), FVector3f(0, 1, 0), FVector3f(0, 0, 1));
-    StaticMeshVertexBuffer.SetVertexUV(0, 0, FVector2f(0, 0));
-
-    ColorVertexBuffer.Init(1);
-    ColorVertexBuffer.VertexColor(0) = FColor::White;
-
-    IndexBuffer.SetIndices(TArray<uint32>(), EIndexBufferStride::Force32Bit);
-
-    PositionVertexBuffer.InitResource(RHICmdList);
-    StaticMeshVertexBuffer.InitResource(RHICmdList);
-    ColorVertexBuffer.InitResource(RHICmdList);
-    IndexBuffer.InitResource(RHICmdList);
-
-    FLocalVertexFactory::FDataType Data;
-    PositionVertexBuffer.BindPositionVertexBuffer(&VertexFactory, Data);
-    StaticMeshVertexBuffer.BindTangentVertexBuffer(&VertexFactory, Data);
-    StaticMeshVertexBuffer.BindPackedTexCoordVertexBuffer(&VertexFactory, Data);
-    ColorVertexBuffer.BindColorVertexBuffer(&VertexFactory, Data);
-    VertexFactory.SetData(RHICmdList, Data);
-    VertexFactory.InitResource(RHICmdList);
-
-    bResourcesReady = true;
+    // ç°åœ¨æ˜¯ per-chunk èµ„æºï¼Œè¿™é‡Œä¸éœ€è¦åšä»»ä½•äº‹ã€‚
+    // å…·ä½“èµ„æºåœ¨ AddChunk_RenderThread é‡Œåˆ›å»ºã€‚
 }
+
+void FVoxelSceneProxy::ReleaseChunkResources_RenderThread(FChunkRender& R)
+{
+    R.VertexFactory.ReleaseResource();
+    R.PositionVB.ReleaseResource();
+    R.StaticVB.ReleaseResource();
+    R.ColorVB.ReleaseResource();
+    R.IB.ReleaseResource();
+    R.bReady = false;
+}
+
 void FVoxelSceneProxy::DestroyRenderThreadResources()
 {
-    bResourcesReady = false;
-
-    VertexFactory.ReleaseResource();
-    PositionVertexBuffer.ReleaseResource();
-    StaticMeshVertexBuffer.ReleaseResource();
-    ColorVertexBuffer.ReleaseResource();
-    IndexBuffer.ReleaseResource();
+    for (auto& Pair : ChunkRenders)
+    {
+        if (Pair.Value.IsValid())
+            ReleaseChunkResources_RenderThread(*Pair.Value);
+    }
+    ChunkRenders.Empty();
 }
 
-void FVoxelSceneProxy::UploadMeshData_RenderThread(
+// ============================================================
+// å¢é‡æ¥å£
+// ============================================================
+void FVoxelSceneProxy::AddChunk_RenderThread(
     FRHICommandListBase& RHICmdList,
-    TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> InMeshData)
+    const FChunkKey& Key,
+    TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> Mesh)
 {
-    if (!InMeshData.IsValid()) return;
+    if (!Mesh.IsValid()) return;
 
-    const int32 NumVerts = InMeshData->Positions.Num();
-    const int32 NumIndices = InMeshData->Indices.Num();
+    const int32 NumVerts = Mesh->Positions.Num();
+    const int32 NumIndices = Mesh->Indices.Num();
     if (NumVerts == 0 || NumIndices == 0) return;
 
-    // ---- 1) ÊÍ·Å¾É×ÊÔ´ ----
-    VertexFactory.ReleaseResource();
-    PositionVertexBuffer.ReleaseResource();
-    StaticMeshVertexBuffer.ReleaseResource();
-    ColorVertexBuffer.ReleaseResource();
-    IndexBuffer.ReleaseResource();
+    // å¦‚æœè¯¥ Key å·²å­˜åœ¨ï¼Œå…ˆé‡Šæ”¾æ—§çš„
+    if (auto* Existing = ChunkRenders.Find(Key))
+    {
+        if (Existing->IsValid())
+            ReleaseChunkResources_RenderThread(**Existing);
+        ChunkRenders.Remove(Key);
+    }
 
-    // ---- 2) ·ÖÅäĞÂ»º³å ----
-    PositionVertexBuffer.Init(NumVerts);
-    StaticMeshVertexBuffer.Init(NumVerts, 1);
-    ColorVertexBuffer.Init(NumVerts);
+    // åˆ›å»ºæ–°çš„ FChunkRender
+    auto R = MakeShared<FChunkRender>(GetScene().GetFeatureLevel());
+
+    R->PositionVB.Init(NumVerts);
+    R->StaticVB.Init(NumVerts, 1);
+    R->ColorVB.Init(NumVerts);
+
+    // â­ æ”¹åï¼šBounds â†’ ChunkBounds
+    FBox ChunkBounds(ForceInit);
 
     for (int32 i = 0; i < NumVerts; ++i)
     {
-        const FVector3f& P = InMeshData->Positions[i];
-        PositionVertexBuffer.VertexPosition(i) = P;
+        const FVector3f& P = Mesh->Positions[i];
+        R->PositionVB.VertexPosition(i) = P;
 
-        // Ê¹ÓÃÍø¸ñÊı¾İÀïµÄÕæÊµ·¨Ïß
-        const FVector3f N = InMeshData->Normals.IsValidIndex(i)
-            ? InMeshData->Normals[i]
+        const FVector3f N = Mesh->Normals.IsValidIndex(i)
+            ? Mesh->Normals[i]
             : FVector3f(0, 0, 1);
 
-        // ´Ó·¨ÏßËãÒ»×éÕı½»ÇĞÏß»ù£¨¼òµ¥°æ£ºZ ÖáÍ¶Ó°£©
         FVector3f T = FVector3f::CrossProduct(FVector3f(0, 0, 1), N);
         if (T.SizeSquared() < 1e-4f) T = FVector3f(1, 0, 0);
         T.Normalize();
-        const FVector3f B = FVector3f::CrossProduct(N, T);
 
-        StaticMeshVertexBuffer.SetVertexTangents(i, T, B, N);
-        StaticMeshVertexBuffer.SetVertexUV(i, 0, FVector2f(P.X * 0.01f, P.Y * 0.01f));
-        ColorVertexBuffer.VertexColor(i) = FColor::White;
+        R->StaticVB.SetVertexTangents(i, T,
+            FVector3f::CrossProduct(N, T), N);
+        R->StaticVB.SetVertexUV(i, 0, FVector2f(0, 0));
+
+        R->ColorVB.VertexColor(i) = Mesh->Colors.IsValidIndex(i)
+            ? Mesh->Colors[i]
+            : FColor::White;
+
+        // â­ æ”¹å
+        ChunkBounds += FVector(P);
     }
-    IndexBuffer.SetIndices(InMeshData->Indices, EIndexBufferStride::Force32Bit);
+    // â­ æ”¹å
+    R->Bounds = ChunkBounds;
 
-    // ---- 3) ÉÏ´« RHI ----
-    PositionVertexBuffer.InitResource(RHICmdList);
-    StaticMeshVertexBuffer.InitResource(RHICmdList);
-    ColorVertexBuffer.InitResource(RHICmdList);
-    IndexBuffer.InitResource(RHICmdList);
+    R->IB.SetIndices(Mesh->Indices, EIndexBufferStride::Force32Bit);
 
-    // ---- 4) °ó¶¨µ½ VertexFactory ----
+    // ä¸Šä¼ åˆ° GPU
+    R->PositionVB.InitResource(RHICmdList);
+    R->StaticVB.InitResource(RHICmdList);
+    R->ColorVB.InitResource(RHICmdList);
+    R->IB.InitResource(RHICmdList);
+
+    // ç»‘å®šåˆ° Vertex Factory
     FLocalVertexFactory::FDataType Data;
-    PositionVertexBuffer.BindPositionVertexBuffer(&VertexFactory, Data);
-    StaticMeshVertexBuffer.BindTangentVertexBuffer(&VertexFactory, Data);
-    StaticMeshVertexBuffer.BindPackedTexCoordVertexBuffer(&VertexFactory, Data);
-    ColorVertexBuffer.BindColorVertexBuffer(&VertexFactory, Data);
-    VertexFactory.SetData(RHICmdList, Data);
-    VertexFactory.InitResource(RHICmdList);
+    R->PositionVB.BindPositionVertexBuffer(&R->VertexFactory, Data);
+    R->StaticVB.BindTangentVertexBuffer(&R->VertexFactory, Data);
+    R->StaticVB.BindPackedTexCoordVertexBuffer(&R->VertexFactory, Data);
+    R->ColorVB.BindColorVertexBuffer(&R->VertexFactory, Data);
+    R->VertexFactory.SetData(RHICmdList, Data);
+    R->VertexFactory.InitResource(RHICmdList);
 
-    bResourcesReady = true;
+    R->bReady = true;
+
+    ChunkRenders.Add(Key, R);
+}
+void FVoxelSceneProxy::RemoveChunk_RenderThread(
+    FRHICommandListBase& RHICmdList,
+    const FChunkKey& Key)
+{
+    if (auto* Existing = ChunkRenders.Find(Key))
+    {
+        if (Existing->IsValid())
+            ReleaseChunkResources_RenderThread(**Existing);
+        ChunkRenders.Remove(Key);
+    }
 }
 
+// ============================================================
+// æ¸²æŸ“
+// ============================================================
 void FVoxelSceneProxy::GetDynamicMeshElements(
     const TArray<const FSceneView*>& Views,
     const FSceneViewFamily& ViewFamily,
     uint32 VisibilityMap,
     FMeshElementCollector& Collector) const
 {
-    if (!bResourcesReady) return;
-    if (IndexBuffer.GetNumIndices() == 0) return;
     if (!MaterialProxy) return;
+    if (ChunkRenders.Num() == 0) return;
 
-    for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ++ViewIndex)
+    for (const auto& Pair : ChunkRenders)
     {
-        if (!(VisibilityMap & (1 << ViewIndex))) continue;
+        const FChunkRender& R = *Pair.Value;
+        if (!R.bReady) continue;
+        if (R.IB.GetNumIndices() == 0) continue;
 
-        FMeshBatch& Mesh = Collector.AllocateMesh();
-        Mesh.Elements.SetNum(1);
-        FMeshBatchElement& Element = Mesh.Elements[0];
+        for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ++ViewIndex)
+        {
+            if (!(VisibilityMap & (1 << ViewIndex))) continue;
 
-        Element.IndexBuffer = &IndexBuffer;
-        Element.FirstIndex = 0;
-        Element.NumPrimitives = IndexBuffer.GetNumIndices() / 3;
-        Element.MinVertexIndex = 0;
-        Element.MaxVertexIndex = PositionVertexBuffer.GetNumVertices() - 1;
-        Element.PrimitiveUniformBuffer = GetUniformBuffer();
+            FMeshBatch& Mesh = Collector.AllocateMesh();
+            Mesh.Elements.SetNum(1);
+            FMeshBatchElement& Element = Mesh.Elements[0];
 
-        Mesh.bWireframe = false;
-        Mesh.VertexFactory = &VertexFactory;
-        Mesh.MaterialRenderProxy = MaterialProxy;
-        Mesh.ReverseCulling = IsLocalToWorldDeterminantNegative();
-        Mesh.Type = PT_TriangleList;
-        Mesh.DepthPriorityGroup = SDPG_World;
-        Mesh.bCanApplyViewModeOverrides = false;
+            Element.IndexBuffer = &R.IB;
+            Element.FirstIndex = 0;
+            Element.NumPrimitives = R.IB.GetNumIndices() / 3;
+            Element.MinVertexIndex = 0;
+            Element.MaxVertexIndex = R.PositionVB.GetNumVertices() - 1;
+            Element.PrimitiveUniformBuffer = GetUniformBuffer();
 
-        Collector.AddMesh(ViewIndex, Mesh);
+            Mesh.bWireframe = false;
+            Mesh.VertexFactory = &R.VertexFactory;
+            Mesh.MaterialRenderProxy = MaterialProxy;
+            Mesh.ReverseCulling = IsLocalToWorldDeterminantNegative();
+            Mesh.Type = PT_TriangleList;
+            Mesh.DepthPriorityGroup = SDPG_World;
+            Mesh.bCanApplyViewModeOverrides = false;
+
+            Collector.AddMesh(ViewIndex, Mesh);
+        }
     }
 }
 
@@ -182,10 +213,17 @@ FPrimitiveViewRelevance FVoxelSceneProxy::GetViewRelevance(const FSceneView* Vie
     R.bEditorPrimitiveRelevance = false;
     return R;
 }
+
 uint32 FVoxelSceneProxy::GetMemoryFootprint() const
 {
-    return sizeof(*this)
-        + PositionVertexBuffer.GetNumVertices() * sizeof(FVector3f)
-        + StaticMeshVertexBuffer.GetNumVertices() * 32
-        + IndexBuffer.GetNumIndices() * sizeof(uint32);
+    uint32 Total = sizeof(*this);
+    for (const auto& Pair : ChunkRenders)
+    {
+        if (!Pair.Value.IsValid()) continue;
+        const FChunkRender& R = *Pair.Value;
+        Total += R.PositionVB.GetNumVertices() * sizeof(FVector3f);
+        Total += R.StaticVB.GetNumVertices() * 32;
+        Total += R.IB.GetNumIndices() * sizeof(uint32);
+    }
+    return Total;
 }

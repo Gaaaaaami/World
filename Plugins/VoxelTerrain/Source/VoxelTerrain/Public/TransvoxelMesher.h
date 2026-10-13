@@ -1,13 +1,13 @@
-#pragma once
+ï»¿#pragma once
 #include "CoreMinimal.h"
 #include "VoxelChunkData.h"
 #include "VoxelMeshData.h"
 
-class FTransvoxelMesher
+class VOXELTERRAIN_API FTransvoxelMesher
 {
 public:
-    /** Ö»´¦Àí regular cells¡£ºóÐøÔÙ¼Ó LOD ¹ý¶É¡£ */
     static void GenerateRegular(const FVoxelChunkData& Chunk,
         float VoxelSize,
+        int32 LOD,
         FVoxelMeshData& Out);
 };

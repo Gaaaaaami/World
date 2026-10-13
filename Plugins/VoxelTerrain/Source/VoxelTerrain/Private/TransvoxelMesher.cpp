@@ -1,9 +1,10 @@
-#include "TransvoxelMesher.h"
+ï»¿#include "TransvoxelMesher.h"
 #include "Transvoxel.h"
 
 namespace
 {
-    // Transvoxel µÄ½ÇµãÔ¼¶¨£º
+    // ============================ è§’ç‚¹å®šä¹‰ ============================
+    // ä¸Ž Transvoxel regularVertexData çš„ä½Žå­—èŠ‚ç«¯ç‚¹ä¸€è‡´ï¼š
     // 0:(0,0,0) 1:(1,0,0) 2:(0,1,0) 3:(1,1,0)
     // 4:(0,0,1) 5:(1,0,1) 6:(0,1,1) 7:(1,1,1)
     const FIntVector CornerOffsets[8] = {
@@ -11,8 +12,9 @@ namespace
         {0,0,1}, {1,0,1}, {0,1,1}, {1,1,1}
     };
 
-    /** ²ÉÑùÌåËØÈ¨ÖØ£¨×Ô¶¯ clamp µ½ chunk ÄÚ²¿£© */
-    FORCEINLINE float SampleWeight(const FVoxelChunkData& Chunk, int32 x, int32 y, int32 z)
+    // ============================ é‡‡æ ·æƒé‡ ============================
+    FORCEINLINE float SampleWeight(const FVoxelChunkData& Chunk,
+        int32 x, int32 y, int32 z)
     {
         const int32 N = VoxelConfig::ChunkStride;
         x = FMath::Clamp(x, 0, N - 1);
@@ -21,70 +23,58 @@ namespace
         return (float)Chunk.At(x, y, z).Weight;
     }
 
-    /**
-     * ÓÃÖÐÐÄ²î·Ö¼ÆËãÌÝ¶È·¨Ïß¡£
-     *
-     * Weight Ô¼¶¨£º>0 ÊÇ¿ÕÆø£¬<0 ÊÇÊµÐÄ¡£
-     * ÌÝ¶È·½Ïò = ´ÓÊµÐÄÖ¸Ïò¿ÕÆø = Íâ·¨Ïß·½Ïò¡£
-     */
-    FVector3f ComputeGradient(const FVoxelChunkData& Chunk, const FVector3f& LocalPos)
+    // ============================ æ¢¯åº¦æ³•çº¿ ============================
+    FVector3f ComputeGradient(const FVoxelChunkData& Chunk,
+        const FVector3f& LocalPos)
     {
         const int32 xi = FMath::RoundToInt(LocalPos.X);
         const int32 yi = FMath::RoundToInt(LocalPos.Y);
         const int32 zi = FMath::RoundToInt(LocalPos.Z);
 
-        const float dx = SampleWeight(Chunk, xi + 1, yi, zi) - SampleWeight(Chunk, xi - 1, yi, zi);
-        const float dy = SampleWeight(Chunk, xi, yi + 1, zi) - SampleWeight(Chunk, xi, yi - 1, zi);
-        const float dz = SampleWeight(Chunk, xi, yi, zi + 1) - SampleWeight(Chunk, xi, yi, zi - 1);
+        const float dx = SampleWeight(Chunk, xi + 1, yi, zi)
+            - SampleWeight(Chunk, xi - 1, yi, zi);
+        const float dy = SampleWeight(Chunk, xi, yi + 1, zi)
+            - SampleWeight(Chunk, xi, yi - 1, zi);
+        const float dz = SampleWeight(Chunk, xi, yi, zi + 1)
+            - SampleWeight(Chunk, xi, yi, zi - 1);
 
         FVector3f N(dx, dy, dz);
         if (N.SizeSquared() < 1e-6f)
             return FVector3f(0, 0, 1);
         return N.GetSafeNormal();
     }
+
+    // ============================ é¡¶ç‚¹é¢œè‰² ============================
+    FColor ComputeColor(const FVector3f& WorldPos, const FVector3f& Normal)
+    {
+        const float Slope = 1.0f - FMath::Clamp(Normal.Z, 0.f, 1.f);
+        const float Height = FMath::Clamp(WorldPos.Z / 3300.f, 0.f, 1.f);
+
+        if (Slope > 0.45f)
+            return FColor(110, 85, 60);      // å²©çŸ³æ£•
+        if (Height > 0.65f)
+            return FColor(240, 240, 245);    // é›ªç™½
+        return FColor(65, 125, 60);          // è‰åœ°ç»¿
+    }
 }
 
-
-
-
-
-/**
- * ¸ù¾ÝÎ»ÖÃºÍ·¨ÏßËã¶¥µãÑÕÉ«¡£
- *   - ¶¸ÆÂ£¨·¨Ïß½Ó½üË®Æ½£©¡ú ÑÒÊ¯×Ø
- *   - ¸ßº£°Î ¡ú Ñ©°×
- *   - ÆäËû ¡ú ²ÝµØÂÌ
- */
-FColor ComputeColor(const FVector3f& WorldPos, const FVector3f& Normal)
-{
-    // ¶¸ÇÍ¶È£º·¨Ïß Z ·ÖÁ¿Ô½Ð¡Ô½¶¸
-    const float Slope = 1.0f - FMath::Clamp(Normal.Z, 0.f, 1.f);
-
-    // ¹éÒ»»¯¸ß¶È£¨¼ÙÉè chunk ¸ßÔ¼ 33 * 100cm£©
-    const float Height = FMath::Clamp(WorldPos.Z / 3300.f, 0.f, 1.f);
-
-    if (Slope > 0.45f)
-    {
-        return FColor(110, 85, 60);   // ÑÒÊ¯×Ø
-    }
-    if (Height > 0.65f)
-    {
-        return FColor(240, 240, 245); // Ñ©°×
-    }
-    return FColor(65, 125, 60);       // ²ÝµØÂÌ
-}
+// ============================ GenerateRegular ============================
 void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
     float VoxelSize,
+    int32 LOD,
     FVoxelMeshData& Out)
 {
     Out.Reset();
 
-    const int32 N = VoxelConfig::ChunkSize;
+    const int32 ChunkN = VoxelConfig::ChunkSize;
+    const int32 S = 1 << LOD;
+    const float WorldStep = VoxelSize * S;
 
-    for (int32 x = 0; x < N; ++x)
-        for (int32 y = 0; y < N; ++y)
-            for (int32 z = 0; z < N; ++z)
+    for (int32 x = 0; x < ChunkN; ++x)
+        for (int32 y = 0; y < ChunkN; ++y)
+            for (int32 z = 0; z < ChunkN; ++z)
             {
-                // ²ÉÑù 8 ¸ö½Çµã
+                // 1) é‡‡æ · 8 ä¸ªè§’ç‚¹
                 int8 W[8];
                 for (int i = 0; i < 8; ++i)
                 {
@@ -92,7 +82,7 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
                     W[i] = Chunk.At(x + O.X, y + O.Y, z + O.Z).Weight;
                 }
 
-                // ¼ÆËã case
+                // 2) case
                 uint32 Case = 0;
                 for (int i = 0; i < 8; ++i)
                     if (W[i] < 0) Case |= (1u << i);
@@ -104,7 +94,7 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
 
                 const int32 BaseVertex = Out.Positions.Num();
 
-                // Éú³É¸Ã cell µÄ¶¥µã
+                // 3) ç”Ÿæˆé¡¶ç‚¹
                 const unsigned short* VD = regularVertexData[Case];
                 int32 VCount = 0;
                 for (int v = 0; v < 12; ++v)
@@ -127,7 +117,7 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
                     const FVector3f PB((float)(x + OB.X), (float)(y + OB.Y), (float)(z + OB.Z));
 
                     const FVector3f LocalP = FMath::Lerp(PA, PB, t);
-                    const FVector3f WorldP = LocalP * VoxelSize;
+                    const FVector3f WorldP = LocalP * WorldStep;
                     const FVector3f Normal = ComputeGradient(Chunk, LocalP);
 
                     Out.Positions.Add(WorldP);
@@ -136,7 +126,7 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
                     ++VCount;
                 }
 
-                // Éú³ÉÈý½ÇÐÎ£¨±£³Ö CW£¬¼ûÏÂÃæµÄËµÃ÷£©
+                // 4) ç”Ÿæˆä¸‰è§’å½¢ï¼ˆå·²ä¿®æ­£ç»•åºï¼‰
                 const int32 TCount = CD.GetTriangleCount();
                 for (int t = 0; t < TCount; ++t)
                 {
@@ -146,12 +136,9 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
 
                     if (I0 >= VCount || I1 >= VCount || I2 >= VCount) continue;
 
-                    // Transvoxel ¹Ù·½ÈÆÐòÎª CW£¬½»»» I1/I2 µÃµ½ UE ÐèÒªµÄ CCW
                     Out.Indices.Add(BaseVertex + I0);
                     Out.Indices.Add(BaseVertex + I2);
                     Out.Indices.Add(BaseVertex + I1);
                 }
             }
 }
-
-

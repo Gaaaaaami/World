@@ -7,6 +7,7 @@
         "Includes": [
             "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\intermediate\\build\\win64\\x64\\unrealeditor\\debuggame\\voxelterrain\\definitions.voxelterrain.h",
             "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\public\\voxelgenerator.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\public\\voxelchunkdata.h",
             "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\public\\voxeltypes.h"
         ],
         "ImportedModules": [],

@@ -2,3 +2,4 @@
 #include "D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Intermediate/Build/Win64/UnrealEditor/Inc/VoxelTerrain/UHT/VoxelTerrain.init.gen.cpp"
 #include "D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Intermediate/Build/Win64/UnrealEditor/Inc/VoxelTerrain/UHT/VoxelTerrainComponent.gen.cpp"
 #include "D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/VoxelTerrain/PerModuleInline.gen.cpp"
+#include "D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Source/VoxelTerrain/Private/VoxelTerrain.cpp"
