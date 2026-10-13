@@ -1,0 +1,19 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\consolecommandpanel\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\consolecommandpanel\\module.consolecommandpanel.cpp",
+        "ProvidedModule": "",
+        "PCH": "d:\\users\\administrator\\documents\\unreal projects\\world\\intermediate\\build\\win64\\x64\\worldeditor\\development\\unrealed\\sharedpch.unrealed.project.valapi.valexpapi.cpp20.inclorderunreal5_6.h.pch",
+        "Includes": [
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\consolecommandpanel\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\consolecommandpanel\\definitions.consolecommandpanel.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\consolecommandpanel\\intermediate\\build\\win64\\unrealeditor\\inc\\consolecommandpanel\\uht\\consolecommandpanel.init.gen.cpp",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\consolecommandpanel\\intermediate\\build\\win64\\unrealeditor\\inc\\consolecommandpanel\\uht\\consolecommandpanelsettings.gen.cpp",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\consolecommandpanel\\source\\consolecommandpanel\\public\\consolecommandpanelsettings.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\consolecommandpanel\\intermediate\\build\\win64\\unrealeditor\\inc\\consolecommandpanel\\uht\\consolecommandpanelsettings.generated.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\consolecommandpanel\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\consolecommandpanel\\permoduleinline.gen.cpp",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\core\\public\\hal\\permoduleinline.inl"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

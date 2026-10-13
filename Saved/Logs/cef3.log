@@ -1,3 +1,7 @@
-[21328:20528:0928/125843.335:WARNING:chrome_main_delegate.cc(745)] This is Chrome version 128.0.6613.138 (not a warning)
-[21328:20528:0928/125843.403:WARNING:account_consistency_mode_manager.cc(77)] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
-[21328:20528:0928/132228.435:ERROR:device_event_log_impl.cc(196)] [13:22:28.304] USB: usb_service_win.cc:105 SetupDiGetDeviceProperty({{A45C254E-DF1C-4EFD-8020-67D146A850E0}, 6}) failed: 找不到元素。 (0x490)
+[6800:20008:1013/111941.186:WARNING:chrome_main_delegate.cc(745)] This is Chrome version 128.0.6613.138 (not a warning)
+[6800:20008:1013/111941.270:WARNING:account_consistency_mode_manager.cc(77)] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
+[20144:12236:1013/111953.608:WARNING:spdy_session.cc(2985)] Received HEADERS for invalid stream 11
+[20144:12236:1013/111953.609:WARNING:spdy_session.cc(2985)] Received HEADERS for invalid stream 13
+[20144:12236:1013/111953.611:WARNING:spdy_session.cc(2985)] Received HEADERS for invalid stream 9
+[20144:12236:1013/111953.611:WARNING:spdy_session.cc(2985)] Received HEADERS for invalid stream 15
+[20144:12236:1013/111953.794:WARNING:spdy_session.cc(2985)] Received HEADERS for invalid stream 1

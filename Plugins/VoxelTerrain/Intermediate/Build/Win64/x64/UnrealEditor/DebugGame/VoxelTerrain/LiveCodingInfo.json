@@ -1,0 +1,15 @@
+{
+	"RemapUnityFiles": 
+	{
+		"Module.VoxelTerrain.cpp.obj": [
+			"VoxelTerrain.init.gen.cpp.obj",
+			"VoxelTerrainComponent.gen.cpp.obj",
+			"PerModuleInline.gen.cpp.obj",
+			"TransvoxelMesher.cpp.obj",
+			"VoxelGenerator.cpp.obj",
+			"VoxelSceneProxy.cpp.obj",
+			"VoxelTerrain.cpp.obj",
+			"VoxelTerrainComponent.cpp.obj"
+		]
+	}
+}
