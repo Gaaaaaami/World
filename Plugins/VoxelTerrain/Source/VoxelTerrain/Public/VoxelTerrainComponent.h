@@ -29,6 +29,12 @@ public:
     int32 UnloadRadius = 3;
 
     UPROPERTY(EditAnywhere, Category = "Voxel")
+    int32 LOD0Radius = 2;
+
+    UPROPERTY(EditAnywhere, Category = "Voxel")
+    int32 LOD1Radius = 4;
+
+    UPROPERTY(EditAnywhere, Category = "Voxel")
     float UnloadDelay = 5.0f;
 
     virtual FPrimitiveSceneProxy* CreateSceneProxy() override;

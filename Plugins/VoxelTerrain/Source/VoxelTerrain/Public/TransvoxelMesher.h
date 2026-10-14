@@ -10,4 +10,14 @@ public:
         float VoxelSize,
         int32 LOD,
         FVoxelMeshData& Out);
+
+    // FaceDirection:
+    // 0 = +X, 1 = -X
+    // 2 = +Y, 3 = -Y
+    // 4 = +Z, 5 = -Z
+    static void GenerateTransition(const FVoxelChunkData& Chunk,
+        float VoxelSize,
+        int32 LOD,
+        int32 FaceDirection,
+        FVoxelMeshData& Out);
 };

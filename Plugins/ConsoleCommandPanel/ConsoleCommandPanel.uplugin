@@ -19,7 +19,8 @@
 		{
 			"Name": "ConsoleCommandPanel",
 			"Type": "Editor",
-			"LoadingPhase": "PostConfigInit"
+			"LoadingPhase": "PostConfigInit",
+			"PlatformAllowList": [ "Win64" ]
 		}
 	]
 }
