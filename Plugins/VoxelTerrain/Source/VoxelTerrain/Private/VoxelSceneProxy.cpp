@@ -187,13 +187,13 @@ void FVoxelSceneProxy::GetDynamicMeshElements(
             Element.MaxVertexIndex = R.PositionVB.GetNumVertices() - 1;
             Element.PrimitiveUniformBuffer = GetUniformBuffer();
 
-            Mesh.bWireframe = false;
             Mesh.VertexFactory = &R.VertexFactory;
             Mesh.MaterialRenderProxy = MaterialProxy;
             Mesh.ReverseCulling = IsLocalToWorldDeterminantNegative();
             Mesh.Type = PT_TriangleList;
             Mesh.DepthPriorityGroup = SDPG_World;
-            Mesh.bCanApplyViewModeOverrides = false;
+            Mesh.bCanApplyViewModeOverrides = 0;
+            Mesh.bWireframe = 0;
 
             Collector.AddMesh(ViewIndex, Mesh);
         }

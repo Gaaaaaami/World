@@ -119,6 +119,7 @@ void UVoxelTerrainComponent::GenerateOneChunk(const FChunkKey& Key)
 // ============================================================
 // 主循环：加载 + 卸载
 // ============================================================
+#if 0
 void UVoxelTerrainComponent::StreamTick()
 {
     UWorld* World = GetWorld();
@@ -262,7 +263,190 @@ void UVoxelTerrainComponent::StreamTick()
         MarkRenderTransformDirty();
     }
 }
+#else
+void UVoxelTerrainComponent::StreamTick()
+{
+    UWorld* World = GetWorld();
+    if (!World) return;
 
+    // ---------- 相机位置 ----------
+    FVector CamLoc = GetComponentLocation();
+    if (APlayerController* PC = World->GetFirstPlayerController())
+    {
+        if (APawn* Pawn = PC->GetPawnOrSpectator())
+            CamLoc = Pawn->GetActorLocation();
+    }
+
+    const double Now = FPlatformTime::Seconds();
+
+    // ---------- 请求一个 chunk ----------
+    TWeakObjectPtr<UVoxelTerrainComponent> WeakThis(this);
+
+    auto RequestChunk = [this, WeakThis, Now](const FChunkKey& Key)
+        {
+            if (ChunkMeshes.Contains(Key))
+            {
+                ChunkLastActiveTime.Add(Key, Now);
+                return;
+            }
+            if (RequestedChunks.Contains(Key)) return;
+            RequestedChunks.Add(Key);
+
+            Async(EAsyncExecution::ThreadPool, [WeakThis, Key]()
+                {
+                    FVoxelGenerator Gen;
+                    FVoxelChunkData ChunkData;
+                    Gen.GenerateChunk(Key.X, Key.Y, Key.Z, Key.LOD,
+                        ChunkData.Voxels.GetData());
+
+                    auto MeshData = MakeShared<FVoxelMeshData, ESPMode::ThreadSafe>();
+                    FTransvoxelMesher::GenerateRegular(
+                        ChunkData, VoxelConfig::VoxelSize, Key.LOD, *MeshData);
+
+                    const float S = (float)(1 << Key.LOD);
+                    const float LODChunkWorldSize =
+                        VoxelConfig::ChunkSize * VoxelConfig::VoxelSize * S;
+                    const FVector3f Offset(
+                        Key.X * LODChunkWorldSize,
+                        Key.Y * LODChunkWorldSize,
+                        Key.Z * LODChunkWorldSize);
+                    for (FVector3f& P : MeshData->Positions)
+                        P += Offset;
+
+                    AsyncTask(ENamedThreads::GameThread, [WeakThis, Key, MeshData]()
+                        {
+                            if (auto* Self = WeakThis.Get())
+                                Self->OnChunkGenerated(Key, MeshData);
+                        });
+                });
+        };
+
+    // ---------- 基础网格坐标 ----------
+    const FIntVector Base = WorldToBaseChunk(CamLoc);
+
+    // LOD0 chunk 世界边长 3200
+    const float LOD0ChunkSize =
+        VoxelConfig::ChunkSize * VoxelConfig::VoxelSize;
+
+    // LOD1 chunk 世界边长 6400
+    const float LOD1ChunkSize =
+        VoxelConfig::ChunkSize * VoxelConfig::VoxelSize * 2.f;
+
+    // LOD0 覆盖的世界半径，用于跳过 LOD1 重叠
+    const float LOD0WorldRadius =
+        (LOD0Radius + 0.5f) * LOD0ChunkSize;
+
+    // ---------- 1) LOD0 ----------
+    for (int32 dx = -LOD0Radius; dx <= LOD0Radius; ++dx)
+    {
+        for (int32 dy = -LOD0Radius; dy <= LOD0Radius; ++dy)
+        {
+            for (int32 dz = -LOD0Radius; dz <= LOD0Radius; ++dz)
+            {
+                FChunkKey Key(Base.X + dx, Base.Y + dy, Base.Z + dz, 0);
+                RequestChunk(Key);
+            }
+        }
+    }
+
+    // ---------- 2) LOD1 ----------
+    // LOD1 坐标 = 基础坐标 / 2
+    const int32 B1X = Base.X >> 1;
+    const int32 B1Y = Base.Y >> 1;
+    const int32 B1Z = Base.Z >> 1;
+
+    for (int32 dx = -LOD1Radius; dx <= LOD1Radius; ++dx)
+    {
+        for (int32 dy = -LOD1Radius; dy <= LOD1Radius; ++dy)
+        {
+            for (int32 dz = -LOD1Radius; dz <= LOD1Radius; ++dz)
+            {
+                const int32 X = B1X + dx;
+                const int32 Y = B1Y + dy;
+                const int32 Z = B1Z + dz;
+
+                // 这个 LOD1 chunk 的世界中心
+                const FVector ChunkCenter(
+                    (X + 0.5f) * LOD1ChunkSize,
+                    (Y + 0.5f) * LOD1ChunkSize,
+                    (Z + 0.5f) * LOD1ChunkSize);
+
+                // 已经被 LOD0 覆盖，跳过
+                if (FVector::Dist(ChunkCenter, CamLoc) < LOD0WorldRadius)
+                    continue;
+
+                FChunkKey Key(X, Y, Z, 1);
+                RequestChunk(Key);
+            }
+        }
+    }
+
+    // ---------- 3) 卸载 ----------
+    TArray<FChunkKey> ToUnload;
+    for (auto& Pair : ChunkMeshes)
+    {
+        const FChunkKey& Key = Pair.Key;
+
+        const float S = (float)(1 << Key.LOD);
+        const float ChunkSize = LOD0ChunkSize * S;
+
+        // chunk 世界中心
+        const FVector ChunkCenter(
+            (Key.X + 0.5f) * ChunkSize,
+            (Key.Y + 0.5f) * ChunkSize,
+            (Key.Z + 0.5f) * ChunkSize);
+
+        const float Dist = FVector::Dist(ChunkCenter, CamLoc);
+
+        float UnloadWorldRadius;
+        if (Key.LOD == 0)
+            UnloadWorldRadius = (LOD0Radius + 1.f) * LOD0ChunkSize;
+        else
+            UnloadWorldRadius = (LOD1Radius + 1.f) * LOD1ChunkSize;
+
+        if (Dist < UnloadWorldRadius) continue;
+
+        // 延迟卸载
+        if (const double* LastTime = ChunkLastActiveTime.Find(Key))
+        {
+            if (Now - *LastTime < UnloadDelay) continue;
+        }
+
+        ToUnload.Add(Key);
+    }
+
+    for (const FChunkKey& Key : ToUnload)
+    {
+        ChunkMeshes.Remove(Key);
+        ChunkLastActiveTime.Remove(Key);
+        RequestedChunks.Remove(Key);
+
+        FVoxelSceneProxy* Proxy = static_cast<FVoxelSceneProxy*>(SceneProxy);
+        if (Proxy)
+        {
+            ENQUEUE_RENDER_COMMAND(RemoveVoxelChunk)(
+                [Proxy, Key](FRHICommandListImmediate& RHICmdList)
+                {
+                    Proxy->RemoveChunk_RenderThread(RHICmdList, Key);
+                });
+        }
+    }
+
+    if (ToUnload.Num() > 0)
+    {
+        bBoundsDirty = true;
+    }
+
+    // ---------- 4) Bounds ----------
+    if (bBoundsDirty)
+    {
+        bBoundsDirty = false;
+        UpdateBounds();
+        MarkRenderTransformDirty();
+    }
+}
+
+#endif
 // ============================================================
 // 回调
 // ============================================================
@@ -299,4 +483,14 @@ void UVoxelTerrainComponent::EndPlay(const EEndPlayReason::Type Reason)
         FTSTicker::GetCoreTicker().RemoveTicker(TickHandle);
     TickHandle.Reset();
     Super::EndPlay(Reason);
+}
+
+FIntVector UVoxelTerrainComponent::WorldToBaseChunk(const FVector& WorldPos) const
+{
+    const float BaseChunkSize =
+        VoxelConfig::ChunkSize * VoxelConfig::VoxelSize;  // 3200
+    return FIntVector(
+        FMath::FloorToInt(WorldPos.X / BaseChunkSize),
+        FMath::FloorToInt(WorldPos.Y / BaseChunkSize),
+        FMath::FloorToInt(WorldPos.Z / BaseChunkSize));
 }

@@ -2,5 +2,6 @@
 #include "D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/ConsoleCommandPanel/Intermediate/Build/Win64/UnrealEditor/Inc/ConsoleCommandPanel/UHT/ConsoleCommandPanel.init.gen.cpp"
 #include "D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/ConsoleCommandPanel/Intermediate/Build/Win64/UnrealEditor/Inc/ConsoleCommandPanel/UHT/ConsoleCommandPanelSettings.gen.cpp"
 #include "D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/ConsoleCommandPanel/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/ConsoleCommandPanel/PerModuleInline.gen.cpp"
+#include "D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/ConsoleCommandPanel/Source/ConsoleCommandPanel/Private/ConsoleCommandPanel.cpp"
 #include "D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/ConsoleCommandPanel/Source/ConsoleCommandPanel/Private/ConsoleCommandPanelCommands.cpp"
 #include "D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/ConsoleCommandPanel/Source/ConsoleCommandPanel/Private/ConsoleCommandPanelStyle.cpp"

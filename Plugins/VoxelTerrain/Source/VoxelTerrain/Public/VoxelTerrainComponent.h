@@ -54,7 +54,7 @@ private:
     void StreamTick();
     void OnChunkGenerated(FChunkKey Key,
         TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> Mesh);
-
+    FIntVector WorldToBaseChunk(const FVector& WorldPos) const;
     TSet<FChunkKey> RequestedChunks;
     FTSTicker::FDelegateHandle TickHandle;
 

@@ -5,9 +5,9 @@
 			"ConsoleCommandPanel.init.gen.cpp.obj",
 			"ConsoleCommandPanelSettings.gen.cpp.obj",
 			"PerModuleInline.gen.cpp.obj",
+			"ConsoleCommandPanel.cpp.obj",
 			"ConsoleCommandPanelCommands.cpp.obj",
-			"ConsoleCommandPanelStyle.cpp.obj",
-			"ConsoleCommandPanel.cpp.obj"
+			"ConsoleCommandPanelStyle.cpp.obj"
 		]
 	}
 }
