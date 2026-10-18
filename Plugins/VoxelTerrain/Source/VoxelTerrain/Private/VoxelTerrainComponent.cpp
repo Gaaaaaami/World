@@ -24,7 +24,10 @@ void UVoxelTerrainComponent::BeginPlay()
 {
     Super::BeginPlay();
 
-
+    if (TerrainMaterial)
+    {
+        TerrainMaterial->EnsureIsComplete();
+    }
 
     ChunkMeshes.Reserve(1024);
     ChunkCollisionProxies.Reserve(64);
