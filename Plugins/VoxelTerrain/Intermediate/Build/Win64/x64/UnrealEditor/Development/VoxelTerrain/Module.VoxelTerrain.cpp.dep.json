@@ -1,0 +1,29 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\voxelterrain\\module.voxelterrain.cpp",
+        "ProvidedModule": "",
+        "PCH": "d:\\users\\administrator\\documents\\unreal projects\\world\\intermediate\\build\\win64\\x64\\worldeditor\\development\\unrealed\\sharedpch.unrealed.project.valapi.valexpapi.cpp20.inclorderunreal5_6.h.pch",
+        "Includes": [
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\voxelterrain\\definitions.voxelterrain.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\intermediate\\build\\win64\\unrealeditor\\inc\\voxelterrain\\uht\\voxelterrain.init.gen.cpp",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\intermediate\\build\\win64\\unrealeditor\\inc\\voxelterrain\\uht\\voxelterraincomponent.gen.cpp",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\public\\voxelterraincomponent.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\public\\voxelmeshdata.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\public\\voxeltypes.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\intermediate\\build\\win64\\unrealeditor\\inc\\voxelterrain\\uht\\voxelterraincomponent.generated.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\voxelterrain\\permoduleinline.gen.cpp",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\core\\public\\hal\\permoduleinline.inl",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\private\\transvoxelmesher.cpp",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\public\\transvoxelmesher.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\public\\voxelchunkdata.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\private\\transvoxel.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\private\\voxelgenerator.cpp",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\public\\voxelgenerator.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\private\\voxelterrain.cpp",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\public\\voxelterrain.h"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

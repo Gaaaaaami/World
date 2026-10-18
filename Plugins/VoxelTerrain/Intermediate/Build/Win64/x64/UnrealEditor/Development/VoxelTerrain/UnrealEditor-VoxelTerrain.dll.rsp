@@ -37,10 +37,11 @@
 /NOIMPLIB
 /NOEXP
 /NATVIS:"../Intermediate/Build/Win64/x64/UnrealEditor/Development/RenderCore/RenderCore.natvis"
-"D:/Users/Administrator/Documents/Unreal Projects/World/Intermediate/Build/Win64/x64/WorldEditor/DebugGame/UnrealEd/SharedPCH.UnrealEd.Project.NonOpt.ValApi.ValExpApi.Cpp20.InclOrderUnreal5_6.h.obj"
-"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/VoxelTerrain/Module.VoxelTerrain.cpp.obj"
-"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/VoxelTerrain/VoxelTerrainComponent.cpp.obj"
-"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/VoxelTerrain/Default.rc2.res"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Intermediate/Build/Win64/x64/WorldEditor/Development/UnrealEd/SharedPCH.UnrealEd.Project.ValApi.ValExpApi.Cpp20.InclOrderUnreal5_6.h.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Intermediate/Build/Win64/x64/UnrealEditor/Development/VoxelTerrain/Module.VoxelTerrain.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Intermediate/Build/Win64/x64/UnrealEditor/Development/VoxelTerrain/VoxelSceneProxy.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Intermediate/Build/Win64/x64/UnrealEditor/Development/VoxelTerrain/VoxelTerrainComponent.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Intermediate/Build/Win64/x64/UnrealEditor/Development/VoxelTerrain/Default.rc2.res"
 "../Intermediate/Build/Win64/x64/UnrealEditor/Development/Core/UnrealEditor-Core.lib"
 "../Intermediate/Build/Win64/x64/UnrealEditor/Development/CoreUObject/UnrealEditor-CoreUObject.lib"
 "../Intermediate/Build/Win64/x64/UnrealEditor/Development/Engine/UnrealEditor-Engine.lib"
@@ -73,6 +74,6 @@
 "synchronization.lib"
 "dwmapi.lib"
 "imm32.lib"
-/OUT:"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Binaries/Win64/UnrealEditor-VoxelTerrain-Win64-DebugGame.dll"
-/PDB:"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Binaries/Win64/UnrealEditor-VoxelTerrain-Win64-DebugGame.pdb"
+/OUT:"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Binaries/Win64/UnrealEditor-VoxelTerrain.dll"
+/PDB:"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Binaries/Win64/UnrealEditor-VoxelTerrain.pdb"
 /ignore:4078

@@ -192,8 +192,8 @@ void FVoxelSceneProxy::GetDynamicMeshElements(
             Mesh.ReverseCulling = IsLocalToWorldDeterminantNegative();
             Mesh.Type = PT_TriangleList;
             Mesh.DepthPriorityGroup = SDPG_World;
-            Mesh.bCanApplyViewModeOverrides = 0;
-            Mesh.bWireframe = 0;
+            Mesh.bCanApplyViewModeOverrides = false;
+            Mesh.bWireframe = false;
 
             Collector.AddMesh(ViewIndex, Mesh);
         }

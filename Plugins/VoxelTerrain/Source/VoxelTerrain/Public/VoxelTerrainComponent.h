@@ -60,13 +60,27 @@ private:
 
     TMap<FChunkKey, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe>> ChunkMeshes;
 
-    UPROPERTY()
-    TObjectPtr<UProceduralMeshComponent> CollisionProxy;
+
 
     FBox LocalBounds = FBox(ForceInit);
     bool bBoundsDirty = false;
 
     // 每个 chunk 的最后活跃时间（用于延迟卸载）
     TMap<FChunkKey, double> ChunkLastActiveTime;
+public:
+    UPROPERTY(EditAnywhere, Category = "Voxel")
+    int32 CollisionRadius = 1;
+
+private:
+    void UpdateCollisions(const FVector& CamLoc);
+    void ProcessCollisionQueue();
+    void CreateCollisionForChunk(const FChunkKey& Key, const FVoxelMeshData& Mesh);
+    void RemoveCollisionForChunk(const FChunkKey& Key);
+    void ClearAllCollisions();
+
+    TMap<FChunkKey, TObjectPtr<UProceduralMeshComponent>> ChunkCollisionProxies;
+    TArray<FChunkKey> PendingCollisionAdds;
+    TArray<FChunkKey> PendingCollisionRemoves;
+    FTSTicker::FDelegateHandle CollisionTickHandle;
 
 };

@@ -18,37 +18,33 @@ UVoxelTerrainComponent::UVoxelTerrainComponent()
     bUseAsOccluder = false;
     CastShadow = true;
 
-    CollisionProxy = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("VoxelCollisionProxy"));
-    if (CollisionProxy)
-    {
-        CollisionProxy->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-        CollisionProxy->SetCollisionObjectType(ECC_WorldStatic);
-        CollisionProxy->SetCollisionResponseToAllChannels(ECR_Block);
-        CollisionProxy->bUseComplexAsSimpleCollision = true;
-        CollisionProxy->SetVisibility(false);
-        CollisionProxy->SetHiddenInGame(true);
-        CollisionProxy->SetGenerateOverlapEvents(false);
-    }
 }
 
 void UVoxelTerrainComponent::BeginPlay()
 {
     Super::BeginPlay();
 
-    if (CollisionProxy && !CollisionProxy->GetAttachParent())
-    {
-        CollisionProxy->AttachToComponent(
-            this,
-            FAttachmentTransformRules::KeepRelativeTransform);
-    }
 
-    // 启动流式 ticker（每 0.2 秒跑一次）
+
+    ChunkMeshes.Reserve(1024);
+    ChunkCollisionProxies.Reserve(64);
+    PendingCollisionAdds.Reserve(64);
+    PendingCollisionRemoves.Reserve(64);
+
     TickHandle = FTSTicker::GetCoreTicker().AddTicker(
         FTickerDelegate::CreateWeakLambda(this, [this](float)
             {
                 StreamTick();
                 return true;
             }), 0.2f);
+
+    // ⭐ 每帧处理碰撞队列
+    CollisionTickHandle = FTSTicker::GetCoreTicker().AddTicker(
+        FTickerDelegate::CreateWeakLambda(this, [this](float)
+            {
+                ProcessCollisionQueue();
+                return true;
+            }), 0.f);
 }
 
 FPrimitiveSceneProxy* UVoxelTerrainComponent::CreateSceneProxy()
@@ -269,14 +265,17 @@ void UVoxelTerrainComponent::StreamTick()
     UWorld* World = GetWorld();
     if (!World) return;
 
+
     // ---------- 相机位置 ----------
     FVector CamLoc = GetComponentLocation();
     if (APlayerController* PC = World->GetFirstPlayerController())
     {
         if (APawn* Pawn = PC->GetPawnOrSpectator())
+        {
             CamLoc = Pawn->GetActorLocation();
+        }
     }
-
+    
     const double Now = FPlatformTime::Seconds();
 
     // ---------- 请求一个 chunk ----------
@@ -354,6 +353,7 @@ void UVoxelTerrainComponent::StreamTick()
     const int32 B1X = Base.X >> 1;
     const int32 B1Y = Base.Y >> 1;
     const int32 B1Z = Base.Z >> 1;
+    const float LOD0WorldRadiusSqared = LOD0WorldRadius * LOD0WorldRadius;
 
     for (int32 dx = -LOD1Radius; dx <= LOD1Radius; ++dx)
     {
@@ -371,9 +371,15 @@ void UVoxelTerrainComponent::StreamTick()
                     (Y + 0.5f) * LOD1ChunkSize,
                     (Z + 0.5f) * LOD1ChunkSize);
 
+#if 0
                 // 已经被 LOD0 覆盖，跳过
                 if (FVector::Dist(ChunkCenter, CamLoc) < LOD0WorldRadius)
                     continue;
+#else
+                // 已经被 LOD0 覆盖，跳过
+                if (FVector::DistSquared(ChunkCenter, CamLoc) < LOD0WorldRadiusSqared)
+                    continue;
+#endif
 
                 FChunkKey Key(X, Y, Z, 1);
                 RequestChunk(Key);
@@ -436,7 +442,8 @@ void UVoxelTerrainComponent::StreamTick()
     {
         bBoundsDirty = true;
     }
-
+    // ---------- 3.5) 碰撞 ----------
+    UpdateCollisions(CamLoc);
     // ---------- 4) Bounds ----------
     if (bBoundsDirty)
     {
@@ -493,4 +500,163 @@ FIntVector UVoxelTerrainComponent::WorldToBaseChunk(const FVector& WorldPos) con
         FMath::FloorToInt(WorldPos.X / BaseChunkSize),
         FMath::FloorToInt(WorldPos.Y / BaseChunkSize),
         FMath::FloorToInt(WorldPos.Z / BaseChunkSize));
+}
+
+
+
+void UVoxelTerrainComponent::CreateCollisionForChunk(
+    const FChunkKey& Key, const FVoxelMeshData& Mesh)
+{
+    if (!bGenerateCollision) return;
+    if (Mesh.Positions.Num() == 0 || Mesh.Indices.Num() == 0) return;
+    if (ChunkCollisionProxies.Contains(Key)) return;
+
+    UProceduralMeshComponent* NewPMC = NewObject<UProceduralMeshComponent>(
+        this, NAME_None, RF_Transient);
+    if (!NewPMC) return;
+
+    NewPMC->SetupAttachment(this);
+    NewPMC->bUseAsyncCooking = true;
+    NewPMC->bUseComplexAsSimpleCollision = true;
+    NewPMC->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    NewPMC->SetCollisionObjectType(ECC_WorldStatic);
+    NewPMC->SetCollisionResponseToAllChannels(ECR_Block);
+    NewPMC->SetGenerateOverlapEvents(false);
+    NewPMC->SetVisibility(false);
+    NewPMC->SetHiddenInGame(true);
+
+    NewPMC->RegisterComponent();
+
+    const int32 NumVerts = Mesh.Positions.Num();
+
+    TArray<FVector>          Verts;
+    TArray<int32>            Tris;
+    TArray<FVector>          Normals;
+    TArray<FVector2D>        UVs;
+    TArray<FLinearColor>     LinearColors;
+    TArray<FProcMeshTangent> Tangents;
+
+    Verts.SetNumUninitialized(NumVerts);
+    Normals.SetNumUninitialized(NumVerts);
+    UVs.SetNumUninitialized(NumVerts);
+    LinearColors.SetNumUninitialized(NumVerts);
+    Tangents.SetNumUninitialized(NumVerts);
+
+    for (int32 i = 0; i < NumVerts; ++i)
+    {
+        Verts[i] = FVector(Mesh.Positions[i]);
+        Normals[i] = Mesh.Normals.IsValidIndex(i)
+            ? FVector(Mesh.Normals[i]) : FVector(0, 0, 1);
+        UVs[i] = FVector2D::ZeroVector;
+
+        FColor C = Mesh.Colors.IsValidIndex(i) ? Mesh.Colors[i] : FColor::White;
+        LinearColors[i] = FLinearColor(C);
+
+        Tangents[i] = FProcMeshTangent(1, 0, 0);
+    }
+
+    Tris.SetNumUninitialized(Mesh.Indices.Num());
+    for (int32 i = 0; i < Mesh.Indices.Num(); ++i)
+        Tris[i] = (int32)Mesh.Indices[i];
+
+    NewPMC->CreateMeshSection_LinearColor(
+        0, Verts, Tris, Normals, UVs, LinearColors, Tangents,
+        true, true);
+
+    ChunkCollisionProxies.Add(Key, NewPMC);
+}
+void UVoxelTerrainComponent::RemoveCollisionForChunk(const FChunkKey& Key)
+{
+    UProceduralMeshComponent* PMC = ChunkCollisionProxies.FindRef(Key);
+    if (IsValid(PMC))
+    {
+        // 先禁用碰撞，避免异步 cooking 残留的幽灵碰撞
+        PMC->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        PMC->ClearAllMeshSections();
+        PMC->DestroyComponent();
+    }
+    ChunkCollisionProxies.Remove(Key);
+}
+
+void UVoxelTerrainComponent::ClearAllCollisions()
+{
+    for (auto& Pair : ChunkCollisionProxies)
+    {
+        if (IsValid(Pair.Value))
+        {
+            Pair.Value->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+            Pair.Value->ClearAllMeshSections();
+            Pair.Value->DestroyComponent();
+        }
+    }
+    ChunkCollisionProxies.Empty();
+    PendingCollisionAdds.Empty();
+    PendingCollisionRemoves.Empty();
+}
+void UVoxelTerrainComponent::UpdateCollisions(const FVector& CamLoc)
+{
+    if (!bGenerateCollision) return;
+
+    const float BaseChunkSize =
+        VoxelConfig::ChunkSize * VoxelConfig::VoxelSize;
+
+    const float RadiusWorld = (CollisionRadius + 0.5f) * BaseChunkSize;
+    const float RadiusSquared = RadiusWorld * RadiusWorld;
+
+    for (auto& Pair : ChunkMeshes)
+    {
+        const FChunkKey& Key = Pair.Key;
+
+        // 只给 LOD0 加碰撞
+        if (Key.LOD != 0) continue;
+
+        const FVector ChunkCenter(
+            (Key.X + 0.5f) * BaseChunkSize,
+            (Key.Y + 0.5f) * BaseChunkSize,
+            (Key.Z + 0.5f) * BaseChunkSize);
+
+        const bool bShouldHave =
+            FVector::DistSquared(ChunkCenter, CamLoc) < RadiusSquared;
+
+        const bool bHas = ChunkCollisionProxies.Contains(Key);
+        const bool bPendingAdd = PendingCollisionAdds.Contains(Key);
+        const bool bPendingRemove = PendingCollisionRemoves.Contains(Key);
+
+        if (bShouldHave && !bHas && !bPendingAdd)
+        {
+            PendingCollisionAdds.Add(Key);
+        }
+        else if (!bShouldHave && bHas && !bPendingRemove)
+        {
+            PendingCollisionRemoves.Add(Key);
+        }
+    }
+}
+
+
+void UVoxelTerrainComponent::ProcessCollisionQueue()
+{
+    // 删除预算大一些，优先级高
+    int32 RemoveBudget = 2;
+    int32 AddBudget = 1;
+
+    while (PendingCollisionRemoves.Num() > 0 && RemoveBudget > 0)
+    {
+        FChunkKey Key = PendingCollisionRemoves.Pop();
+        RemoveCollisionForChunk(Key);
+        --RemoveBudget;
+    }
+
+    while (PendingCollisionAdds.Num() > 0 && AddBudget > 0)
+    {
+        FChunkKey Key = PendingCollisionAdds.Pop();
+        --AddBudget;
+
+        // 队列等待期间 chunk 可能已被卸载
+        TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe>* MeshPtr =
+            ChunkMeshes.Find(Key);
+        if (!MeshPtr || !MeshPtr->IsValid()) continue;
+
+        CreateCollisionForChunk(Key, **MeshPtr);
+    }
 }

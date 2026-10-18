@@ -36,10 +36,12 @@
 /FUNCTIONPADMIN:6
 /NOIMPLIB
 /NOEXP
-"D:/Users/Administrator/Documents/Unreal Projects/World/Intermediate/Build/Win64/x64/WorldEditor/DebugGame/UnrealEd/SharedPCH.UnrealEd.Project.NonOpt.ValApi.ValExpApi.Cpp20.InclOrderUnreal5_6.h.obj"
-"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/ConsoleCommandPanel/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/ConsoleCommandPanel/Module.ConsoleCommandPanel.cpp.obj"
-"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/ConsoleCommandPanel/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/ConsoleCommandPanel/ConsoleCommandPanel.cpp.obj"
-"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/ConsoleCommandPanel/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/ConsoleCommandPanel/Default.rc2.res"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Intermediate/Build/Win64/x64/WorldEditor/Development/UnrealEd/SharedPCH.UnrealEd.Project.ValApi.ValExpApi.Cpp20.InclOrderUnreal5_6.h.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/ConsoleCommandPanel/Intermediate/Build/Win64/x64/UnrealEditor/Development/ConsoleCommandPanel/Module.ConsoleCommandPanel.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/ConsoleCommandPanel/Intermediate/Build/Win64/x64/UnrealEditor/Development/ConsoleCommandPanel/ConsoleCommandPanel.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/ConsoleCommandPanel/Intermediate/Build/Win64/x64/UnrealEditor/Development/ConsoleCommandPanel/ConsoleCommandPanelCommands.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/ConsoleCommandPanel/Intermediate/Build/Win64/x64/UnrealEditor/Development/ConsoleCommandPanel/ConsoleCommandPanelStyle.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/ConsoleCommandPanel/Intermediate/Build/Win64/x64/UnrealEditor/Development/ConsoleCommandPanel/Default.rc2.res"
 "../Intermediate/Build/Win64/x64/UnrealEditor/Development/Projects/UnrealEditor-Projects.lib"
 "../Intermediate/Build/Win64/x64/UnrealEditor/Development/InputCore/UnrealEditor-InputCore.lib"
 "../Intermediate/Build/Win64/x64/UnrealEditor/Development/EditorFramework/UnrealEditor-EditorFramework.lib"
@@ -76,6 +78,6 @@
 "synchronization.lib"
 "dwmapi.lib"
 "imm32.lib"
-/OUT:"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/ConsoleCommandPanel/Binaries/Win64/UnrealEditor-ConsoleCommandPanel-Win64-DebugGame.dll"
-/PDB:"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/ConsoleCommandPanel/Binaries/Win64/UnrealEditor-ConsoleCommandPanel-Win64-DebugGame.pdb"
+/OUT:"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/ConsoleCommandPanel/Binaries/Win64/UnrealEditor-ConsoleCommandPanel.dll"
+/PDB:"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/ConsoleCommandPanel/Binaries/Win64/UnrealEditor-ConsoleCommandPanel.pdb"
 /ignore:4078
