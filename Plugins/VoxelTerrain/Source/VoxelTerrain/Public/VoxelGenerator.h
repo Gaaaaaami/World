@@ -26,5 +26,6 @@ public:
 
 private:
     float Fbm(const FVector& P) const;
+    float Fbm2D(const FVector2D& P) const;        // ⭐ 加上这一行
     float SampleDensity(const FVector& WorldPos) const;
 };

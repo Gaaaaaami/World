@@ -42,6 +42,12 @@ public:
     virtual void GetUsedMaterials(TArray<UMaterialInterface*>& OutMaterials,
         bool bGetDebugMaterials = false) const override;
 
+
+    UPROPERTY(EditAnywhere, Category = "Voxel")
+    float LOD0RadiusXYWorld = 12800.f;   // 水平半径（世界单位）
+
+    UPROPERTY(EditAnywhere, Category = "Voxel")
+    float LOD0RadiusZWorld = 6400.f;     // 垂直半径（世界单位）
 protected:
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
@@ -67,6 +73,10 @@ private:
 
     // 每个 chunk 的最后活跃时间（用于延迟卸载）
     TMap<FChunkKey, double> ChunkLastActiveTime;
+private:
+    bool IsCoveredByGeneratedLOD0(const FChunkKey& LOD1Key) const;
+
+
 public:
     UPROPERTY(EditAnywhere, Category = "Voxel")
     int32 CollisionRadius = 1;

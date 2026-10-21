@@ -1,3 +1,3 @@
-[8676:19572:1018/200407.813:WARNING:chrome_main_delegate.cc(745)] This is Chrome version 128.0.6613.138 (not a warning)
-[8676:19572:1018/200408.348:WARNING:account_consistency_mode_manager.cc(77)] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
-[8676:19572:1018/203207.446:ERROR:device_event_log_impl.cc(196)] [20:32:07.177] USB: usb_service_win.cc:105 SetupDiGetDeviceProperty({{A45C254E-DF1C-4EFD-8020-67D146A850E0}, 6}) failed: 找不到元素。 (0x490)
+[10656:10544:1021/121839.215:WARNING:chrome_main_delegate.cc(745)] This is Chrome version 128.0.6613.138 (not a warning)
+[10656:10544:1021/121839.305:WARNING:account_consistency_mode_manager.cc(77)] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
+[10656:10544:1021/124435.505:ERROR:device_event_log_impl.cc(196)] [12:44:35.485] USB: usb_service_win.cc:105 SetupDiGetDeviceProperty({{A45C254E-DF1C-4EFD-8020-67D146A850E0}, 6}) failed: 找不到元素。 (0x490)
