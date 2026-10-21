@@ -23,63 +23,67 @@ public:
     bool bGenerateCollision = true;
 
     UPROPERTY(EditAnywhere, Category = "Voxel")
-    int32 ViewRadius = 4;
+    float LOD0RadiusXYWorld = 19200.f;
 
     UPROPERTY(EditAnywhere, Category = "Voxel")
-    int32 UnloadRadius = 3;
+    float LOD0RadiusZWorld = 9600.f;
+
+    UPROPERTY(EditAnywhere, Category = "Voxel|LOD")
+    TArray<float> LODRatios;
 
     UPROPERTY(EditAnywhere, Category = "Voxel")
-    int32 LOD0Radius = 2;
-
-    UPROPERTY(EditAnywhere, Category = "Voxel")
-    int32 LOD1Radius = 4;
+    int32 CollisionRadius = 1;
 
     UPROPERTY(EditAnywhere, Category = "Voxel")
     float UnloadDelay = 5.0f;
+
+    // 在途异步请求上限（超过这个数就不再发起新请求，等下 tick 再试）
+    UPROPERTY(EditAnywhere, Category = "Voxel|Streaming")
+    int32 MaxInFlightRequests = 48;
 
     virtual FPrimitiveSceneProxy* CreateSceneProxy() override;
     virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override;
     virtual void GetUsedMaterials(TArray<UMaterialInterface*>& OutMaterials,
         bool bGetDebugMaterials = false) const override;
 
-
-    UPROPERTY(EditAnywhere, Category = "Voxel")
-    float LOD0RadiusXYWorld = 12800.f;   // 水平半径（世界单位）
-
-    UPROPERTY(EditAnywhere, Category = "Voxel")
-    float LOD0RadiusZWorld = 6400.f;     // 垂直半径（世界单位）
 protected:
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 
 private:
     void GenerateOneChunk(const FChunkKey& Key);
-    //void PushAllChunksToRenderThread();
     FVector ChunkOriginWorld(const FChunkKey& Key) const;
+
+    int32 SelectLOD(const FVector& ChunkCenter, const FVector& CamLoc) const;
+    void ComputeDesiredChunks(const FVector& CamLoc, TSet<FChunkKey>& Out) const;
 
     void StreamTick();
     void OnChunkGenerated(FChunkKey Key,
         TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> Mesh);
+
+    void ProcessLODSwitches();
+    bool CollectReplacementFor(const FChunkKey& OldKey,
+        TArray<TPair<FChunkKey, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe>>>& OutNewChunks) const;
+    void ExecuteAtomicSwitch(
+        const TArray<FChunkKey>& OldKeys,
+        const TArray<TPair<FChunkKey, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe>>>& NewChunks);
+
     FIntVector WorldToBaseChunk(const FVector& WorldPos) const;
+
     TSet<FChunkKey> RequestedChunks;
     FTSTicker::FDelegateHandle TickHandle;
 
     TMap<FChunkKey, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe>> ChunkMeshes;
-
-
+    TMap<FChunkKey, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe>> StagingMeshes;
 
     FBox LocalBounds = FBox(ForceInit);
     bool bBoundsDirty = false;
 
-    // 每个 chunk 的最后活跃时间（用于延迟卸载）
     TMap<FChunkKey, double> ChunkLastActiveTime;
-private:
-    bool IsCoveredByGeneratedLOD0(const FChunkKey& LOD1Key) const;
 
-
-public:
-    UPROPERTY(EditAnywhere, Category = "Voxel")
-    int32 CollisionRadius = 1;
+    // DesiredChunks 缓存：相机移动超过阈值才重算
+    TSet<FChunkKey> CachedDesiredChunks;
+    FVector LastDesiredCamLoc = FVector(MAX_flt, MAX_flt, MAX_flt);
 
 private:
     void UpdateCollisions(const FVector& CamLoc);
@@ -92,5 +96,4 @@ private:
     TArray<FChunkKey> PendingCollisionAdds;
     TArray<FChunkKey> PendingCollisionRemoves;
     FTSTicker::FDelegateHandle CollisionTickHandle;
-
 };

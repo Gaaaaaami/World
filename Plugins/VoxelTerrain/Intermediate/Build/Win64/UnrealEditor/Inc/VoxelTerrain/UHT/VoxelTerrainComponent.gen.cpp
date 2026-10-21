@@ -46,19 +46,19 @@ struct UHT_STATICS
 		{ "Category", "Voxel" },
 		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_ViewRadius_MetaData[] = {
+	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_LOD0RadiusXYWorld_MetaData[] = {
 		{ "Category", "Voxel" },
 		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_UnloadRadius_MetaData[] = {
+	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_LOD0RadiusZWorld_MetaData[] = {
 		{ "Category", "Voxel" },
 		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_LOD0Radius_MetaData[] = {
-		{ "Category", "Voxel" },
+	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_LODRatios_MetaData[] = {
+		{ "Category", "Voxel|LOD" },
 		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_LOD1Radius_MetaData[] = {
+	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_CollisionRadius_MetaData[] = {
 		{ "Category", "Voxel" },
 		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
 	};
@@ -66,23 +66,15 @@ struct UHT_STATICS
 		{ "Category", "Voxel" },
 		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_LOD0RadiusXYWorld_MetaData[] = {
-		{ "Category", "Voxel" },
-		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
-	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_LOD0RadiusZWorld_MetaData[] = {
-		{ "Category", "Voxel" },
+	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_MaxInFlightRequests_MetaData[] = {
+		{ "Category", "Voxel|Streaming" },
 #if !UE_BUILD_SHIPPING
-		{ "Comment", "// \xe6\xb0\xb4\xe5\xb9\xb3\xe5\x8d\x8a\xe5\xbe\x84\xef\xbc\x88\xe4\xb8\x96\xe7\x95\x8c\xe5\x8d\x95\xe4\xbd\x8d\xef\xbc\x89\n" },
+		{ "Comment", "// \xe5\x9c\xa8\xe9\x80\x94\xe5\xbc\x82\xe6\xad\xa5\xe8\xaf\xb7\xe6\xb1\x82\xe4\xb8\x8a\xe9\x99\x90\xef\xbc\x88\xe8\xb6\x85\xe8\xbf\x87\xe8\xbf\x99\xe4\xb8\xaa\xe6\x95\xb0\xe5\xb0\xb1\xe4\xb8\x8d\xe5\x86\x8d\xe5\x8f\x91\xe8\xb5\xb7\xe6\x96\xb0\xe8\xaf\xb7\xe6\xb1\x82\xef\xbc\x8c\xe7\xad\x89\xe4\xb8\x8b tick \xe5\x86\x8d\xe8\xaf\x95\xef\xbc\x89\n" },
 #endif
 		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
 #if !UE_BUILD_SHIPPING
-		{ "ToolTip", "\xe6\xb0\xb4\xe5\xb9\xb3\xe5\x8d\x8a\xe5\xbe\x84\xef\xbc\x88\xe4\xb8\x96\xe7\x95\x8c\xe5\x8d\x95\xe4\xbd\x8d\xef\xbc\x89" },
+		{ "ToolTip", "\xe5\x9c\xa8\xe9\x80\x94\xe5\xbc\x82\xe6\xad\xa5\xe8\xaf\xb7\xe6\xb1\x82\xe4\xb8\x8a\xe9\x99\x90\xef\xbc\x88\xe8\xb6\x85\xe8\xbf\x87\xe8\xbf\x99\xe4\xb8\xaa\xe6\x95\xb0\xe5\xb0\xb1\xe4\xb8\x8d\xe5\x86\x8d\xe5\x8f\x91\xe8\xb5\xb7\xe6\x96\xb0\xe8\xaf\xb7\xe6\xb1\x82\xef\xbc\x8c\xe7\xad\x89\xe4\xb8\x8b tick \xe5\x86\x8d\xe8\xaf\x95\xef\xbc\x89" },
 #endif
-	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_CollisionRadius_MetaData[] = {
-		{ "Category", "Voxel" },
-		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
 	};
 #endif // WITH_METADATA
 
@@ -93,14 +85,13 @@ struct UHT_STATICS
 		((UVoxelTerrainComponent*)Obj)->bGenerateCollision = 1;
 	}
 	static const UECodeGen_Private::FBoolPropertyParams NewProp_bGenerateCollision;
-	static const UECodeGen_Private::FIntPropertyParams NewProp_ViewRadius;
-	static const UECodeGen_Private::FIntPropertyParams NewProp_UnloadRadius;
-	static const UECodeGen_Private::FIntPropertyParams NewProp_LOD0Radius;
-	static const UECodeGen_Private::FIntPropertyParams NewProp_LOD1Radius;
-	static const UECodeGen_Private::FFloatPropertyParams NewProp_UnloadDelay;
 	static const UECodeGen_Private::FFloatPropertyParams NewProp_LOD0RadiusXYWorld;
 	static const UECodeGen_Private::FFloatPropertyParams NewProp_LOD0RadiusZWorld;
+	static const UECodeGen_Private::FFloatPropertyParams NewProp_LODRatios_Inner;
+	static const UECodeGen_Private::FArrayPropertyParams NewProp_LODRatios;
 	static const UECodeGen_Private::FIntPropertyParams NewProp_CollisionRadius;
+	static const UECodeGen_Private::FFloatPropertyParams NewProp_UnloadDelay;
+	static const UECodeGen_Private::FIntPropertyParams NewProp_MaxInFlightRequests;
 	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
 // ********** End Class UVoxelTerrainComponent constinit property declarations *********************
 	static FTypeConstructFunc* DependentSingletons[];
@@ -113,25 +104,23 @@ struct UHT_STATICS
 // ********** Begin Class UVoxelTerrainComponent Property Definitions ******************************
 const UECodeGen_Private::FObjectPropertyParams UHT_STATICS::NewProp_TerrainMaterial = { "TerrainMaterial", nullptr, (EPropertyFlags)0x0114000000000001, UECodeGen_Private::EPropertyGenFlags::Object | UECodeGen_Private::EPropertyGenFlags::ObjectPtr, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, TerrainMaterial), Z_Construct_UClass_UMaterialInterface, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_TerrainMaterial_MetaData), NewProp_TerrainMaterial_MetaData) };
 const UECodeGen_Private::FBoolPropertyParams UHT_STATICS::NewProp_bGenerateCollision = { "bGenerateCollision", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Bool | UECodeGen_Private::EPropertyGenFlags::NativeBool, nullptr, nullptr, 1, sizeof(bool), sizeof(UVoxelTerrainComponent), &UHT_STATICS::NewProp_bGenerateCollision_SetBit, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_bGenerateCollision_MetaData), NewProp_bGenerateCollision_MetaData) };
-const UECodeGen_Private::FIntPropertyParams UHT_STATICS::NewProp_ViewRadius = { "ViewRadius", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Int, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, ViewRadius), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_ViewRadius_MetaData), NewProp_ViewRadius_MetaData) };
-const UECodeGen_Private::FIntPropertyParams UHT_STATICS::NewProp_UnloadRadius = { "UnloadRadius", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Int, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, UnloadRadius), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_UnloadRadius_MetaData), NewProp_UnloadRadius_MetaData) };
-const UECodeGen_Private::FIntPropertyParams UHT_STATICS::NewProp_LOD0Radius = { "LOD0Radius", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Int, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, LOD0Radius), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_LOD0Radius_MetaData), NewProp_LOD0Radius_MetaData) };
-const UECodeGen_Private::FIntPropertyParams UHT_STATICS::NewProp_LOD1Radius = { "LOD1Radius", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Int, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, LOD1Radius), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_LOD1Radius_MetaData), NewProp_LOD1Radius_MetaData) };
-const UECodeGen_Private::FFloatPropertyParams UHT_STATICS::NewProp_UnloadDelay = { "UnloadDelay", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Float, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, UnloadDelay), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_UnloadDelay_MetaData), NewProp_UnloadDelay_MetaData) };
 const UECodeGen_Private::FFloatPropertyParams UHT_STATICS::NewProp_LOD0RadiusXYWorld = { "LOD0RadiusXYWorld", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Float, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, LOD0RadiusXYWorld), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_LOD0RadiusXYWorld_MetaData), NewProp_LOD0RadiusXYWorld_MetaData) };
 const UECodeGen_Private::FFloatPropertyParams UHT_STATICS::NewProp_LOD0RadiusZWorld = { "LOD0RadiusZWorld", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Float, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, LOD0RadiusZWorld), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_LOD0RadiusZWorld_MetaData), NewProp_LOD0RadiusZWorld_MetaData) };
+const UECodeGen_Private::FFloatPropertyParams UHT_STATICS::NewProp_LODRatios_Inner = { "LODRatios", nullptr, (EPropertyFlags)0x0000000000000000, UECodeGen_Private::EPropertyGenFlags::Float, nullptr, nullptr, 1, 0, METADATA_PARAMS(0, nullptr) };
+const UECodeGen_Private::FArrayPropertyParams UHT_STATICS::NewProp_LODRatios = { "LODRatios", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Array, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, LODRatios), EArrayPropertyFlags::None, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_LODRatios_MetaData), NewProp_LODRatios_MetaData) };
 const UECodeGen_Private::FIntPropertyParams UHT_STATICS::NewProp_CollisionRadius = { "CollisionRadius", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Int, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, CollisionRadius), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_CollisionRadius_MetaData), NewProp_CollisionRadius_MetaData) };
+const UECodeGen_Private::FFloatPropertyParams UHT_STATICS::NewProp_UnloadDelay = { "UnloadDelay", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Float, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, UnloadDelay), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_UnloadDelay_MetaData), NewProp_UnloadDelay_MetaData) };
+const UECodeGen_Private::FIntPropertyParams UHT_STATICS::NewProp_MaxInFlightRequests = { "MaxInFlightRequests", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Int, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, MaxInFlightRequests), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_MaxInFlightRequests_MetaData), NewProp_MaxInFlightRequests_MetaData) };
 const UECodeGen_Private::FPropertyParamsBase* const UHT_STATICS::PropPointers[] = {
 	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_TerrainMaterial,
 	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_bGenerateCollision,
-	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_ViewRadius,
-	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_UnloadRadius,
-	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_LOD0Radius,
-	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_LOD1Radius,
-	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_UnloadDelay,
 	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_LOD0RadiusXYWorld,
 	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_LOD0RadiusZWorld,
+	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_LODRatios_Inner,
+	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_LODRatios,
 	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_CollisionRadius,
+	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_UnloadDelay,
+	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_MaxInFlightRequests,
 };
 static_assert(UE_ARRAY_COUNT(UHT_STATICS::PropPointers) < 2048);
 // ********** End Class UVoxelTerrainComponent Property Definitions ********************************
@@ -201,10 +190,10 @@ UVoxelTerrainComponent::~UVoxelTerrainComponent() {}
 struct UHT_STATICS
 {
 	static constexpr FClassRegisterCompiledInInfo ClassInfo[] = {
-		{ Z_Construct_UClass_UVoxelTerrainComponent, TEXT("UVoxelTerrainComponent"), &Z_Registration_Info_UClass_UVoxelTerrainComponent, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UVoxelTerrainComponent), 1610839797U) },
+		{ Z_Construct_UClass_UVoxelTerrainComponent, TEXT("UVoxelTerrainComponent"), &Z_Registration_Info_UClass_UVoxelTerrainComponent, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UVoxelTerrainComponent), 284195030U) },
 	};
 }; // UHT_STATICS 
-static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h__Script_VoxelTerrain_50ba12fc5db36cc8f8b1e535376057d633626e72{
+static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h__Script_VoxelTerrain_8cfdc0c56416c819079e9ea05d328e5d52b5109d{
 	TEXT("/Script/VoxelTerrain"),
 	UHT_STATICS::ClassInfo, UE_ARRAY_COUNT(UHT_STATICS::ClassInfo),
 	nullptr, 0,

@@ -39,7 +39,7 @@
 /NATVIS:"../Intermediate/Build/Win64/x64/UnrealEditor/Development/RenderCore/RenderCore.natvis"
 "D:/Users/Administrator/Documents/Unreal Projects/World/Intermediate/Build/Win64/x64/WorldEditor/DebugGame/UnrealEd/SharedPCH.UnrealEd.Project.NonOpt.ValApi.ValExpApi.Cpp20.InclOrderUnreal5_6.h.obj"
 "D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/VoxelTerrain/Module.VoxelTerrain.cpp.obj"
-"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/VoxelTerrain/VoxelGenerator.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/VoxelTerrain/VoxelTerrainComponent.cpp.obj"
 "D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/VoxelTerrain/Default.rc2.res"
 "../Intermediate/Build/Win64/x64/UnrealEditor/Development/Core/UnrealEditor-Core.lib"
 "../Intermediate/Build/Win64/x64/UnrealEditor/Development/CoreUObject/UnrealEditor-CoreUObject.lib"
