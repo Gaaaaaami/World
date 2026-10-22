@@ -15,7 +15,7 @@ namespace VoxelConfig
 {
     static constexpr int32 ChunkSize = 32;
     static constexpr int32 ChunkStride = ChunkSize + 1;
-    static constexpr float VoxelSize = 50.f;
+    static constexpr float VoxelSize = 100.f;
 }
 
 struct FChunkKey

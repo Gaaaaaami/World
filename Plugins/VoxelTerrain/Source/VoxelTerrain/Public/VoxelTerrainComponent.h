@@ -37,9 +37,14 @@ public:
     UPROPERTY(EditAnywhere, Category = "Voxel")
     float UnloadDelay = 5.0f;
 
-    // 在途异步请求上限（超过这个数就不再发起新请求，等下 tick 再试）
+    // 在途异步请求上限
     UPROPERTY(EditAnywhere, Category = "Voxel|Streaming")
     int32 MaxInFlightRequests = 48;
+
+    // 每帧最多往渲染线程发多少个 chunk 的 GPU 命令
+    // 值越大加载越快，值越小越平稳（掉帧越少）
+    UPROPERTY(EditAnywhere, Category = "Voxel|Streaming")
+    int32 MaxGPUCommandsPerFrame = 4;
 
     virtual FPrimitiveSceneProxy* CreateSceneProxy() override;
     virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override;
@@ -70,8 +75,21 @@ private:
 
     FIntVector WorldToBaseChunk(const FVector& WorldPos) const;
 
+    // 分帧处理 GPU 命令
+    void FlushPendingGPUCommands();
+
+    // 待发送到渲染线程的 GPU 命令
+    struct FPendingAdd
+    {
+        FChunkKey Key;
+        TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> Mesh;
+    };
+    TArray<FPendingAdd> PendingGPUAdds;
+    TArray<FChunkKey>   PendingGPURemoves;
+
     TSet<FChunkKey> RequestedChunks;
     FTSTicker::FDelegateHandle TickHandle;
+    FTSTicker::FDelegateHandle RenderTickHandle;
 
     TMap<FChunkKey, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe>> ChunkMeshes;
     TMap<FChunkKey, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe>> StagingMeshes;
@@ -81,7 +99,6 @@ private:
 
     TMap<FChunkKey, double> ChunkLastActiveTime;
 
-    // DesiredChunks 缓存：相机移动超过阈值才重算
     TSet<FChunkKey> CachedDesiredChunks;
     FVector LastDesiredCamLoc = FVector(MAX_flt, MAX_flt, MAX_flt);
 

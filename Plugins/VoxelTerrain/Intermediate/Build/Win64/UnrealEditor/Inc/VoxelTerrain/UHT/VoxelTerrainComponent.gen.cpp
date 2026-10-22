@@ -69,11 +69,21 @@ struct UHT_STATICS
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_MaxInFlightRequests_MetaData[] = {
 		{ "Category", "Voxel|Streaming" },
 #if !UE_BUILD_SHIPPING
-		{ "Comment", "// \xe5\x9c\xa8\xe9\x80\x94\xe5\xbc\x82\xe6\xad\xa5\xe8\xaf\xb7\xe6\xb1\x82\xe4\xb8\x8a\xe9\x99\x90\xef\xbc\x88\xe8\xb6\x85\xe8\xbf\x87\xe8\xbf\x99\xe4\xb8\xaa\xe6\x95\xb0\xe5\xb0\xb1\xe4\xb8\x8d\xe5\x86\x8d\xe5\x8f\x91\xe8\xb5\xb7\xe6\x96\xb0\xe8\xaf\xb7\xe6\xb1\x82\xef\xbc\x8c\xe7\xad\x89\xe4\xb8\x8b tick \xe5\x86\x8d\xe8\xaf\x95\xef\xbc\x89\n" },
+		{ "Comment", "// \xe5\x9c\xa8\xe9\x80\x94\xe5\xbc\x82\xe6\xad\xa5\xe8\xaf\xb7\xe6\xb1\x82\xe4\xb8\x8a\xe9\x99\x90\n" },
 #endif
 		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
 #if !UE_BUILD_SHIPPING
-		{ "ToolTip", "\xe5\x9c\xa8\xe9\x80\x94\xe5\xbc\x82\xe6\xad\xa5\xe8\xaf\xb7\xe6\xb1\x82\xe4\xb8\x8a\xe9\x99\x90\xef\xbc\x88\xe8\xb6\x85\xe8\xbf\x87\xe8\xbf\x99\xe4\xb8\xaa\xe6\x95\xb0\xe5\xb0\xb1\xe4\xb8\x8d\xe5\x86\x8d\xe5\x8f\x91\xe8\xb5\xb7\xe6\x96\xb0\xe8\xaf\xb7\xe6\xb1\x82\xef\xbc\x8c\xe7\xad\x89\xe4\xb8\x8b tick \xe5\x86\x8d\xe8\xaf\x95\xef\xbc\x89" },
+		{ "ToolTip", "\xe5\x9c\xa8\xe9\x80\x94\xe5\xbc\x82\xe6\xad\xa5\xe8\xaf\xb7\xe6\xb1\x82\xe4\xb8\x8a\xe9\x99\x90" },
+#endif
+	};
+	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_MaxGPUCommandsPerFrame_MetaData[] = {
+		{ "Category", "Voxel|Streaming" },
+#if !UE_BUILD_SHIPPING
+		{ "Comment", "// \xe6\xaf\x8f\xe5\xb8\xa7\xe6\x9c\x80\xe5\xa4\x9a\xe5\xbe\x80\xe6\xb8\xb2\xe6\x9f\x93\xe7\xba\xbf\xe7\xa8\x8b\xe5\x8f\x91\xe5\xa4\x9a\xe5\xb0\x91\xe4\xb8\xaa chunk \xe7\x9a\x84 GPU \xe5\x91\xbd\xe4\xbb\xa4\n// \xe5\x80\xbc\xe8\xb6\x8a\xe5\xa4\xa7\xe5\x8a\xa0\xe8\xbd\xbd\xe8\xb6\x8a\xe5\xbf\xab\xef\xbc\x8c\xe5\x80\xbc\xe8\xb6\x8a\xe5\xb0\x8f\xe8\xb6\x8a\xe5\xb9\xb3\xe7\xa8\xb3\xef\xbc\x88\xe6\x8e\x89\xe5\xb8\xa7\xe8\xb6\x8a\xe5\xb0\x91\xef\xbc\x89\n" },
+#endif
+		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
+#if !UE_BUILD_SHIPPING
+		{ "ToolTip", "\xe6\xaf\x8f\xe5\xb8\xa7\xe6\x9c\x80\xe5\xa4\x9a\xe5\xbe\x80\xe6\xb8\xb2\xe6\x9f\x93\xe7\xba\xbf\xe7\xa8\x8b\xe5\x8f\x91\xe5\xa4\x9a\xe5\xb0\x91\xe4\xb8\xaa chunk \xe7\x9a\x84 GPU \xe5\x91\xbd\xe4\xbb\xa4\n\xe5\x80\xbc\xe8\xb6\x8a\xe5\xa4\xa7\xe5\x8a\xa0\xe8\xbd\xbd\xe8\xb6\x8a\xe5\xbf\xab\xef\xbc\x8c\xe5\x80\xbc\xe8\xb6\x8a\xe5\xb0\x8f\xe8\xb6\x8a\xe5\xb9\xb3\xe7\xa8\xb3\xef\xbc\x88\xe6\x8e\x89\xe5\xb8\xa7\xe8\xb6\x8a\xe5\xb0\x91\xef\xbc\x89" },
 #endif
 	};
 #endif // WITH_METADATA
@@ -92,6 +102,7 @@ struct UHT_STATICS
 	static const UECodeGen_Private::FIntPropertyParams NewProp_CollisionRadius;
 	static const UECodeGen_Private::FFloatPropertyParams NewProp_UnloadDelay;
 	static const UECodeGen_Private::FIntPropertyParams NewProp_MaxInFlightRequests;
+	static const UECodeGen_Private::FIntPropertyParams NewProp_MaxGPUCommandsPerFrame;
 	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
 // ********** End Class UVoxelTerrainComponent constinit property declarations *********************
 	static FTypeConstructFunc* DependentSingletons[];
@@ -111,6 +122,7 @@ const UECodeGen_Private::FArrayPropertyParams UHT_STATICS::NewProp_LODRatios = {
 const UECodeGen_Private::FIntPropertyParams UHT_STATICS::NewProp_CollisionRadius = { "CollisionRadius", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Int, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, CollisionRadius), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_CollisionRadius_MetaData), NewProp_CollisionRadius_MetaData) };
 const UECodeGen_Private::FFloatPropertyParams UHT_STATICS::NewProp_UnloadDelay = { "UnloadDelay", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Float, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, UnloadDelay), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_UnloadDelay_MetaData), NewProp_UnloadDelay_MetaData) };
 const UECodeGen_Private::FIntPropertyParams UHT_STATICS::NewProp_MaxInFlightRequests = { "MaxInFlightRequests", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Int, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, MaxInFlightRequests), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_MaxInFlightRequests_MetaData), NewProp_MaxInFlightRequests_MetaData) };
+const UECodeGen_Private::FIntPropertyParams UHT_STATICS::NewProp_MaxGPUCommandsPerFrame = { "MaxGPUCommandsPerFrame", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Int, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, MaxGPUCommandsPerFrame), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_MaxGPUCommandsPerFrame_MetaData), NewProp_MaxGPUCommandsPerFrame_MetaData) };
 const UECodeGen_Private::FPropertyParamsBase* const UHT_STATICS::PropPointers[] = {
 	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_TerrainMaterial,
 	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_bGenerateCollision,
@@ -121,6 +133,7 @@ const UECodeGen_Private::FPropertyParamsBase* const UHT_STATICS::PropPointers[] 
 	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_CollisionRadius,
 	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_UnloadDelay,
 	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_MaxInFlightRequests,
+	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_MaxGPUCommandsPerFrame,
 };
 static_assert(UE_ARRAY_COUNT(UHT_STATICS::PropPointers) < 2048);
 // ********** End Class UVoxelTerrainComponent Property Definitions ********************************
@@ -190,10 +203,10 @@ UVoxelTerrainComponent::~UVoxelTerrainComponent() {}
 struct UHT_STATICS
 {
 	static constexpr FClassRegisterCompiledInInfo ClassInfo[] = {
-		{ Z_Construct_UClass_UVoxelTerrainComponent, TEXT("UVoxelTerrainComponent"), &Z_Registration_Info_UClass_UVoxelTerrainComponent, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UVoxelTerrainComponent), 284195030U) },
+		{ Z_Construct_UClass_UVoxelTerrainComponent, TEXT("UVoxelTerrainComponent"), &Z_Registration_Info_UClass_UVoxelTerrainComponent, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UVoxelTerrainComponent), 3651255637U) },
 	};
 }; // UHT_STATICS 
-static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h__Script_VoxelTerrain_8cfdc0c56416c819079e9ea05d328e5d52b5109d{
+static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h__Script_VoxelTerrain_38a288faaafaf70a2e7349a79243a6130c83437a{
 	TEXT("/Script/VoxelTerrain"),
 	UHT_STATICS::ClassInfo, UE_ARRAY_COUNT(UHT_STATICS::ClassInfo),
 	nullptr, 0,

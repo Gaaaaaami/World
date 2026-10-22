@@ -109,7 +109,11 @@ void FVoxelSceneProxy::AddChunk_RenderThread(
 
         R->StaticVB.SetVertexTangents(i, T,
             FVector3f::CrossProduct(N, T), N);
-        R->StaticVB.SetVertexUV(i, 0, FVector2f(0, 0));
+       // R->StaticVB.SetVertexUV(i, 0, FVector2f(0, 0));
+        const FVector2f UV = Mesh->UVs.IsValidIndex(i)
+            ? Mesh->UVs[i]
+            : FVector2f(0, 0);
+        R->StaticVB.SetVertexUV(i, 0, UV);
 
         R->ColorVB.VertexColor(i) = Mesh->Colors.IsValidIndex(i)
             ? Mesh->Colors[i]
@@ -192,8 +196,8 @@ void FVoxelSceneProxy::GetDynamicMeshElements(
             Mesh.ReverseCulling = IsLocalToWorldDeterminantNegative();
             Mesh.Type = PT_TriangleList;
             Mesh.DepthPriorityGroup = SDPG_World;
-            Mesh.bCanApplyViewModeOverrides = true;
-            Mesh.bWireframe = true;
+            Mesh.bCanApplyViewModeOverrides = false;
+            Mesh.bWireframe = false;
 
             Collector.AddMesh(ViewIndex, Mesh);
         }

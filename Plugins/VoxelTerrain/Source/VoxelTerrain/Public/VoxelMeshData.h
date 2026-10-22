@@ -5,7 +5,8 @@ struct FVoxelMeshData
 {
     TArray<FVector3f> Positions;
     TArray<FVector3f> Normals;
-    TArray<FColor>    Colors;        // ¡û ÐÂÔö
+    TArray<FVector2f> UVs;          
+    TArray<FColor>    Colors;       
     TArray<uint32>    Indices;
 
     void Reset()

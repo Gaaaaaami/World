@@ -1,0 +1,18 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\private\\voxelsceneproxy.cpp",
+        "ProvidedModule": "",
+        "PCH": "d:\\users\\administrator\\documents\\unreal projects\\world\\intermediate\\build\\win64\\x64\\world\\debuggame\\engine\\sharedpch.engine.project.nonopt.valapi.valexpapi.cpp20.inclorderunreal5_6.h.pch",
+        "Includes": [
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\intermediate\\build\\win64\\x64\\unrealgame\\debuggame\\voxelterrain\\definitions.voxelterrain.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\public\\voxelsceneproxy.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\public\\voxelmeshdata.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\public\\voxeltypes.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\public\\voxelterraincomponent.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\intermediate\\build\\win64\\unrealgame\\inc\\voxelterrain\\uht\\voxelterraincomponent.generated.h"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}
