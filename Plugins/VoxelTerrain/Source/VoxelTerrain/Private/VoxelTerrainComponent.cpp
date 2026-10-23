@@ -15,6 +15,7 @@
 #include "Serialization/MemoryWriter.h"
 #include "Serialization/MemoryReader.h"
 #include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
 
 UVoxelTerrainComponent::UVoxelTerrainComponent()
 {
@@ -39,6 +40,7 @@ void UVoxelTerrainComponent::BeginPlay()
     PendingPushToSceneProxy.Reserve(64);
     PendingRebuilds.Reserve(64);
     ChunkVersions.Reserve(1024);
+    ChunkModifications.Reserve(1024);
 
     TickHandle = FTSTicker::GetCoreTicker().AddTicker(
         FTickerDelegate::CreateWeakLambda(this, [this](float)
@@ -87,6 +89,114 @@ FIntVector UVoxelTerrainComponent::WorldToBaseChunk(const FVector& WorldPos) con
         FMath::FloorToInt(WorldPos.Z / BaseChunkSize));
 }
 
+// ============================================================
+// 存档系统
+// ============================================================
+FString UVoxelTerrainComponent::GetWorldSaveDir() const
+{
+    FString MapName = GetWorld()->GetMapName();
+    MapName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
+
+    FString Dir = FPaths::ProjectSavedDir() / TEXT("VoxelWorlds") / MapName / TEXT("");
+    if (!IFileManager::Get().DirectoryExists(*Dir))
+    {
+        IFileManager::Get().MakeDirectory(*Dir, true);
+    }
+    return Dir;
+}
+
+FString UVoxelTerrainComponent::GetChunkFilePath(const FChunkKey& Key) const
+{
+    return GetWorldSaveDir() + FString::Printf(TEXT("Chunk_%d_%d_%d.vmod"), Key.X, Key.Y, Key.Z);
+}
+
+void UVoxelTerrainComponent::SaveChunkModificationFile(const FChunkKey& Key)
+{
+    if (Key.LOD != 0) return;
+    FVoxelModificationMap* Mods = ChunkModifications.Find(Key);
+    if (!Mods || Mods->Num() == 0) return;
+
+    TArray<uint8> SaveData;
+    FMemoryWriter Writer(SaveData, true);
+
+    int32 Count = Mods->Num();
+    Writer << Count;
+
+    for (const auto& Pair : *Mods)
+    {
+        FIntVector Coord = Pair.Key;
+        int8 Weight = Pair.Value;
+        Writer << Coord;
+        Writer << Weight;
+    }
+
+    FFileHelper::SaveArrayToFile(SaveData, *GetChunkFilePath(Key));
+}
+
+void UVoxelTerrainComponent::LoadChunkModificationFile(const FChunkKey& Key)
+{
+    if (Key.LOD != 0) return;
+    if (FileLoadedChunks.Contains(Key)) return;
+
+    TArray<uint8> LoadData;
+    if (!FFileHelper::LoadFileToArray(LoadData, *GetChunkFilePath(Key)))
+    {
+        FileLoadedChunks.Add(Key);
+        return;
+    }
+
+    FMemoryReader Reader(LoadData, true);
+    int32 Count = 0;
+    Reader << Count;
+
+    FVoxelModificationMap& Mods = ChunkModifications.FindOrAdd(Key);
+    for (int32 i = 0; i < Count; ++i)
+    {
+        FIntVector Coord;
+        int8 Weight;
+        Reader << Coord;
+        Reader << Weight;
+        Mods.Add(Coord, Weight);
+    }
+    FileLoadedChunks.Add(Key);
+}
+
+FVoxelModificationMap UVoxelTerrainComponent::GatherModificationsForChunk(const FChunkKey& Key)
+{
+    FVoxelModificationMap ResultMods;
+
+    int32 MinX, MaxX, MinY, MaxY, MinZ, MaxZ;
+
+    if (Key.LOD == 0) {
+        MinX = Key.X - 1; MaxX = Key.X + 1;
+        MinY = Key.Y - 1; MaxY = Key.Y + 1;
+        MinZ = Key.Z - 1; MaxZ = Key.Z + 1;
+    }
+    else {
+        int32 S = 1 << Key.LOD;
+        MinX = (Key.X * S) - 1; MaxX = ((Key.X + 1) * S);
+        MinY = (Key.Y * S) - 1; MaxY = ((Key.Y + 1) * S);
+        MinZ = (Key.Z * S) - 1; MaxZ = ((Key.Z + 1) * S);
+    }
+
+    for (int32 x = MinX; x <= MaxX; ++x) {
+        for (int32 y = MinY; y <= MaxY; ++y) {
+            for (int32 z = MinZ; z <= MaxZ; ++z) {
+                FChunkKey SubKey(x, y, z, 0);
+                LoadChunkModificationFile(SubKey);
+                if (const FVoxelModificationMap* Mods = ChunkModifications.Find(SubKey)) {
+                    ResultMods.Append(*Mods);
+                }
+            }
+        }
+    }
+
+    return ResultMods;
+}
+
+// ============================================================
+// 流式加载
+// ============================================================
 void UVoxelTerrainComponent::StreamTick()
 {
     UWorld* World = GetWorld();
@@ -115,11 +225,17 @@ void UVoxelTerrainComponent::StreamTick()
             if (RequestedChunks.Contains(Key)) return;
             RequestedChunks.Add(Key);
 
-            FVoxelModificationMap ModsCopy = TerrainModifications;
             const int32 CurrentVersion = ChunkVersions.FindRef(Key);
 
-            Async(EAsyncExecution::ThreadPool, [WeakThis, Key, ModsCopy, CurrentVersion]()
+            Async(EAsyncExecution::ThreadPool, [WeakThis, Key, CurrentVersion]()
                 {
+                    FVoxelModificationMap ModsCopy;
+                    if (auto* Self = WeakThis.Get())
+                    {
+                        FScopeLock Lock(&Self->DataLock);
+                        ModsCopy = Self->GatherModificationsForChunk(Key);
+                    }
+
                     FVoxelGenerator Gen;
                     FVoxelChunkData ChunkData;
                     Gen.GenerateChunk(Key.X, Key.Y, Key.Z, Key.LOD, ModsCopy, ChunkData.Voxels.GetData());
@@ -154,14 +270,17 @@ void UVoxelTerrainComponent::StreamTick()
                 });
         };
 
-    const FIntVector Base = WorldToBaseChunk(CamLoc);
     const float BaseChunkSize = VoxelConfig::ChunkSize * VoxelConfig::VoxelSize;
+    const FIntVector Base = WorldToBaseChunk(CamLoc);
 
-    for (int32 dx = -LOD0RadiusXY; dx <= LOD0RadiusXY; ++dx)
+    const int32 RadiusChunkXY0 = FMath::CeilToInt(LOD0RadiusXY / BaseChunkSize);
+    const int32 RadiusChunkZ0 = FMath::CeilToInt(LOD0RadiusZ / BaseChunkSize);
+
+    for (int32 dx = -RadiusChunkXY0; dx <= RadiusChunkXY0; ++dx)
     {
-        for (int32 dy = -LOD0RadiusXY; dy <= LOD0RadiusXY; ++dy)
+        for (int32 dy = -RadiusChunkXY0; dy <= RadiusChunkXY0; ++dy)
         {
-            for (int32 dz = -LOD0RadiusZ; dz <= LOD0RadiusZ; ++dz)
+            for (int32 dz = -RadiusChunkZ0; dz <= RadiusChunkZ0; ++dz)
             {
                 FChunkKey Key(Base.X + dx, Base.Y + dy, Base.Z + dz, 0);
                 RequestChunk(Key);
@@ -174,14 +293,14 @@ void UVoxelTerrainComponent::StreamTick()
     const int32 B1Z = Base.Z >> 1;
 
     const float LOD1ChunkSize = BaseChunkSize * 2.f;
-    const float LOD0WorldRadiusXY = (LOD0RadiusXY + 0.5f) * BaseChunkSize;
-    const float LOD0WorldRadiusZ = (LOD0RadiusZ + 0.5f) * BaseChunkSize;
+    const int32 RadiusChunkXY1 = FMath::CeilToInt(LOD1RadiusXY / LOD1ChunkSize);
+    const int32 RadiusChunkZ1 = FMath::CeilToInt(LOD1RadiusZ / LOD1ChunkSize);
 
-    for (int32 dx = -LOD1RadiusXY; dx <= LOD1RadiusXY; ++dx)
+    for (int32 dx = -RadiusChunkXY1; dx <= RadiusChunkXY1; ++dx)
     {
-        for (int32 dy = -LOD1RadiusXY; dy <= LOD1RadiusXY; ++dy)
+        for (int32 dy = -RadiusChunkXY1; dy <= RadiusChunkXY1; ++dy)
         {
-            for (int32 dz = -LOD1RadiusZ; dz <= LOD1RadiusZ; ++dz)
+            for (int32 dz = -RadiusChunkZ1; dz <= RadiusChunkZ1; ++dz)
             {
                 const int32 X = B1X + dx;
                 const int32 Y = B1Y + dy;
@@ -194,9 +313,9 @@ void UVoxelTerrainComponent::StreamTick()
 
                 const FVector Delta = ChunkCenter - CamLoc;
                 const bool bInsideLOD0 =
-                    FMath::Abs(Delta.X) < LOD0WorldRadiusXY &&
-                    FMath::Abs(Delta.Y) < LOD0WorldRadiusXY &&
-                    FMath::Abs(Delta.Z) < LOD0WorldRadiusZ;
+                    FMath::Abs(Delta.X) < (LOD0RadiusXY + 0.5f * BaseChunkSize) &&
+                    FMath::Abs(Delta.Y) < (LOD0RadiusXY + 0.5f * BaseChunkSize) &&
+                    FMath::Abs(Delta.Z) < (LOD0RadiusZ + 0.5f * BaseChunkSize);
 
                 if (bInsideLOD0) continue;
 
@@ -210,7 +329,6 @@ void UVoxelTerrainComponent::StreamTick()
     for (auto& Pair : ChunkMeshes)
     {
         const FChunkKey& Key = Pair.Key;
-        if (PendingRebuilds.Contains(Key)) continue;
 
         const float S = (float)(1 << Key.LOD);
         const float ChunkSize = BaseChunkSize * S;
@@ -224,12 +342,12 @@ void UVoxelTerrainComponent::StreamTick()
 
         float UnloadRadiusXY, UnloadRadiusZ;
         if (Key.LOD == 0) {
-            UnloadRadiusXY = (LOD0RadiusXY + 1.f) * BaseChunkSize;
-            UnloadRadiusZ = (LOD0RadiusZ + 1.f) * BaseChunkSize;
+            UnloadRadiusXY = LOD0RadiusXY + BaseChunkSize;
+            UnloadRadiusZ = LOD0RadiusZ + BaseChunkSize;
         }
         else {
-            UnloadRadiusXY = (LOD1RadiusXY + 1.f) * LOD1ChunkSize;
-            UnloadRadiusZ = (LOD1RadiusZ + 1.f) * LOD1ChunkSize;
+            UnloadRadiusXY = LOD1RadiusXY + LOD1ChunkSize;
+            UnloadRadiusZ = LOD1RadiusZ + LOD1ChunkSize;
         }
 
         const bool bKeep = AbsDelta.X < UnloadRadiusXY && AbsDelta.Y < UnloadRadiusXY && AbsDelta.Z < UnloadRadiusZ;
@@ -252,6 +370,13 @@ void UVoxelTerrainComponent::StreamTick()
         PendingRebuilds.Remove(Key);
         ChunkVersions.Remove(Key);
         RemoveCollisionForChunk(Key);
+
+        if (DirtyChunks.Contains(Key))
+        {
+            FScopeLock Lock(&DataLock);
+            SaveChunkModificationFile(Key);
+            DirtyChunks.Remove(Key);
+        }
 
         FVoxelSceneProxy* Proxy = static_cast<FVoxelSceneProxy*>(SceneProxy);
         if (Proxy)
@@ -309,6 +434,12 @@ void UVoxelTerrainComponent::OnChunkGenerated(
     {
         PendingPushToSceneProxy.Add(Key);
     }
+
+    if (bGenerateCollision && Key.LOD == 0)
+    {
+        PendingCollisionAdds.Add(Key);
+        PendingCollisionRemoves.Remove(Key);
+    }
 }
 
 void UVoxelTerrainComponent::FlushPendingPushToSceneProxy()
@@ -333,19 +464,21 @@ void UVoxelTerrainComponent::FlushPendingPushToSceneProxy()
     PendingPushToSceneProxy.Empty();
 }
 
+// ============================================================
+// 碰撞系统
+// ============================================================
 void UVoxelTerrainComponent::UpdateCollisions(const FVector& CamLoc)
 {
     if (!bGenerateCollision) return;
 
-    const float BaseChunkSize = VoxelConfig::ChunkSize * VoxelConfig::VoxelSize;
-    const float RadiusWorld = (CollisionRadius + 0.5f) * BaseChunkSize;
-    const float RadiusSquared = RadiusWorld * RadiusWorld;
+    const float RadiusSquared = CollisionRadius * CollisionRadius;
 
     for (auto& Pair : ChunkMeshes)
     {
         const FChunkKey& Key = Pair.Key;
         if (Key.LOD != 0) continue;
 
+        const float BaseChunkSize = VoxelConfig::ChunkSize * VoxelConfig::VoxelSize;
         const FVector ChunkCenter(
             (Key.X + 0.5f) * BaseChunkSize,
             (Key.Y + 0.5f) * BaseChunkSize,
@@ -370,7 +503,7 @@ void UVoxelTerrainComponent::UpdateCollisions(const FVector& CamLoc)
 void UVoxelTerrainComponent::ProcessCollisionQueue()
 {
     int32 RemoveBudget = 2;
-    int32 AddBudget = 1;
+    int32 AddBudget = 2;
 
     while (PendingCollisionRemoves.Num() > 0 && RemoveBudget > 0)
     {
@@ -476,16 +609,23 @@ void UVoxelTerrainComponent::ClearAllCollisions()
     PendingCollisionRemoves.Empty();
 }
 
+// ============================================================
+// 编辑与重建
+// ============================================================
 void UVoxelTerrainComponent::ApplyEdit(const FVector& WorldPos, float Radius, bool bIsAdd)
 {
+    // ⭐ 防抖
+    double Now = FPlatformTime::Seconds();
+    if (Now - LastEditTime < 0.1) return;
+    LastEditTime = Now;
+
     const float VoxelSize = VoxelConfig::VoxelSize;
     const FVector GridPos = WorldPos / VoxelSize;
 
     const int32 RadiusInVoxels = FMath::CeilToInt(Radius / VoxelSize);
-    const float SearchRadius = Radius + VoxelSize; // 向外多扩一圈，用于平滑过渡
+    const float SearchRadius = Radius + VoxelSize;
     const float SearchRadiusSq = SearchRadius * SearchRadius;
 
-    // 计算出受影响的 AABB 范围
     const FIntVector MinGrid(FMath::FloorToInt(GridPos.X - RadiusInVoxels - 1),
         FMath::FloorToInt(GridPos.Y - RadiusInVoxels - 1),
         FMath::FloorToInt(GridPos.Z - RadiusInVoxels - 1));
@@ -494,76 +634,155 @@ void UVoxelTerrainComponent::ApplyEdit(const FVector& WorldPos, float Radius, bo
         FMath::FloorToInt(GridPos.Z + RadiusInVoxels + 1));
 
     constexpr float Scale = 150.f;
-
-    // 用于获取原始地形权重（如果没有被修改过）
+    const float BaseChunkSize = VoxelConfig::ChunkSize * VoxelConfig::VoxelSize;
     FVoxelGenerator Gen;
 
-    for (int32 x = MinGrid.X; x <= MaxGrid.X; ++x) {
-        for (int32 y = MinGrid.Y; y <= MaxGrid.Y; ++y) {
-            for (int32 z = MinGrid.Z; z <= MaxGrid.Z; ++z) {
+    {
+        FScopeLock Lock(&DataLock); // 加锁
 
-                const FVector VoxelWorldPos(x * VoxelSize, y * VoxelSize, z * VoxelSize);
-                const float DistSq = FVector::DistSquared(VoxelWorldPos, WorldPos);
+        for (int32 x = MinGrid.X; x <= MaxGrid.X; ++x) {
+            for (int32 y = MinGrid.Y; y <= MaxGrid.Y; ++y) {
+                for (int32 z = MinGrid.Z; z <= MaxGrid.Z; ++z) {
+                    const FVector VoxelWorldPos(x * VoxelSize, y * VoxelSize, z * VoxelSize);
+                    const float DistSq = FVector::DistSquared(VoxelWorldPos, WorldPos);
+                    if (DistSq > SearchRadiusSq) continue;
 
-                if (DistSq > SearchRadiusSq) continue;
+                    const float Dist = FMath::Sqrt(DistSq);
+                    const float SDF = bIsAdd ? (Dist - Radius) : (Radius - Dist);
+                    float W = FMath::Clamp(SDF / Scale, -1.f, 1.f);
+                    int8 SDFWeight = (FVoxelWeight)FMath::RoundToInt(W * 127.f);
 
-                const float Dist = FMath::Sqrt(DistSq);
+                    const FIntVector ChunkCoord(
+                        FMath::FloorToInt((x * VoxelSize) / BaseChunkSize),
+                        FMath::FloorToInt((y * VoxelSize) / BaseChunkSize),
+                        FMath::FloorToInt((z * VoxelSize) / BaseChunkSize)
+                    );
+                    FChunkKey LOD0Key(ChunkCoord.X, ChunkCoord.Y, ChunkCoord.Z, 0);
 
-                // 1. 计算球形 SDF 权重
-                // 破坏 (bIsAdd = false)：球心是空气(正)，外部是实心(负)。
-                // 建造 (bIsAdd = true)：球心是实心(负)，外部是空气(正)。
-                const float SDF = bIsAdd ? (Dist - Radius) : (Radius - Dist);
-                float W = FMath::Clamp(SDF / Scale, -1.f, 1.f);
-                int8 SDFWeight = (FVoxelWeight)FMath::RoundToInt(W * 127.f);
+                    FVoxelModificationMap& Mods = ChunkModifications.FindOrAdd(LOD0Key);
+                    FIntVector VoxelCoord(x, y, z);
 
-                // 2. 获取该体素当前的权重（已被修改过就取字典，否则取原始地形）
-                int8 CurrentWeight;
-                FIntVector VoxelCoord(x, y, z);
+                    // ⭐ 找回原始地形密度做布尔运算，解决空心球问题
+                    int8 CurrentWeight;
+                    if (const FVoxelWeight* Existing = Mods.Find(VoxelCoord))
+                    {
+                        CurrentWeight = *Existing;
+                    }
+                    else
+                    {
+                        float Density = -Gen.SampleDensity(VoxelWorldPos);
+                        float BaseW = FMath::Clamp(Density / Scale, -1.f, 1.f);
+                        CurrentWeight = (FVoxelWeight)FMath::RoundToInt(BaseW * 127.f);
+                    }
 
-                if (const FVoxelWeight* Existing = TerrainModifications.Find(VoxelCoord))
-                {
-                    CurrentWeight = *Existing;
+                    int8 FinalWeight = bIsAdd
+                        ? FMath::Min<int8>(CurrentWeight, SDFWeight)
+                        : FMath::Max<int8>(CurrentWeight, SDFWeight);
+
+                    Mods.Add(VoxelCoord, FinalWeight);
+                    DirtyChunks.Add(LOD0Key);
                 }
-                else
-                {
-                    float Density = -Gen.SampleDensity(VoxelWorldPos);
-                    float BaseW = FMath::Clamp(Density / Scale, -1.f, 1.f);
-                    CurrentWeight = (FVoxelWeight)FMath::RoundToInt(BaseW * 127.f);
-                }
-
-                // 3. SDF 布尔运算
-                // 挖坑：取 Max（只要有空气就是空气）
-                // 建造：取 Min（只要有实心就是实心）
-                int8 FinalWeight = bIsAdd
-                    ? FMath::Min<int8>(CurrentWeight, SDFWeight)
-                    : FMath::Max<int8>(CurrentWeight, SDFWeight);
-
-                // 4. 存回字典
-                TerrainModifications.Add(VoxelCoord, FinalWeight);
             }
         }
     }
 
-    // 触发重建
     RebuildChunksAround(WorldPos, Radius);
+}
+
+void UVoxelTerrainComponent::RequestChunkImmediate(const FChunkKey& Key)
+{
+    if (ChunkMeshes.Contains(Key) && !PendingRebuilds.Contains(Key)) return;
+
+    RequestedChunks.Remove(Key);
+    TWeakObjectPtr<UVoxelTerrainComponent> WeakThis(this);
+
+    if (RequestedChunks.Contains(Key)) return;
+    RequestedChunks.Add(Key);
+
+    const int32 CurrentVersion = ChunkVersions.FindRef(Key);
+
+    Async(EAsyncExecution::ThreadPool, [WeakThis, Key, CurrentVersion]()
+        {
+            FVoxelModificationMap ModsCopy;
+            if (auto* Self = WeakThis.Get())
+            {
+                FScopeLock Lock(&Self->DataLock);
+                ModsCopy = Self->GatherModificationsForChunk(Key);
+            }
+
+            FVoxelGenerator Gen;
+            FVoxelChunkData ChunkData;
+            Gen.GenerateChunk(Key.X, Key.Y, Key.Z, Key.LOD, ModsCopy, ChunkData.Voxels.GetData());
+
+            auto MeshData = MakeShared<FVoxelMeshData, ESPMode::ThreadSafe>();
+            FTransvoxelMesher::GenerateRegular(ChunkData, VoxelConfig::VoxelSize, Key.LOD, *MeshData);
+
+            const float S = (float)(1 << Key.LOD);
+            const float LODChunkWorldSize = VoxelConfig::ChunkSize * VoxelConfig::VoxelSize * S;
+            const FVector3f Offset(
+                Key.X * LODChunkWorldSize,
+                Key.Y * LODChunkWorldSize,
+                Key.Z * LODChunkWorldSize);
+
+            for (FVector3f& P : MeshData->Positions)
+            {
+                P += Offset;
+            }
+
+            const float UVScale = 400.f;
+            MeshData->UVs.SetNumUninitialized(MeshData->Positions.Num());
+            for (int32 i = 0; i < MeshData->Positions.Num(); ++i)
+            {
+                MeshData->UVs[i] = FVector2f(MeshData->Positions[i].X, MeshData->Positions[i].Y) / UVScale;
+            }
+
+            AsyncTask(ENamedThreads::GameThread, [WeakThis, Key, MeshData, CurrentVersion]()
+                {
+                    if (auto* Self = WeakThis.Get())
+                        Self->OnChunkGenerated(Key, MeshData, CurrentVersion);
+                });
+        });
 }
 
 void UVoxelTerrainComponent::RebuildChunksAround(const FVector& WorldPos, float Radius)
 {
     const float BaseChunkSize = VoxelConfig::ChunkSize * VoxelConfig::VoxelSize;
-    const float Extent = Radius + BaseChunkSize;
-    const FIntVector MinChunk = WorldToBaseChunk(WorldPos - FVector(Extent));
-    const FIntVector MaxChunk = WorldToBaseChunk(WorldPos + FVector(Extent));
+
+    const float Extent0 = Radius + BaseChunkSize;
+    const FIntVector Min0 = WorldToBaseChunk(WorldPos - FVector(Extent0));
+    const FIntVector Max0 = WorldToBaseChunk(WorldPos + FVector(Extent0));
+
+    const float LOD1ChunkSize = BaseChunkSize * 2.f;
+    const float Extent1 = Radius + LOD1ChunkSize;
+    const FVector WorldPosMin1 = WorldPos - FVector(Extent1);
+    const FVector WorldPosMax1 = WorldPos + FVector(Extent1);
+    const FIntVector Min1(
+        FMath::FloorToInt(WorldPosMin1.X / LOD1ChunkSize),
+        FMath::FloorToInt(WorldPosMin1.Y / LOD1ChunkSize),
+        FMath::FloorToInt(WorldPosMin1.Z / LOD1ChunkSize)
+    );
+    const FIntVector Max1(
+        FMath::FloorToInt(WorldPosMax1.X / LOD1ChunkSize),
+        FMath::FloorToInt(WorldPosMax1.Y / LOD1ChunkSize),
+        FMath::FloorToInt(WorldPosMax1.Z / LOD1ChunkSize)
+    );
 
     TArray<FChunkKey> ToRebuild;
 
-    for (int32 x = MinChunk.X; x <= MaxChunk.X; ++x) {
-        for (int32 y = MinChunk.Y; y <= MaxChunk.Y; ++y) {
-            for (int32 z = MinChunk.Z; z <= MaxChunk.Z; ++z) {
+    for (int32 x = Min0.X; x <= Max0.X; ++x) {
+        for (int32 y = Min0.Y; y <= Max0.Y; ++y) {
+            for (int32 z = Min0.Z; z <= Max0.Z; ++z) {
                 FChunkKey Key(x, y, z, 0);
-                if (ChunkMeshes.Contains(Key)) {
-                    ToRebuild.Add(Key);
-                }
+                if (ChunkMeshes.Contains(Key)) ToRebuild.Add(Key);
+            }
+        }
+    }
+
+    for (int32 x = Min1.X; x <= Max1.X; ++x) {
+        for (int32 y = Min1.Y; y <= Max1.Y; ++y) {
+            for (int32 z = Min1.Z; z <= Max1.Z; ++z) {
+                FChunkKey Key(x, y, z, 1);
+                if (ChunkMeshes.Contains(Key)) ToRebuild.Add(Key);
             }
         }
     }
@@ -571,63 +790,54 @@ void UVoxelTerrainComponent::RebuildChunksAround(const FVector& WorldPos, float 
     for (const FChunkKey& Key : ToRebuild)
     {
         PendingRebuilds.Add(Key);
-
-        // ⭐ 强制清理所有状态，确保立即发起重新请求
         RequestedChunks.Remove(Key);
         PendingPushToSceneProxy.Remove(Key);
         PendingCollisionAdds.Remove(Key);
 
-        // ⭐ 如果已经有碰撞体了，先删掉，防止玩家利用旧碰撞体导致射线打偏
-        RemoveCollisionForChunk(Key);
-
         int32& Ver = ChunkVersions.FindOrAdd(Key);
         Ver++;
+
+        RequestChunkImmediate(Key);
     }
 }
 
-void UVoxelTerrainComponent::SaveModifications(const FString& FilePath)
+void UVoxelTerrainComponent::ClearAllSaveData()
 {
-    TArray<uint8> SaveData;
-    FMemoryWriter Writer(SaveData, true);
+    FScopeLock Lock(&DataLock);
+    ChunkModifications.Empty();
+    FileLoadedChunks.Empty();
+    DirtyChunks.Empty();
 
-    int32 Count = TerrainModifications.Num();
-    Writer << Count;
+    FString Dir = GetWorldSaveDir();
+    IFileManager::Get().DeleteDirectory(*Dir, false, true);
 
-    for (const auto& Pair : TerrainModifications)
+    UE_LOG(LogTemp, Warning, TEXT("VoxelTerrain: 存档已清除，目录: %s"), *Dir);
+
+    TArray<FChunkKey> Keys;
+    ChunkMeshes.GetKeys(Keys);
+
+    for (const FChunkKey& Key : Keys)
     {
-        FIntVector Coord = Pair.Key;
-        int8 Weight = Pair.Value;
-        Writer << Coord;
-        Writer << Weight;
+        ChunkMeshes.Remove(Key);
+        RequestedChunks.Remove(Key);
+        PendingRebuilds.Remove(Key);
+        ChunkVersions.Remove(Key);
+        RemoveCollisionForChunk(Key);
+
+        FVoxelSceneProxy* Proxy = static_cast<FVoxelSceneProxy*>(SceneProxy);
+        if (Proxy)
+        {
+            ENQUEUE_RENDER_COMMAND(RemoveVoxelChunk)(
+                [Proxy, Key](FRHICommandListImmediate& RHICmdList)
+                {
+                    Proxy->RemoveChunk_RenderThread(RHICmdList, Key);
+                });
+        }
     }
 
-    if (FFileHelper::SaveArrayToFile(SaveData, *FilePath))
-    {
-        //UE_LOG(LogTemp, Log, TEXT("VoxelTerrain: Saved %d modifications to %s"), Count, *FilePath);
-    }
-}
-
-void UVoxelTerrainComponent::LoadModifications(const FString& FilePath)
-{
-    TArray<uint8> LoadData;
-    if (!FFileHelper::LoadFileToArray(LoadData, *FilePath)) return;
-
-    FMemoryReader Reader(LoadData, true);
-    int32 Count = 0;
-    Reader << Count;
-
-    TerrainModifications.Empty(Count);
-    for (int32 i = 0; i < Count; ++i)
-    {
-        FIntVector Coord;
-        int8 Weight;
-        Reader << Coord;
-        Reader << Weight;
-        TerrainModifications.Add(Coord, Weight);
-    }
-
-    //UE_LOG(LogTemp, Log, TEXT("VoxelTerrain: Loaded %d modifications from %s"), Count, *FilePath);
-    RebuildChunksAround(GetComponentLocation(), 50000.f);
+    LocalBounds = FBox(ForceInit);
+    bBoundsDirty = true;
+    UpdateBounds();
 }
 
 void UVoxelTerrainComponent::EndPlay(const EEndPlayReason::Type Reason)
@@ -641,6 +851,13 @@ void UVoxelTerrainComponent::EndPlay(const EEndPlayReason::Type Reason)
     CollisionTickHandle.Reset();
 
     ClearAllCollisions();
+
+    FScopeLock Lock(&DataLock);
+    for (const FChunkKey& Key : DirtyChunks)
+    {
+        SaveChunkModificationFile(Key);
+    }
+    DirtyChunks.Empty();
 
     Super::EndPlay(Reason);
 }

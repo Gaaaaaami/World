@@ -95,44 +95,26 @@ DEFINE_FUNCTION(UVoxelTerrainComponent::execApplyEdit)
 }
 // ********** End Class UVoxelTerrainComponent Function ApplyEdit **********************************
 
-// ********** Begin Class UVoxelTerrainComponent Function LoadModifications ************************
+// ********** Begin Class UVoxelTerrainComponent Function ClearAllSaveData *************************
 #ifdef UHT_STATICS
 #error UHT_STATICS already defined
 #endif
-#define UHT_STATICS Z_Construct_UFunction_UVoxelTerrainComponent_LoadModifications_Statics
+#define UHT_STATICS Z_Construct_UFunction_UVoxelTerrainComponent_ClearAllSaveData_Statics
 struct UHT_STATICS
 {
-	struct VoxelTerrainComponent_eventLoadModifications_Parms
-	{
-		FString FilePath;
-	};
 #if WITH_METADATA
 	static constexpr UECodeGen_Private::FMetaDataPairParam Type_MetaData[] = {
 		{ "Category", "Voxel" },
 		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_FilePath_MetaData[] = {
-		{ "NativeConst", "" },
-	};
 #endif // WITH_METADATA
 
-// ********** Begin Function LoadModifications constinit property declarations *********************
-	static const UECodeGen_Private::FStrPropertyParams NewProp_FilePath;
-	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
-// ********** End Function LoadModifications constinit property declarations ***********************
+// ********** Begin Function ClearAllSaveData constinit property declarations **********************
+// ********** End Function ClearAllSaveData constinit property declarations ************************
 	static const UECodeGen_Private::FFunctionParams FuncParams;
 };
-
-// ********** Begin Function LoadModifications Property Definitions ********************************
-const UECodeGen_Private::FStrPropertyParams UHT_STATICS::NewProp_FilePath = { "FilePath", nullptr, (EPropertyFlags)0x0010000000000080, UECodeGen_Private::EPropertyGenFlags::Str, nullptr, nullptr, 1, STRUCT_OFFSET(VoxelTerrainComponent_eventLoadModifications_Parms, FilePath), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_FilePath_MetaData), NewProp_FilePath_MetaData) };
-const UECodeGen_Private::FPropertyParamsBase* const UHT_STATICS::PropPointers[] = {
-	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_FilePath,
-};
-static_assert(UE_ARRAY_COUNT(UHT_STATICS::PropPointers) < 2048);
-// ********** End Function LoadModifications Property Definitions **********************************
-const UECodeGen_Private::FFunctionParams UHT_STATICS::FuncParams = { { (FTypeConstructFunc*)Z_Construct_UClass_UVoxelTerrainComponent, nullptr, "LoadModifications", UHT_STATICS::PropPointers, UE_ARRAY_COUNT(UHT_STATICS::PropPointers), DataSizeOf<UHT_STATICS::VoxelTerrainComponent_eventLoadModifications_Parms>(), RF_Public|RF_Transient|RF_MarkAsNative, (EFunctionFlags)0x04020401, 0, 0, METADATA_PARAMS(UE_ARRAY_COUNT(UHT_STATICS::Type_MetaData), UHT_STATICS::Type_MetaData)},  };
-static_assert(sizeof(UHT_STATICS::VoxelTerrainComponent_eventLoadModifications_Parms) < MAX_uint16);
-UFunction* Z_Construct_UFunction_UVoxelTerrainComponent_LoadModifications(ETypeConstructPhase Phase)
+const UECodeGen_Private::FFunctionParams UHT_STATICS::FuncParams = { { (FTypeConstructFunc*)Z_Construct_UClass_UVoxelTerrainComponent, nullptr, "ClearAllSaveData", nullptr, 0, 0, RF_Public|RF_Transient|RF_MarkAsNative, (EFunctionFlags)0x04020401, 0, 0, METADATA_PARAMS(UE_ARRAY_COUNT(UHT_STATICS::Type_MetaData), UHT_STATICS::Type_MetaData)},  };
+UFunction* Z_Construct_UFunction_UVoxelTerrainComponent_ClearAllSaveData(ETypeConstructPhase Phase)
 {
 	static UFunction* ReturnFunction = nullptr;
 	if (!ReturnFunction)
@@ -142,72 +124,14 @@ UFunction* Z_Construct_UFunction_UVoxelTerrainComponent_LoadModifications(ETypeC
 	return ReturnFunction;
 }
 #undef UHT_STATICS
-DEFINE_FUNCTION(UVoxelTerrainComponent::execLoadModifications)
+DEFINE_FUNCTION(UVoxelTerrainComponent::execClearAllSaveData)
 {
-	P_GET_PROPERTY(FStrProperty,Z_Param_FilePath);
 	P_FINISH;
 	P_NATIVE_BEGIN;
-	P_THIS->LoadModifications(Z_Param_FilePath);
+	P_THIS->ClearAllSaveData();
 	P_NATIVE_END;
 }
-// ********** End Class UVoxelTerrainComponent Function LoadModifications **************************
-
-// ********** Begin Class UVoxelTerrainComponent Function SaveModifications ************************
-#ifdef UHT_STATICS
-#error UHT_STATICS already defined
-#endif
-#define UHT_STATICS Z_Construct_UFunction_UVoxelTerrainComponent_SaveModifications_Statics
-struct UHT_STATICS
-{
-	struct VoxelTerrainComponent_eventSaveModifications_Parms
-	{
-		FString FilePath;
-	};
-#if WITH_METADATA
-	static constexpr UECodeGen_Private::FMetaDataPairParam Type_MetaData[] = {
-		{ "Category", "Voxel" },
-		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
-	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_FilePath_MetaData[] = {
-		{ "NativeConst", "" },
-	};
-#endif // WITH_METADATA
-
-// ********** Begin Function SaveModifications constinit property declarations *********************
-	static const UECodeGen_Private::FStrPropertyParams NewProp_FilePath;
-	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
-// ********** End Function SaveModifications constinit property declarations ***********************
-	static const UECodeGen_Private::FFunctionParams FuncParams;
-};
-
-// ********** Begin Function SaveModifications Property Definitions ********************************
-const UECodeGen_Private::FStrPropertyParams UHT_STATICS::NewProp_FilePath = { "FilePath", nullptr, (EPropertyFlags)0x0010000000000080, UECodeGen_Private::EPropertyGenFlags::Str, nullptr, nullptr, 1, STRUCT_OFFSET(VoxelTerrainComponent_eventSaveModifications_Parms, FilePath), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_FilePath_MetaData), NewProp_FilePath_MetaData) };
-const UECodeGen_Private::FPropertyParamsBase* const UHT_STATICS::PropPointers[] = {
-	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_FilePath,
-};
-static_assert(UE_ARRAY_COUNT(UHT_STATICS::PropPointers) < 2048);
-// ********** End Function SaveModifications Property Definitions **********************************
-const UECodeGen_Private::FFunctionParams UHT_STATICS::FuncParams = { { (FTypeConstructFunc*)Z_Construct_UClass_UVoxelTerrainComponent, nullptr, "SaveModifications", UHT_STATICS::PropPointers, UE_ARRAY_COUNT(UHT_STATICS::PropPointers), DataSizeOf<UHT_STATICS::VoxelTerrainComponent_eventSaveModifications_Parms>(), RF_Public|RF_Transient|RF_MarkAsNative, (EFunctionFlags)0x04020401, 0, 0, METADATA_PARAMS(UE_ARRAY_COUNT(UHT_STATICS::Type_MetaData), UHT_STATICS::Type_MetaData)},  };
-static_assert(sizeof(UHT_STATICS::VoxelTerrainComponent_eventSaveModifications_Parms) < MAX_uint16);
-UFunction* Z_Construct_UFunction_UVoxelTerrainComponent_SaveModifications(ETypeConstructPhase Phase)
-{
-	static UFunction* ReturnFunction = nullptr;
-	if (!ReturnFunction)
-	{
-		UECodeGen_Private::ConstructUFunction(&ReturnFunction, UHT_STATICS::FuncParams);
-	}
-	return ReturnFunction;
-}
-#undef UHT_STATICS
-DEFINE_FUNCTION(UVoxelTerrainComponent::execSaveModifications)
-{
-	P_GET_PROPERTY(FStrProperty,Z_Param_FilePath);
-	P_FINISH;
-	P_NATIVE_BEGIN;
-	P_THIS->SaveModifications(Z_Param_FilePath);
-	P_NATIVE_END;
-}
-// ********** End Class UVoxelTerrainComponent Function SaveModifications **************************
+// ********** End Class UVoxelTerrainComponent Function ClearAllSaveData ***************************
 
 // ********** Begin Class UVoxelTerrainComponent ***************************************************
 #ifdef UHT_STATICS
@@ -234,23 +158,46 @@ struct UHT_STATICS
 	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_LOD0RadiusXY_MetaData[] = {
 		{ "Category", "Voxel|LOD" },
+#if !UE_BUILD_SHIPPING
+		{ "Comment", "// \xe2\xad\x90 LOD0 \xe8\x8c\x83\xe5\x9b\xb4\xef\xbc\x88\xe5\x8d\x95\xe4\xbd\x8d\xef\xbc\x9a\xe5\x8e\x98\xe7\xb1\xb3 CM\xef\xbc\x89\n" },
+#endif
+		{ "DisplayName", "LOD0 Radius XY (cm)" },
 		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
+#if !UE_BUILD_SHIPPING
+		{ "ToolTip", "\xe2\xad\x90 LOD0 \xe8\x8c\x83\xe5\x9b\xb4\xef\xbc\x88\xe5\x8d\x95\xe4\xbd\x8d\xef\xbc\x9a\xe5\x8e\x98\xe7\xb1\xb3 CM\xef\xbc\x89" },
+#endif
 	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_LOD0RadiusZ_MetaData[] = {
 		{ "Category", "Voxel|LOD" },
+		{ "DisplayName", "LOD0 Radius Z (cm)" },
 		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
 	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_LOD1RadiusXY_MetaData[] = {
 		{ "Category", "Voxel|LOD" },
+#if !UE_BUILD_SHIPPING
+		{ "Comment", "// \xe2\xad\x90 LOD1 \xe8\x8c\x83\xe5\x9b\xb4\xef\xbc\x88\xe5\x8d\x95\xe4\xbd\x8d\xef\xbc\x9a\xe5\x8e\x98\xe7\xb1\xb3 CM\xef\xbc\x89\n" },
+#endif
+		{ "DisplayName", "LOD1 Radius XY (cm)" },
 		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
+#if !UE_BUILD_SHIPPING
+		{ "ToolTip", "\xe2\xad\x90 LOD1 \xe8\x8c\x83\xe5\x9b\xb4\xef\xbc\x88\xe5\x8d\x95\xe4\xbd\x8d\xef\xbc\x9a\xe5\x8e\x98\xe7\xb1\xb3 CM\xef\xbc\x89" },
+#endif
 	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_LOD1RadiusZ_MetaData[] = {
 		{ "Category", "Voxel|LOD" },
+		{ "DisplayName", "LOD1 Radius Z (cm)" },
 		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
 	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_CollisionRadius_MetaData[] = {
 		{ "Category", "Voxel" },
+#if !UE_BUILD_SHIPPING
+		{ "Comment", "// \xe7\xa2\xb0\xe6\x92\x9e\xe8\x8c\x83\xe5\x9b\xb4\xef\xbc\x88\xe5\x8d\x95\xe4\xbd\x8d\xef\xbc\x9a\xe5\x8e\x98\xe7\xb1\xb3 CM\xef\xbc\x89\n" },
+#endif
+		{ "DisplayName", "Collision Radius (cm)" },
 		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
+#if !UE_BUILD_SHIPPING
+		{ "ToolTip", "\xe7\xa2\xb0\xe6\x92\x9e\xe8\x8c\x83\xe5\x9b\xb4\xef\xbc\x88\xe5\x8d\x95\xe4\xbd\x8d\xef\xbc\x9a\xe5\x8e\x98\xe7\xb1\xb3 CM\xef\xbc\x89" },
+#endif
 	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_UnloadDelay_MetaData[] = {
 		{ "Category", "Voxel" },
@@ -265,24 +212,22 @@ struct UHT_STATICS
 		((UVoxelTerrainComponent*)Obj)->bGenerateCollision = 1;
 	}
 	static const UECodeGen_Private::FBoolPropertyParams NewProp_bGenerateCollision;
-	static const UECodeGen_Private::FIntPropertyParams NewProp_LOD0RadiusXY;
-	static const UECodeGen_Private::FIntPropertyParams NewProp_LOD0RadiusZ;
-	static const UECodeGen_Private::FIntPropertyParams NewProp_LOD1RadiusXY;
-	static const UECodeGen_Private::FIntPropertyParams NewProp_LOD1RadiusZ;
-	static const UECodeGen_Private::FIntPropertyParams NewProp_CollisionRadius;
+	static const UECodeGen_Private::FFloatPropertyParams NewProp_LOD0RadiusXY;
+	static const UECodeGen_Private::FFloatPropertyParams NewProp_LOD0RadiusZ;
+	static const UECodeGen_Private::FFloatPropertyParams NewProp_LOD1RadiusXY;
+	static const UECodeGen_Private::FFloatPropertyParams NewProp_LOD1RadiusZ;
+	static const UECodeGen_Private::FFloatPropertyParams NewProp_CollisionRadius;
 	static const UECodeGen_Private::FFloatPropertyParams NewProp_UnloadDelay;
 	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
 // ********** End Class UVoxelTerrainComponent constinit property declarations *********************
 	static constexpr UE::CodeGen::FClassNativeFunction Funcs[] = {
 		{ .NameUTF8 = UTF8TEXT("ApplyEdit"), .Pointer = &UVoxelTerrainComponent::execApplyEdit },
-		{ .NameUTF8 = UTF8TEXT("LoadModifications"), .Pointer = &UVoxelTerrainComponent::execLoadModifications },
-		{ .NameUTF8 = UTF8TEXT("SaveModifications"), .Pointer = &UVoxelTerrainComponent::execSaveModifications },
+		{ .NameUTF8 = UTF8TEXT("ClearAllSaveData"), .Pointer = &UVoxelTerrainComponent::execClearAllSaveData },
 	};
 	static FTypeConstructFunc* DependentSingletons[];
 	static constexpr FClassFunctionLinkInfo FuncInfo[] = {
 		{ &Z_Construct_UFunction_UVoxelTerrainComponent_ApplyEdit, "ApplyEdit" }, // c2436e9c6f20010e7cf1f092b5a7ef761a69d398
-		{ &Z_Construct_UFunction_UVoxelTerrainComponent_LoadModifications, "LoadModifications" }, // 6a60350f1fb98b1d0c6b4f2c276c83943478ae63
-		{ &Z_Construct_UFunction_UVoxelTerrainComponent_SaveModifications, "SaveModifications" }, // 53f847571f3c1437e993e5e980b0e5b4b6d9ac41
+		{ &Z_Construct_UFunction_UVoxelTerrainComponent_ClearAllSaveData, "ClearAllSaveData" }, // daa29b6d64eef781a25a9c636dcfd5979fa8f492
 	};
 	static_assert(UE_ARRAY_COUNT(FuncInfo) < 2048);
 	static constexpr FCppClassTypeInfoStatic StaticCppClassTypeInfo = {
@@ -294,11 +239,11 @@ struct UHT_STATICS
 // ********** Begin Class UVoxelTerrainComponent Property Definitions ******************************
 const UECodeGen_Private::FObjectPropertyParams UHT_STATICS::NewProp_TerrainMaterial = { "TerrainMaterial", nullptr, (EPropertyFlags)0x0114000000000001, UECodeGen_Private::EPropertyGenFlags::Object | UECodeGen_Private::EPropertyGenFlags::ObjectPtr, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, TerrainMaterial), Z_Construct_UClass_UMaterialInterface, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_TerrainMaterial_MetaData), NewProp_TerrainMaterial_MetaData) };
 const UECodeGen_Private::FBoolPropertyParams UHT_STATICS::NewProp_bGenerateCollision = { "bGenerateCollision", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Bool | UECodeGen_Private::EPropertyGenFlags::NativeBool, nullptr, nullptr, 1, sizeof(bool), sizeof(UVoxelTerrainComponent), &UHT_STATICS::NewProp_bGenerateCollision_SetBit, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_bGenerateCollision_MetaData), NewProp_bGenerateCollision_MetaData) };
-const UECodeGen_Private::FIntPropertyParams UHT_STATICS::NewProp_LOD0RadiusXY = { "LOD0RadiusXY", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Int, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, LOD0RadiusXY), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_LOD0RadiusXY_MetaData), NewProp_LOD0RadiusXY_MetaData) };
-const UECodeGen_Private::FIntPropertyParams UHT_STATICS::NewProp_LOD0RadiusZ = { "LOD0RadiusZ", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Int, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, LOD0RadiusZ), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_LOD0RadiusZ_MetaData), NewProp_LOD0RadiusZ_MetaData) };
-const UECodeGen_Private::FIntPropertyParams UHT_STATICS::NewProp_LOD1RadiusXY = { "LOD1RadiusXY", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Int, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, LOD1RadiusXY), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_LOD1RadiusXY_MetaData), NewProp_LOD1RadiusXY_MetaData) };
-const UECodeGen_Private::FIntPropertyParams UHT_STATICS::NewProp_LOD1RadiusZ = { "LOD1RadiusZ", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Int, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, LOD1RadiusZ), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_LOD1RadiusZ_MetaData), NewProp_LOD1RadiusZ_MetaData) };
-const UECodeGen_Private::FIntPropertyParams UHT_STATICS::NewProp_CollisionRadius = { "CollisionRadius", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Int, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, CollisionRadius), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_CollisionRadius_MetaData), NewProp_CollisionRadius_MetaData) };
+const UECodeGen_Private::FFloatPropertyParams UHT_STATICS::NewProp_LOD0RadiusXY = { "LOD0RadiusXY", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Float, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, LOD0RadiusXY), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_LOD0RadiusXY_MetaData), NewProp_LOD0RadiusXY_MetaData) };
+const UECodeGen_Private::FFloatPropertyParams UHT_STATICS::NewProp_LOD0RadiusZ = { "LOD0RadiusZ", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Float, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, LOD0RadiusZ), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_LOD0RadiusZ_MetaData), NewProp_LOD0RadiusZ_MetaData) };
+const UECodeGen_Private::FFloatPropertyParams UHT_STATICS::NewProp_LOD1RadiusXY = { "LOD1RadiusXY", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Float, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, LOD1RadiusXY), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_LOD1RadiusXY_MetaData), NewProp_LOD1RadiusXY_MetaData) };
+const UECodeGen_Private::FFloatPropertyParams UHT_STATICS::NewProp_LOD1RadiusZ = { "LOD1RadiusZ", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Float, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, LOD1RadiusZ), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_LOD1RadiusZ_MetaData), NewProp_LOD1RadiusZ_MetaData) };
+const UECodeGen_Private::FFloatPropertyParams UHT_STATICS::NewProp_CollisionRadius = { "CollisionRadius", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Float, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, CollisionRadius), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_CollisionRadius_MetaData), NewProp_CollisionRadius_MetaData) };
 const UECodeGen_Private::FFloatPropertyParams UHT_STATICS::NewProp_UnloadDelay = { "UnloadDelay", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Float, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, UnloadDelay), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_UnloadDelay_MetaData), NewProp_UnloadDelay_MetaData) };
 const UECodeGen_Private::FPropertyParamsBase* const UHT_STATICS::PropPointers[] = {
 	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_TerrainMaterial,
@@ -383,10 +328,10 @@ UVoxelTerrainComponent::~UVoxelTerrainComponent() {}
 struct UHT_STATICS
 {
 	static constexpr FClassRegisterCompiledInInfo ClassInfo[] = {
-		{ Z_Construct_UClass_UVoxelTerrainComponent, TEXT("UVoxelTerrainComponent"), &Z_Registration_Info_UClass_UVoxelTerrainComponent, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UVoxelTerrainComponent), 4179528171U) },
+		{ Z_Construct_UClass_UVoxelTerrainComponent, TEXT("UVoxelTerrainComponent"), &Z_Registration_Info_UClass_UVoxelTerrainComponent, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UVoxelTerrainComponent), 831721686U) },
 	};
 }; // UHT_STATICS 
-static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h__Script_VoxelTerrain_4ec344b968a8f683263a6c1d0b4e4b3840b51605{
+static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h__Script_VoxelTerrain_ad090ebfe06e6816f9d68fb14ea17ee0c9365290{
 	TEXT("/Script/VoxelTerrain"),
 	UHT_STATICS::ClassInfo, UE_ARRAY_COUNT(UHT_STATICS::ClassInfo),
 	nullptr, 0,

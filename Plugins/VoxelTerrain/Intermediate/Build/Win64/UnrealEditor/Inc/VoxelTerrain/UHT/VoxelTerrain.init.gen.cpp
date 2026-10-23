@@ -18,7 +18,7 @@ static_assert(!UE_WITH_CONSTINIT_UOBJECT, "This generated code can only be compi
 			nullptr,
 			0,
 			PKG_CompiledIn | 0x00000000,
-			0x15534D02,
+			0x60E88554,
 			0x91B4C84A,
 			METADATA_PARAMS(0, nullptr)
 		};
@@ -26,5 +26,5 @@ static_assert(!UE_WITH_CONSTINIT_UOBJECT, "This generated code can only be compi
 	}
 	return Z_Registration_Info_UPackage__Script_VoxelTerrain.OuterSingleton;
 }
-static FRegisterCompiledInInfo Z_CompiledInDeferPackage_UPackage__Script_VoxelTerrain(Z_Construct_UPackage__Script_VoxelTerrain, TEXT("/Script/VoxelTerrain"), Z_Registration_Info_UPackage__Script_VoxelTerrain, CONSTRUCT_RELOAD_VERSION_INFO(FPackageReloadVersionInfo, 0x15534D02, 0x91B4C84A));
+static FRegisterCompiledInInfo Z_CompiledInDeferPackage_UPackage__Script_VoxelTerrain(Z_Construct_UPackage__Script_VoxelTerrain, TEXT("/Script/VoxelTerrain"), Z_Registration_Info_UPackage__Script_VoxelTerrain, CONSTRUCT_RELOAD_VERSION_INFO(FPackageReloadVersionInfo, 0x60E88554, 0x91B4C84A));
 PRAGMA_ENABLE_DEPRECATION_WARNINGS

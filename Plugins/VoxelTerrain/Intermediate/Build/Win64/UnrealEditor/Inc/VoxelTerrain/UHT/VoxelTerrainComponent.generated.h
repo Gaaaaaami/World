@@ -19,8 +19,7 @@ PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 // ********** Begin Class UVoxelTerrainComponent ***************************************************
 #define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_16_RPC_WRAPPERS_NO_PURE_DECLS \
-	DECLARE_FUNCTION(execLoadModifications); \
-	DECLARE_FUNCTION(execSaveModifications); \
+	DECLARE_FUNCTION(execClearAllSaveData); \
 	DECLARE_FUNCTION(execApplyEdit);
 
 
