@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "CoreMinimal.h"
 #include "VoxelChunkData.h"
+#include "VoxelTypes.h"
 
 class VOXELTERRAIN_API FVoxelGenerator
 {
@@ -16,16 +17,19 @@ public:
         int32 Seed = 1337;
 
         float CaveStrength = 600.f;
-        float CaveThreshold = 0.35f;
+        float CaveThreshold = 0.15f;
     };
 
     FSettings Settings;
 
     void GenerateChunk(int32 ChunkX, int32 ChunkY, int32 ChunkZ, int32 LOD,
+        const FVoxelModificationMap& Modifications,
         FVoxel* OutVoxels) const;
+
+    // ⭐ 移到了 public，以便在组件里做布尔运算查询
+    float SampleDensity(const FVector& WorldPos) const;
 
 private:
     float Fbm(const FVector& P) const;
-    float Fbm2D(const FVector2D& P) const;        // ⭐ 加上这一行
-    float SampleDensity(const FVector& WorldPos) const;
+    float Fbm2D(const FVector2D& P) const;
 };

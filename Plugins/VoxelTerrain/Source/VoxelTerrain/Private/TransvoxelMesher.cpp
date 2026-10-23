@@ -122,6 +122,7 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
 
                     Out.Positions.Add(WorldP);
                     Out.Normals.Add(Normal);
+                    Out.UVs.Add(FVector2f::ZeroVector);   
                     Out.Colors.Add(ComputeColor(WorldP, Normal));
                     ++VCount;
                 }

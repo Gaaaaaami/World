@@ -42,3 +42,6 @@ FORCEINLINE uint32 GetTypeHash(const FChunkKey& K)
     H = HashCombine(H, ::GetTypeHash(K.LOD));
     return H;
 }
+
+// 修改记录：坐标 -> 新的密度权重
+using FVoxelModificationMap = TMap<FIntVector, FVoxelWeight>;

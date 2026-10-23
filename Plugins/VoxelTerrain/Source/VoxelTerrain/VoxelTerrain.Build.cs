@@ -12,6 +12,7 @@ public class VoxelTerrain : ModuleRules
             "Engine",
             "RenderCore",
             "RHI",
+            "InputCore",  
             "Projects",
             "ProceduralMeshComponent"     // ¡û ÐÂÔö
         });

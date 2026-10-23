@@ -6,9 +6,9 @@
 
 void FVoxelTerrainModule::StartupModule()
 {
-	// ÁÙÊ±ÑéÖ¤£ºÒýÓÃ Transvoxel ±í£¬È·±£Ëü±»±àÒë
+	// ï¿½ï¿½Ê±ï¿½ï¿½Ö¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Transvoxel ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	const int32 TestSize = sizeof(regularCellClass);
-	UE_LOG(LogTemp, Log, TEXT("VoxelTerrain: Transvoxel tables loaded, regularCellClass size = %d"), TestSize);
+	//UE_LOG(LogTemp, Log, TEXT("VoxelTerrain: Transvoxel tables loaded, regularCellClass size = %d"), TestSize);
 }
 
 void FVoxelTerrainModule::ShutdownModule()

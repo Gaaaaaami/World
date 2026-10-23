@@ -1,0 +1,29 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\private\\voxelinteractionactor.cpp",
+        "ProvidedModule": "",
+        "PCH": "d:\\users\\administrator\\documents\\unreal projects\\world\\intermediate\\build\\win64\\x64\\worldeditor\\debuggame\\unrealed\\sharedpch.unrealed.project.nonopt.valapi.valexpapi.cpp20.inclorderunreal5_6.h.pch",
+        "Includes": [
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\intermediate\\build\\win64\\x64\\unrealeditor\\debuggame\\voxelterrain\\definitions.voxelterrain.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\public\\voxelinteractionactor.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\intermediate\\build\\win64\\unrealeditor\\inc\\voxelterrain\\uht\\voxelinteractionactor.generated.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\public\\voxelterraincomponent.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\public\\voxelmeshdata.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\public\\voxeltypes.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\intermediate\\build\\win64\\unrealeditor\\inc\\voxelterrain\\uht\\voxelterraincomponent.generated.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\engine\\classes\\kismet\\gameplaystatics.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\engine\\classes\\kismet\\kismetsystemlibrary.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\coreuobject\\public\\uobject\\propertyaccessutil.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\coreuobject\\uht\\propertyaccessutil.generated.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\engine\\uht\\kismetsystemlibrary.generated.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\engine\\classes\\sound\\dialoguetypes.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\engine\\uht\\dialoguetypes.generated.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\engine\\classes\\kismet\\gameplaystaticstypes.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\engine\\uht\\gameplaystaticstypes.generated.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\engine\\uht\\gameplaystatics.generated.h"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

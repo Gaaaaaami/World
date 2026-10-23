@@ -8,11 +8,13 @@
 
 class UMaterialInterface;
 class UProceduralMeshComponent;
+class FVoxelSceneProxy;
 
 UCLASS(ClassGroup = Voxel, meta = (BlueprintSpawnableComponent))
 class VOXELTERRAIN_API UVoxelTerrainComponent : public UPrimitiveComponent
 {
     GENERATED_BODY()
+
 public:
     UVoxelTerrainComponent();
 
@@ -22,14 +24,17 @@ public:
     UPROPERTY(EditAnywhere, Category = "Voxel")
     bool bGenerateCollision = true;
 
-    UPROPERTY(EditAnywhere, Category = "Voxel")
-    float LOD0RadiusXYWorld = 19200.f;
-
-    UPROPERTY(EditAnywhere, Category = "Voxel")
-    float LOD0RadiusZWorld = 9600.f;
+    UPROPERTY(EditAnywhere, Category = "Voxel|LOD")
+    int32 LOD0RadiusXY = 2;
 
     UPROPERTY(EditAnywhere, Category = "Voxel|LOD")
-    TArray<float> LODRatios;
+    int32 LOD0RadiusZ = 1;
+
+    UPROPERTY(EditAnywhere, Category = "Voxel|LOD")
+    int32 LOD1RadiusXY = 4;
+
+    UPROPERTY(EditAnywhere, Category = "Voxel|LOD")
+    int32 LOD1RadiusZ = 2;
 
     UPROPERTY(EditAnywhere, Category = "Voxel")
     int32 CollisionRadius = 1;
@@ -37,14 +42,14 @@ public:
     UPROPERTY(EditAnywhere, Category = "Voxel")
     float UnloadDelay = 5.0f;
 
-    // 在途异步请求上限
-    UPROPERTY(EditAnywhere, Category = "Voxel|Streaming")
-    int32 MaxInFlightRequests = 48;
+    UFUNCTION(BlueprintCallable, Category = "Voxel")
+    void ApplyEdit(const FVector& WorldPos, float Radius, bool bIsAdd);
 
-    // 每帧最多往渲染线程发多少个 chunk 的 GPU 命令
-    // 值越大加载越快，值越小越平稳（掉帧越少）
-    UPROPERTY(EditAnywhere, Category = "Voxel|Streaming")
-    int32 MaxGPUCommandsPerFrame = 4;
+    UFUNCTION(BlueprintCallable, Category = "Voxel")
+    void SaveModifications(const FString& FilePath);
+
+    UFUNCTION(BlueprintCallable, Category = "Voxel")
+    void LoadModifications(const FString& FilePath);
 
     virtual FPrimitiveSceneProxy* CreateSceneProxy() override;
     virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override;
@@ -56,61 +61,34 @@ protected:
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 
 private:
-    void GenerateOneChunk(const FChunkKey& Key);
-    FVector ChunkOriginWorld(const FChunkKey& Key) const;
-
-    int32 SelectLOD(const FVector& ChunkCenter, const FVector& CamLoc) const;
-    void ComputeDesiredChunks(const FVector& CamLoc, TSet<FChunkKey>& Out) const;
-
-    void StreamTick();
-    void OnChunkGenerated(FChunkKey Key,
-        TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> Mesh);
-
-    void ProcessLODSwitches();
-    bool CollectReplacementFor(const FChunkKey& OldKey,
-        TArray<TPair<FChunkKey, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe>>>& OutNewChunks) const;
-    void ExecuteAtomicSwitch(
-        const TArray<FChunkKey>& OldKeys,
-        const TArray<TPair<FChunkKey, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe>>>& NewChunks);
-
     FIntVector WorldToBaseChunk(const FVector& WorldPos) const;
+    void StreamTick();
+    void FlushPendingPushToSceneProxy();
+    void OnChunkGenerated(FChunkKey Key, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> Mesh, int32 Version);
 
-    // 分帧处理 GPU 命令
-    void FlushPendingGPUCommands();
-
-    // 待发送到渲染线程的 GPU 命令
-    struct FPendingAdd
-    {
-        FChunkKey Key;
-        TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> Mesh;
-    };
-    TArray<FPendingAdd> PendingGPUAdds;
-    TArray<FChunkKey>   PendingGPURemoves;
-
-    TSet<FChunkKey> RequestedChunks;
-    FTSTicker::FDelegateHandle TickHandle;
-    FTSTicker::FDelegateHandle RenderTickHandle;
-
-    TMap<FChunkKey, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe>> ChunkMeshes;
-    TMap<FChunkKey, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe>> StagingMeshes;
-
-    FBox LocalBounds = FBox(ForceInit);
-    bool bBoundsDirty = false;
-
-    TMap<FChunkKey, double> ChunkLastActiveTime;
-
-    TSet<FChunkKey> CachedDesiredChunks;
-    FVector LastDesiredCamLoc = FVector(MAX_flt, MAX_flt, MAX_flt);
-
-private:
     void UpdateCollisions(const FVector& CamLoc);
     void ProcessCollisionQueue();
     void CreateCollisionForChunk(const FChunkKey& Key, const FVoxelMeshData& Mesh);
     void RemoveCollisionForChunk(const FChunkKey& Key);
     void ClearAllCollisions();
+    void RebuildChunksAround(const FVector& WorldPos, float Radius);
 
+    TSet<FChunkKey> RequestedChunks;
+    TMap<FChunkKey, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe>> ChunkMeshes;
+    TMap<FChunkKey, double> ChunkLastActiveTime;
+    FVoxelModificationMap TerrainModifications;
+
+    TSet<FChunkKey> PendingRebuilds;
+    TMap<FChunkKey, int32> ChunkVersions;
+
+    TArray<FChunkKey> PendingPushToSceneProxy;
     TMap<FChunkKey, TObjectPtr<UProceduralMeshComponent>> ChunkCollisionProxies;
     TArray<FChunkKey> PendingCollisionAdds;
     TArray<FChunkKey> PendingCollisionRemoves;
+
+    FTSTicker::FDelegateHandle TickHandle;
     FTSTicker::FDelegateHandle CollisionTickHandle;
+
+    FBox LocalBounds = FBox(ForceInit);
+    bool bBoundsDirty = false;
 };
