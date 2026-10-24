@@ -9,5 +9,8 @@
 /NODEFAULTLIB
 "D:/Users/Administrator/Documents/Unreal Projects/World/Intermediate/Build/Win64/x64/WorldEditor/DebugGame/UnrealEd/SharedPCH.UnrealEd.Project.NonOpt.ValApi.ValExpApi.Cpp20.InclOrderUnreal5_6.h.obj"
 "D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/VoxelTerrain/Module.VoxelTerrain.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/VoxelTerrain/TransvoxelMesher.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/VoxelTerrain/VoxelGenerator.cpp.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/VoxelTerrain/VoxelSceneProxy.cpp.obj"
 "D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/VoxelTerrain/VoxelTerrainComponent.cpp.obj"
 /OUT:"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/VoxelTerrain/UnrealEditor-VoxelTerrain-Win64-DebugGame.lib"

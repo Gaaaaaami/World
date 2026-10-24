@@ -16,7 +16,8 @@ namespace
     FORCEINLINE float SampleWeight(const FVoxelChunkData& Chunk,
         int32 x, int32 y, int32 z)
     {
-        const int32 N = VoxelConfig::ChunkStride;
+        // ⭐ 关键修复：用当前 LOD 的 Stride，而不是全局常量 33
+        const int32 N = VoxelConfig::GetChunkStride(Chunk.CurrentLOD);
         x = FMath::Clamp(x, 0, N - 1);
         y = FMath::Clamp(y, 0, N - 1);
         z = FMath::Clamp(z, 0, N - 1);
@@ -59,6 +60,8 @@ namespace
 }
 
 // ============================ GenerateRegular ============================
+// ... 前面的不变 ...
+
 void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
     float VoxelSize,
     int32 LOD,
@@ -66,9 +69,8 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
 {
     Out.Reset();
 
-    const int32 ChunkN = VoxelConfig::ChunkSize;
-    const int32 S = 1 << LOD;
-    const float WorldStep = VoxelSize * S;
+    const int32 ChunkN = VoxelConfig::GetChunkSize(LOD);
+    const float WorldStep = VoxelConfig::GetVoxelSize(LOD);
 
     for (int32 x = 0; x < ChunkN; ++x)
         for (int32 y = 0; y < ChunkN; ++y)
@@ -122,12 +124,12 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
 
                     Out.Positions.Add(WorldP);
                     Out.Normals.Add(Normal);
-                    Out.UVs.Add(FVector2f::ZeroVector);   
+                    Out.UVs.Add(FVector2f::ZeroVector);
                     Out.Colors.Add(ComputeColor(WorldP, Normal));
                     ++VCount;
                 }
 
-                // 4) 生成三角形（已修正绕序）
+                // 4) 生成三角形
                 const int32 TCount = CD.GetTriangleCount();
                 for (int t = 0; t < TCount; ++t)
                 {
@@ -143,7 +145,6 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
                 }
             }
 }
-
 // ============================ GenerateTransition ============================
 void FTransvoxelMesher::GenerateTransition(const FVoxelChunkData& Chunk,
     float VoxelSize,

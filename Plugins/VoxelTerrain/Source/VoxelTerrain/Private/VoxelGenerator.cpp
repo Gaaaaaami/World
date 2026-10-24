@@ -89,14 +89,14 @@ void FVoxelGenerator::GenerateChunk(
     check(LOD >= 0);
     check(OutVoxels != nullptr);
 
-    const int32 N = VoxelConfig::ChunkStride;
-    const int32 S = 1 << LOD;
-    const float Step = VoxelConfig::VoxelSize * S;
+    const int32 N = VoxelConfig::GetChunkStride(LOD);
+    const float Step = VoxelConfig::GetVoxelSize(LOD);
+    const float WorldSize = VoxelConfig::ChunkWorldSize;
 
     const FVector Origin(
-        ChunkX * VoxelConfig::ChunkSize * Step,
-        ChunkY * VoxelConfig::ChunkSize * Step,
-        ChunkZ * VoxelConfig::ChunkSize * Step);
+        ChunkX * WorldSize,
+        ChunkY * WorldSize,
+        ChunkZ * WorldSize);
 
     constexpr float Scale = 150.f;
 
@@ -113,15 +113,53 @@ void FVoxelGenerator::GenerateChunk(
 
                 if (Modifications.Num() > 0)
                 {
-                    const FIntVector LOD0VoxelCoord(
-                        FMath::FloorToInt((WP.X / VoxelConfig::VoxelSize) + 0.5f),
-                        FMath::FloorToInt((WP.Y / VoxelConfig::VoxelSize) + 0.5f),
-                        FMath::FloorToInt((WP.Z / VoxelConfig::VoxelSize) + 0.5f)
-                    );
-
-                    if (const FVoxelWeight* ModifiedWeight = Modifications.Find(LOD0VoxelCoord))
+                    // ⭐ 核心修复 2：LOD0 单点精确采样，LOD1/LOD2 使用邻域采样
+                    if (LOD == 0)
                     {
-                        FinalWeight = *ModifiedWeight;
+                        const FIntVector LOD0VoxelCoord(
+                            FMath::FloorToInt((WP.X / VoxelConfig::BaseVoxelSize) + 0.5f),
+                            FMath::FloorToInt((WP.Y / VoxelConfig::BaseVoxelSize) + 0.5f),
+                            FMath::FloorToInt((WP.Z / VoxelConfig::BaseVoxelSize) + 0.5f)
+                        );
+                        if (const FVoxelWeight* ModifiedWeight = Modifications.Find(LOD0VoxelCoord))
+                        {
+                            FinalWeight = *ModifiedWeight;
+                        }
+                    }
+                    else
+                    {
+                        const int32 L0X = FMath::FloorToInt(WP.X / VoxelConfig::BaseVoxelSize + 0.5f);
+                        const int32 L0Y = FMath::FloorToInt(WP.Y / VoxelConfig::BaseVoxelSize + 0.5f);
+                        const int32 L0Z = FMath::FloorToInt(WP.Z / VoxelConfig::BaseVoxelSize + 0.5f);
+
+                        int8 BestWeight = FinalWeight;
+                        bool bFound = false;
+
+                        // 搜索周围 3x3x3 的 LOD0 体素，只要范围内有修改，就采纳
+                        for (int32 ox = -1; ox <= 1; ++ox) {
+                            for (int32 oy = -1; oy <= 1; ++oy) {
+                                for (int32 oz = -1; oz <= 1; ++oz) {
+                                    FIntVector LOD0VoxelCoord(L0X + ox, L0Y + oy, L0Z + oz);
+                                    if (const FVoxelWeight* WMod = Modifications.Find(LOD0VoxelCoord))
+                                    {
+                                        if (!bFound) {
+                                            BestWeight = *WMod;
+                                            bFound = true;
+                                        }
+                                        else {
+                                            // 挖掘(正)取更大值，建造(负)取更小值(绝对值更大)
+                                            if (FMath::Abs(*WMod) > FMath::Abs(BestWeight)) {
+                                                BestWeight = *WMod;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (bFound)
+                        {
+                            FinalWeight = BestWeight;
+                        }
                     }
                 }
 

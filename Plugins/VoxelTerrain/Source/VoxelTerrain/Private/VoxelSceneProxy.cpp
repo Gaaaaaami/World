@@ -4,9 +4,6 @@
 #include "Materials/Material.h"
 #include "SceneManagement.h"
 
-// ============================================================
-// 构造 / 析构
-// ============================================================
 FVoxelSceneProxy::FVoxelSceneProxy(const UVoxelTerrainComponent* InComponent,
     UMaterialInterface* InMaterial)
     : FPrimitiveSceneProxy(InComponent)
@@ -16,16 +13,11 @@ FVoxelSceneProxy::FVoxelSceneProxy(const UVoxelTerrainComponent* InComponent,
     bCastStaticShadow = false;
 
     UMaterialInterface* UseMat = InMaterial;
-    if (!UseMat)
-        UseMat = UMaterial::GetDefaultMaterial(MD_Surface);
-    if (UseMat)
-        MaterialProxy = UseMat->GetRenderProxy();
+    if (!UseMat) UseMat = UMaterial::GetDefaultMaterial(MD_Surface);
+    if (UseMat) MaterialProxy = UseMat->GetRenderProxy();
 }
 
-FVoxelSceneProxy::~FVoxelSceneProxy()
-{
-    // 资源由 DestroyRenderThreadResources 释放
-}
+FVoxelSceneProxy::~FVoxelSceneProxy() {}
 
 SIZE_T FVoxelSceneProxy::GetTypeHash() const
 {
@@ -33,14 +25,7 @@ SIZE_T FVoxelSceneProxy::GetTypeHash() const
     return reinterpret_cast<size_t>(&UniquePointer);
 }
 
-// ============================================================
-// RT 资源生命周期
-// ============================================================
-void FVoxelSceneProxy::CreateRenderThreadResources(FRHICommandListBase& RHICmdList)
-{
-    // 现在是 per-chunk 资源，这里不需要做任何事。
-    // 具体资源在 AddChunk_RenderThread 里创建。
-}
+void FVoxelSceneProxy::CreateRenderThreadResources(FRHICommandListBase& RHICmdList) {}
 
 void FVoxelSceneProxy::ReleaseChunkResources_RenderThread(FChunkRender& R)
 {
@@ -62,21 +47,29 @@ void FVoxelSceneProxy::DestroyRenderThreadResources()
     ChunkRenders.Empty();
 }
 
-// ============================================================
-// 增量接口
-// ============================================================
 void FVoxelSceneProxy::AddChunk_RenderThread(
     FRHICommandListBase& RHICmdList,
     const FChunkKey& Key,
     TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> Mesh)
 {
+    // ⭐ 核心修复 3：如果是 LOD0，强制清理渲染端同坐标的 LOD1 保险
+    if (Key.LOD == 0)
+    {
+        FChunkKey L1Key(Key.X, Key.Y, Key.Z, 1);
+        if (auto* ExistingL1 = ChunkRenders.Find(L1Key))
+        {
+            if (ExistingL1->IsValid())
+                ReleaseChunkResources_RenderThread(**ExistingL1);
+            ChunkRenders.Remove(L1Key);
+        }
+    }
+
     if (!Mesh.IsValid()) return;
 
     const int32 NumVerts = Mesh->Positions.Num();
     const int32 NumIndices = Mesh->Indices.Num();
     if (NumVerts == 0 || NumIndices == 0) return;
 
-    // 如果该 Key 已存在，先释放旧的
     if (auto* Existing = ChunkRenders.Find(Key))
     {
         if (Existing->IsValid())
@@ -84,14 +77,12 @@ void FVoxelSceneProxy::AddChunk_RenderThread(
         ChunkRenders.Remove(Key);
     }
 
-    // 创建新的 FChunkRender
     auto R = MakeShared<FChunkRender>(GetScene().GetFeatureLevel());
 
     R->PositionVB.Init(NumVerts);
     R->StaticVB.Init(NumVerts, 1);
     R->ColorVB.Init(NumVerts);
 
-    // ⭐ 改名：Bounds → ChunkBounds
     FBox ChunkBounds(ForceInit);
 
     for (int32 i = 0; i < NumVerts; ++i)
@@ -99,41 +90,27 @@ void FVoxelSceneProxy::AddChunk_RenderThread(
         const FVector3f& P = Mesh->Positions[i];
         R->PositionVB.VertexPosition(i) = P;
 
-        const FVector3f N = Mesh->Normals.IsValidIndex(i)
-            ? Mesh->Normals[i]
-            : FVector3f(0, 0, 1);
-
+        const FVector3f N = Mesh->Normals.IsValidIndex(i) ? Mesh->Normals[i] : FVector3f(0, 0, 1);
         FVector3f T = FVector3f::CrossProduct(FVector3f(0, 0, 1), N);
         if (T.SizeSquared() < 1e-4f) T = FVector3f(1, 0, 0);
         T.Normalize();
 
-        R->StaticVB.SetVertexTangents(i, T,
-            FVector3f::CrossProduct(N, T), N);
-       // R->StaticVB.SetVertexUV(i, 0, FVector2f(0, 0));
-        const FVector2f UV = Mesh->UVs.IsValidIndex(i)
-            ? Mesh->UVs[i]
-            : FVector2f(0, 0);
+        R->StaticVB.SetVertexTangents(i, T, FVector3f::CrossProduct(N, T), N);
+        const FVector2f UV = Mesh->UVs.IsValidIndex(i) ? Mesh->UVs[i] : FVector2f(0, 0);
         R->StaticVB.SetVertexUV(i, 0, UV);
+        R->ColorVB.VertexColor(i) = Mesh->Colors.IsValidIndex(i) ? Mesh->Colors[i] : FColor::White;
 
-        R->ColorVB.VertexColor(i) = Mesh->Colors.IsValidIndex(i)
-            ? Mesh->Colors[i]
-            : FColor::White;
-
-        // ⭐ 改名
         ChunkBounds += FVector(P);
     }
-    // ⭐ 改名
     R->Bounds = ChunkBounds;
 
     R->IB.SetIndices(Mesh->Indices, EIndexBufferStride::Force32Bit);
 
-    // 上传到 GPU
     R->PositionVB.InitResource(RHICmdList);
     R->StaticVB.InitResource(RHICmdList);
     R->ColorVB.InitResource(RHICmdList);
     R->IB.InitResource(RHICmdList);
 
-    // 绑定到 Vertex Factory
     FLocalVertexFactory::FDataType Data;
     R->PositionVB.BindPositionVertexBuffer(&R->VertexFactory, Data);
     R->StaticVB.BindTangentVertexBuffer(&R->VertexFactory, Data);
@@ -143,9 +120,9 @@ void FVoxelSceneProxy::AddChunk_RenderThread(
     R->VertexFactory.InitResource(RHICmdList);
 
     R->bReady = true;
-
     ChunkRenders.Add(Key, R);
 }
+
 void FVoxelSceneProxy::RemoveChunk_RenderThread(
     FRHICommandListBase& RHICmdList,
     const FChunkKey& Key)
@@ -158,9 +135,6 @@ void FVoxelSceneProxy::RemoveChunk_RenderThread(
     }
 }
 
-// ============================================================
-// 渲染
-// ============================================================
 void FVoxelSceneProxy::GetDynamicMeshElements(
     const TArray<const FSceneView*>& Views,
     const FSceneViewFamily& ViewFamily,

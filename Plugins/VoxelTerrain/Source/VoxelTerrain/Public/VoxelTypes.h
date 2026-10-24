@@ -13,9 +13,31 @@ struct FVoxel
 
 namespace VoxelConfig
 {
-    static constexpr int32 ChunkSize = 32;
-    static constexpr int32 ChunkStride = ChunkSize + 1;
-    static constexpr float VoxelSize = 100.f;
+    // ⭐ 统一物理尺寸：所有 LOD 都是 3200 的大小
+    static constexpr int32 BaseChunkSize = 32;
+    static constexpr float BaseVoxelSize = 100.f;
+    static constexpr float ChunkWorldSize = BaseChunkSize * BaseVoxelSize; // 3200
+
+    // 兼容旧代码
+    static constexpr int32 ChunkSize = BaseChunkSize;
+    static constexpr int32 ChunkStride = BaseChunkSize + 1;
+    static constexpr float VoxelSize = BaseVoxelSize;
+
+    // ⭐ 动态获取：LOD 越高，体素数越少，但世界大小永远是 3200
+    FORCEINLINE int32 GetChunkSize(int32 LOD)
+    {
+        return FMath::Max(1, BaseChunkSize >> LOD);
+    }
+
+    FORCEINLINE int32 GetChunkStride(int32 LOD)
+    {
+        return GetChunkSize(LOD) + 1;
+    }
+
+    FORCEINLINE float GetVoxelSize(int32 LOD)
+    {
+        return BaseVoxelSize * (1 << LOD);
+    }
 }
 
 struct FChunkKey
@@ -43,5 +65,4 @@ FORCEINLINE uint32 GetTypeHash(const FChunkKey& K)
     return H;
 }
 
-// 修改记录：坐标 -> 新的密度权重
 using FVoxelModificationMap = TMap<FIntVector, FVoxelWeight>;
