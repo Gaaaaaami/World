@@ -59,8 +59,6 @@ namespace
 }
 
 // ============================ GenerateRegular ============================
-
-// ============================ GenerateRegular ============================
 void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
     float VoxelSize,
     int32 LOD,

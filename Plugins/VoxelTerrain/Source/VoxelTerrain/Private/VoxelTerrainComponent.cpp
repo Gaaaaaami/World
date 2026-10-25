@@ -356,8 +356,11 @@ void UVoxelTerrainComponent::StreamTick()
         {
             if (Submitted >= MaxRebuildsPerTick) break;
             if (RequestedChunks.Contains(Key)) continue;
-            if (!ChunkMeshes.Contains(Key))  continue;   // 已被卸载则跳过
-
+            if (!ChunkMeshes.Contains(Key))
+            {
+                PendingRebuilds.Remove(Key);   // ⭐ 已卸载，不再需要重建
+                continue;
+            }
             RequestedChunks.Add(Key);
             const int32 CurrentVersion = ChunkVersions.FindRef(Key);
             SpawnChunkAsyncTask(Key, CurrentVersion);
@@ -521,8 +524,17 @@ void UVoxelTerrainComponent::StreamTick()
 void UVoxelTerrainComponent::OnChunkGenerated(
     FChunkKey Key, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> Mesh, int32 Version)
 {
-    if (!Mesh.IsValid()) return;
-    if (Version != ChunkVersions.FindRef(Key)) return;
+    if (!Mesh.IsValid()) {
+        RequestedChunks.Remove(Key);   // ⭐ 保护：失败也要清请求标记
+        return;
+    }
+    if (Version != ChunkVersions.FindRef(Key)) {
+        RequestedChunks.Remove(Key);   // ⭐ 保护：失败也要清请求标记
+        return;
+    }
+
+
+
     const bool bIsFirstTime = !ChunkMeshes.Contains(Key);
 
     ChunkMeshes.Add(Key, Mesh);
