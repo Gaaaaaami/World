@@ -25,28 +25,20 @@ public:
     UPROPERTY(EditAnywhere, Category = "Voxel")
     bool bGenerateCollision = true;
 
-    // ⭐ LOD0 范围（单位：厘米 CM）
-    UPROPERTY(EditAnywhere, Category = "Voxel|LOD", meta = (DisplayName = "LOD0 Radius XY (cm)"))
-    float LOD0RadiusXY = 20000.f;
+    // ⭐ 改为按 Chunk 数量加载，不再受 VoxelSize 影响
+    UPROPERTY(EditAnywhere, Category = "Voxel|LOD", meta = (DisplayName = "LOD0 Radius XY (Chunks)"))
+    int32 LOD0RadiusChunksXY = 6;
 
-    UPROPERTY(EditAnywhere, Category = "Voxel|LOD", meta = (DisplayName = "LOD0 Radius Z (cm)"))
-    float LOD0RadiusZ = 5000.f;
+    UPROPERTY(EditAnywhere, Category = "Voxel|LOD", meta = (DisplayName = "LOD0 Radius Z (Chunks)"))
+    int32 LOD0RadiusChunksZ = 2;
 
-    // ⭐ LOD1 范围（单位：厘米 CM）
-    UPROPERTY(EditAnywhere, Category = "Voxel|LOD", meta = (DisplayName = "LOD1 Radius XY (cm)"))
-    float LOD1RadiusXY = 25000.f;
-
-    UPROPERTY(EditAnywhere, Category = "Voxel|LOD", meta = (DisplayName = "LOD1 Radius Z (cm)"))
-    float LOD1RadiusZ = 15000.f;
-
-    // 碰撞范围（单位：厘米 CM）
-    UPROPERTY(EditAnywhere, Category = "Voxel", meta = (DisplayName = "Collision Radius (cm)"))
-    float CollisionRadius = 4000.f;
+    // ⭐ 碰撞范围（单位：Chunk 数量）
+    UPROPERTY(EditAnywhere, Category = "Voxel", meta = (DisplayName = "Collision Radius (Chunks)"))
+    int32 CollisionRadiusChunks = 1;
 
     UPROPERTY(EditAnywhere, Category = "Voxel")
     float UnloadDelay = 5.0f;
 
-    // ⭐ 被编辑过的 chunk 保留碰撞的时长（秒）—— 解决"建太高碰撞消失"
     UPROPERTY(EditAnywhere, Category = "Voxel", meta = (DisplayName = "Collision Keep Duration (s)"))
     float CollisionKeepDuration = 60.0f;
 
@@ -76,21 +68,16 @@ private:
     void RemoveCollisionForChunk(const FChunkKey& Key);
     void ClearAllCollisions();
 
-    void RebuildChunksAround(const FVector& WorldPos, float Radius);
     void RequestChunkImmediate(const FChunkKey& Key);
-
-    // ⭐ 只重建真正被编辑命中的 chunk（由 ApplyEdit 精确收集）
     void RebuildTouchedChunks(const TSet<FChunkKey>& TouchedChunks);
-
-    // ⭐ 把 chunk 生成异步任务抽出来，避免 RequestChunk / RequestChunkImmediate 重复代码
     void SpawnChunkAsyncTask(const FChunkKey& Key, int32 CurrentVersion);
 
-    // ====== 存档系统 ======
+    // 存档系统
     FString GetWorldSaveDir() const;
     FString GetChunkFilePath(const FChunkKey& Key) const;
-    void SaveChunkModificationFile(const FChunkKey& Key);         // 同步版本（保留，备用）
-    void SaveChunkModificationFileAsync(const FChunkKey& Key);    // ⭐ 异步版本
-    void FlushAllPendingSaves();                                   // ⭐ 等待所有异步保存完成
+    void SaveChunkModificationFile(const FChunkKey& Key);
+    void SaveChunkModificationFileAsync(const FChunkKey& Key);
+    void FlushAllPendingSaves();
     void LoadChunkModificationFile(const FChunkKey& Key);
     FVoxelModificationMap GatherModificationsForChunk(const FChunkKey& Key);
 
@@ -98,20 +85,16 @@ private:
     TSet<FChunkKey> RequestedChunks;
     TMap<FChunkKey, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe>> ChunkMeshes;
     TMap<FChunkKey, double> ChunkLastActiveTime;
-
-    // ⭐ 被编辑过的 chunk 保留碰撞到期时间（FPlatformTime::Seconds 秒）
     TMap<FChunkKey, double> ChunkCollisionKeepTime;
 
     TMap<FChunkKey, FVoxelModificationMap> ChunkModifications;
     TSet<FChunkKey> FileLoadedChunks;
     TSet<FChunkKey> DirtyChunks;
 
-    // ⭐ 异步存档计数（shared_ptr 让 lambda 安全持有，即使组件销毁也能安全递减）
     TSharedPtr<FThreadSafeCounter> PendingSaveCounter;
 
-    // ⭐ 防抖与线程锁
     double LastEditTime = 0.0;
-    FCriticalSection DataLock; // 保护 ChunkModifications 多线程安全
+    FCriticalSection DataLock;
 
     TSet<FChunkKey> PendingRebuilds;
     TMap<FChunkKey, int32> ChunkVersions;

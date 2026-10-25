@@ -34,7 +34,6 @@ void UVoxelTerrainComponent::BeginPlay()
         TerrainMaterial->EnsureIsComplete();
     }
 
-    // ⭐ 预分配所有容器，避免加载期 rehash
     ChunkMeshes.Reserve(1024);
     ChunkLastActiveTime.Reserve(1024);
     ChunkCollisionKeepTime.Reserve(128);
@@ -49,10 +48,8 @@ void UVoxelTerrainComponent::BeginPlay()
     ChunkVersions.Reserve(1024);
     ChunkModifications.Reserve(1024);
 
-    // ⭐ 异步存档计数器
     PendingSaveCounter = MakeShared<FThreadSafeCounter>();
 
-    // ⭐ Tick 周期 0.1s，配合 StreamTick 的分帧限量，加载更平滑
     TickHandle = FTSTicker::GetCoreTicker().AddTicker(
         FTickerDelegate::CreateWeakLambda(this, [this](float)
             {
@@ -60,7 +57,6 @@ void UVoxelTerrainComponent::BeginPlay()
                 return true;
             }), 0.1f);
 
-    // 碰撞队列独立 Tick，每帧跑
     CollisionTickHandle = FTSTicker::GetCoreTicker().AddTicker(
         FTickerDelegate::CreateWeakLambda(this, [this](float)
             {
@@ -150,7 +146,6 @@ void UVoxelTerrainComponent::SaveChunkModificationFileAsync(const FChunkKey& Key
     if (Key.LOD != 0) return;
     if (!PendingSaveCounter.IsValid()) return;
 
-    // ⭐ 主线程：持锁拷贝数据快照
     TArray<uint8> SaveData;
     {
         FScopeLock Lock(&DataLock);
@@ -172,7 +167,6 @@ void UVoxelTerrainComponent::SaveChunkModificationFileAsync(const FChunkKey& Key
 
     if (SaveData.Num() == 0) return;
 
-    // ⭐ 异步线程：写盘
     const FString FilePath = GetChunkFilePath(Key);
     TSharedPtr<FThreadSafeCounter> Counter = PendingSaveCounter;
     Counter->Increment();
@@ -250,7 +244,6 @@ FVoxelModificationMap UVoxelTerrainComponent::GatherModificationsForChunk(const 
     for (int32 x = MinX; x <= MaxX; ++x) {
         for (int32 y = MinY; y <= MaxY; ++y) {
             for (int32 z = MinZ; z <= MaxZ; ++z) {
-
                 FChunkKey SubKey(x, y, z, 0);
                 FScopeLock Lock(&DataLock);
                 LoadChunkModificationFile(SubKey);
@@ -286,7 +279,6 @@ void UVoxelTerrainComponent::SpawnChunkAsyncTask(const FChunkKey& Key, int32 Cur
             auto MeshData = MakeShared<FVoxelMeshData, ESPMode::ThreadSafe>();
             FTransvoxelMesher::GenerateRegular(ChunkData, VoxelConfig::VoxelSize, Key.LOD, *MeshData);
 
-            // ⭐ 世界偏移 + UV 计算 + Bounds 累积
             const float S = (float)(1 << Key.LOD);
             const float LODChunkWorldSize = VoxelConfig::ChunkSize * VoxelConfig::VoxelSize * S;
             const FVector3f Offset(
@@ -335,9 +327,6 @@ void UVoxelTerrainComponent::StreamTick()
 
     FlushPendingPushToSceneProxy();
 
-    // ============================================================
-    // 消化待重建的 chunk（分帧）
-    // ============================================================
     constexpr int32 MaxRebuildsPerTick = 6;
     if (PendingRebuilds.Num() > 0)
     {
@@ -362,9 +351,6 @@ void UVoxelTerrainComponent::StreamTick()
         }
     }
 
-    // ============================================================
-    // 收集候选 chunk 并按距离排序，每 tick 限量提交
-    // ============================================================
     struct FLoadCandidate
     {
         float     DistSq = 0.f;
@@ -376,8 +362,9 @@ void UVoxelTerrainComponent::StreamTick()
     const float BaseChunkSize = VoxelConfig::ChunkSize * VoxelConfig::VoxelSize;
     const FIntVector Base = WorldToBaseChunk(CamLoc);
 
-    const int32 RadiusChunkXY = FMath::CeilToInt(LOD0RadiusXY / BaseChunkSize);
-    const int32 RadiusChunkZ = FMath::CeilToInt(LOD0RadiusZ / BaseChunkSize);
+    // ⭐ 按 Chunk 数量加载，不受 VoxelSize 影响
+    const int32 RadiusChunkXY = LOD0RadiusChunksXY;
+    const int32 RadiusChunkZ = LOD0RadiusChunksZ;
 
     for (int32 dx = -RadiusChunkXY; dx <= RadiusChunkXY; ++dx)
     {
@@ -405,7 +392,6 @@ void UVoxelTerrainComponent::StreamTick()
         }
     }
 
-    // 根据移动速度动态调整加载带宽
     const float SpeedSq = Pawn->GetVelocity().SizeSquared();
     int32 MaxRequestsPerTick = 8;
     if (SpeedSq > 4000000.f)   MaxRequestsPerTick = 16;
@@ -431,11 +417,9 @@ void UVoxelTerrainComponent::StreamTick()
         }
     }
 
-    // ============================================================
-    // 卸载
-    // ============================================================
-    const float UnloadRadiusXY = LOD0RadiusXY + BaseChunkSize;
-    const float UnloadRadiusZ = LOD0RadiusZ + BaseChunkSize;
+    // 卸载半径：多留一圈 Chunk 缓冲
+    const float UnloadRadiusXY = (LOD0RadiusChunksXY + 1) * BaseChunkSize;
+    const float UnloadRadiusZ = (LOD0RadiusChunksZ + 1) * BaseChunkSize;
 
     TArray<FChunkKey> ToUnload;
     for (auto& Pair : ChunkMeshes)
@@ -499,9 +483,6 @@ void UVoxelTerrainComponent::StreamTick()
 
     if (ToUnload.Num() > 0) bBoundsDirty = true;
 
-    // ============================================================
-    // 碰撞 & Bounds
-    // ============================================================
     UpdateCollisions(CamLoc, Now);
 
     if (bBoundsDirty)
@@ -515,12 +496,10 @@ void UVoxelTerrainComponent::StreamTick()
 void UVoxelTerrainComponent::OnChunkGenerated(
     FChunkKey Key, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> Mesh, int32 Version)
 {
-    // ⭐ 无论如何，先清掉请求标记，释放线程名额
     RequestedChunks.Remove(Key);
 
     if (!Mesh.IsValid()) return;
 
-    // ⭐ 核心 VIP 逻辑：如果版本过期，且依然需要重建，立刻原地重算最新的！
     if (Version != ChunkVersions.FindRef(Key))
     {
         if (PendingRebuilds.Contains(Key) && !RequestedChunks.Contains(Key))
@@ -558,7 +537,6 @@ void UVoxelTerrainComponent::OnChunkGenerated(
 
     if (bGenerateCollision && Key.LOD == 0)
     {
-        // 去重入队
         if (!PendingCollisionAdds.Contains(Key))
         {
             PendingCollisionAdds.Add(Key);
@@ -596,7 +574,9 @@ void UVoxelTerrainComponent::UpdateCollisions(const FVector& CamLoc, double Now)
 {
     if (!bGenerateCollision) return;
 
-    const float RadiusSquared = CollisionRadius * CollisionRadius;
+    // ⭐ 直接使用 Chunk 索引判断距离，无视 VoxelSize
+    const FIntVector PlayerChunk = WorldToBaseChunk(CamLoc);
+    const int32 Radius = CollisionRadiusChunks;
 
     float PlayerVelZ = 0.f;
     if (UWorld* World = GetWorld())
@@ -613,13 +593,10 @@ void UVoxelTerrainComponent::UpdateCollisions(const FVector& CamLoc, double Now)
         const FChunkKey& Key = Pair.Key;
         if (Key.LOD != 0) continue;
 
-        const float BaseChunkSize = VoxelConfig::ChunkSize * VoxelConfig::VoxelSize;
-        const FVector ChunkCenter(
-            (Key.X + 0.5f) * BaseChunkSize,
-            (Key.Y + 0.5f) * BaseChunkSize,
-            (Key.Z + 0.5f) * BaseChunkSize);
-
-        const bool bInRange = FVector::DistSquared(ChunkCenter, CamLoc) < RadiusSquared;
+        const int32 dx = FMath::Abs(Key.X - PlayerChunk.X);
+        const int32 dy = FMath::Abs(Key.Y - PlayerChunk.Y);
+        const int32 dz = FMath::Abs(Key.Z - PlayerChunk.Z);
+        const bool bInRange = (dx <= Radius && dy <= Radius && dz <= Radius);
 
         bool bKeepAlive = false;
         if (const double* KeepUntil = ChunkCollisionKeepTime.Find(Key))
@@ -634,8 +611,7 @@ void UVoxelTerrainComponent::UpdateCollisions(const FVector& CamLoc, double Now)
         {
             if (!ChunkCollisionProxies.Contains(Key))
             {
-                const float AbovePlayer = ChunkCenter.Z - CamLoc.Z;
-                if (AbovePlayer > 2000.f) bShouldHave = false;
+                if (dz > 1) bShouldHave = false; // 快速下落时只加载脚下一层
             }
         }
 
@@ -660,7 +636,6 @@ void UVoxelTerrainComponent::ProcessCollisionQueue()
 
     if (PendingCollisionAdds.Num() == 0) return;
 
-    // ⭐ 核心 VIP 逻辑：找出被你编辑过的 Chunk
     TArray<FChunkKey> VIPKeys;
     for (auto It = PendingCollisionAdds.CreateIterator(); It; ++It)
     {
@@ -671,7 +646,6 @@ void UVoxelTerrainComponent::ProcessCollisionQueue()
         }
     }
 
-    // ⭐ 无视任何预算限制，立刻生成 VIP 碰撞！
     for (const FChunkKey& Key : VIPKeys)
     {
         TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe>* MeshPtr = ChunkMeshes.Find(Key);
@@ -692,7 +666,6 @@ void UVoxelTerrainComponent::ProcessCollisionQueue()
             return FVector((K.X + 0.5f) * BaseChunkSize, (K.Y + 0.5f) * BaseChunkSize, (K.Z + 0.5f) * BaseChunkSize);
         };
 
-    // 处理剩下的普通碰撞，加上严格的时间预算
     const double StartTime = FPlatformTime::Seconds();
     const double MaxTimeBudget = 0.003;
     int32 AddBudget = 3;
@@ -701,7 +674,6 @@ void UVoxelTerrainComponent::ProcessCollisionQueue()
     {
         if (FPlatformTime::Seconds() - StartTime > MaxTimeBudget) break;
 
-        // ⭐ 降序排列：远的排前面，近的留末尾，这样 Pop() 才能优先弹出最近的！
         if (PendingCollisionAdds.Num() > 1)
         {
             PendingCollisionAdds.Sort([&ChunkCenter, PlayerLoc](const FChunkKey& A, const FChunkKey& B)
@@ -722,7 +694,6 @@ void UVoxelTerrainComponent::CreateCollisionForChunk(const FChunkKey& Key, const
 {
     if (Mesh.Positions.Num() == 0 || Mesh.Indices.Num() == 0) return;
 
-    // ⭐ 准备数据
     const int32 NumVerts = Mesh.Positions.Num();
     TArray<FVector> Verts;
     TArray<int32> Tris;
@@ -751,7 +722,6 @@ void UVoxelTerrainComponent::CreateCollisionForChunk(const FChunkKey& Key, const
     for (int32 i = 0; i < Mesh.Indices.Num(); ++i)
         Tris[i] = (int32)Mesh.Indices[i];
 
-    // ⭐ 核心修复：复用组件，绝不销毁重建！
     UProceduralMeshComponent* PMC = nullptr;
     if (TObjectPtr<UProceduralMeshComponent>* Existing = ChunkCollisionProxies.Find(Key))
     {
@@ -777,7 +747,6 @@ void UVoxelTerrainComponent::CreateCollisionForChunk(const FChunkKey& Key, const
         ChunkCollisionProxies.Add(Key, PMC);
     }
 
-    // 直接覆盖 Section 0，底层自动清理旧物理
     PMC->CreateMeshSection_LinearColor(0, Verts, Tris, Normals, UVs, Colors, Tangents, true, true);
 }
 
@@ -818,10 +787,7 @@ void UVoxelTerrainComponent::ApplyEdit(const FVector& WorldPos, float Radius, bo
     const float VoxelSize = VoxelConfig::VoxelSize;
     const FVector GridPos = WorldPos / VoxelSize;
 
-    // ⭐ 动态 Scale，保证过渡平滑
     const float Scale = VoxelSize * 1.5f;
-
-    // ⭐ 搜索范围必须涵盖 Scale，防止边缘密度断层
     const int32 RadiusInVoxels = FMath::CeilToInt((Radius + Scale) / VoxelSize);
     const float SearchRadius = Radius + Scale;
     const float SearchRadiusSq = SearchRadius * SearchRadius;
@@ -927,10 +893,8 @@ void UVoxelTerrainComponent::RebuildTouchedChunks(const TSet<FChunkKey>& Touched
         int32& Ver = ChunkVersions.FindOrAdd(Key);
         Ver++;
 
-        // ⭐ VIP 逻辑：如果已经有任务在算，就等它算完
         if (RequestedChunks.Contains(Key)) continue;
 
-        // ⭐ 玩家编辑触发的任务，直接全部提交，无视 MaxRebuildPerTick 限制！
         RequestedChunks.Add(Key);
         SpawnChunkAsyncTask(Key, Ver);
     }
@@ -944,62 +908,6 @@ void UVoxelTerrainComponent::RequestChunkImmediate(const FChunkKey& Key)
     RequestedChunks.Add(Key);
     const int32 CurrentVersion = ChunkVersions.FindRef(Key);
     SpawnChunkAsyncTask(Key, CurrentVersion);
-}
-
-void UVoxelTerrainComponent::RebuildChunksAround(const FVector& WorldPos, float Radius)
-{
-    const float BaseChunkSize = VoxelConfig::ChunkSize * VoxelConfig::VoxelSize;
-    const float Extent0 = Radius + BaseChunkSize;
-    const FIntVector Min0 = WorldToBaseChunk(WorldPos - FVector(Extent0));
-    const FIntVector Max0 = WorldToBaseChunk(WorldPos + FVector(Extent0));
-
-    const float LOD1ChunkSize = BaseChunkSize * 2.f;
-    const float Extent1 = Radius + LOD1ChunkSize;
-    const FVector WorldPosMin1 = WorldPos - FVector(Extent1);
-    const FVector WorldPosMax1 = WorldPos + FVector(Extent1);
-    const FIntVector Min1(
-        FMath::FloorToInt(WorldPosMin1.X / LOD1ChunkSize),
-        FMath::FloorToInt(WorldPosMin1.Y / LOD1ChunkSize),
-        FMath::FloorToInt(WorldPosMin1.Z / LOD1ChunkSize)
-    );
-    const FIntVector Max1(
-        FMath::FloorToInt(WorldPosMax1.X / LOD1ChunkSize),
-        FMath::FloorToInt(WorldPosMax1.Y / LOD1ChunkSize),
-        FMath::FloorToInt(WorldPosMax1.Z / LOD1ChunkSize)
-    );
-
-    TArray<FChunkKey> ToRebuild;
-
-    for (int32 x = Min0.X; x <= Max0.X; ++x) {
-        for (int32 y = Min0.Y; y <= Max0.Y; ++y) {
-            for (int32 z = Min0.Z; z <= Max0.Z; ++z) {
-                FChunkKey Key(x, y, z, 0);
-                if (ChunkMeshes.Contains(Key)) ToRebuild.Add(Key);
-            }
-        }
-    }
-
-    for (int32 x = Min1.X; x <= Max1.X; ++x) {
-        for (int32 y = Min1.Y; y <= Max1.Y; ++y) {
-            for (int32 z = Min1.Z; z <= Max1.Z; ++z) {
-                FChunkKey Key(x, y, z, 1);
-                if (ChunkMeshes.Contains(Key)) ToRebuild.Add(Key);
-            }
-        }
-    }
-
-    for (const FChunkKey& Key : ToRebuild)
-    {
-        PendingRebuilds.Add(Key);
-        RequestedChunks.Remove(Key);
-        PendingPushToSceneProxy.Remove(Key);
-        PendingCollisionAdds.Remove(Key);
-
-        int32& Ver = ChunkVersions.FindOrAdd(Key);
-        Ver++;
-
-        RequestChunkImmediate(Key);
-    }
 }
 
 void UVoxelTerrainComponent::ClearAllSaveData()
