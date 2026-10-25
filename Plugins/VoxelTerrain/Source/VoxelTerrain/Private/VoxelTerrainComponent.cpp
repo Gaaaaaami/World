@@ -252,7 +252,9 @@ FVoxelModificationMap UVoxelTerrainComponent::GatherModificationsForChunk(const 
     for (int32 x = MinX; x <= MaxX; ++x) {
         for (int32 y = MinY; y <= MaxY; ++y) {
             for (int32 z = MinZ; z <= MaxZ; ++z) {
+
                 FChunkKey SubKey(x, y, z, 0);
+                FScopeLock Lock(&DataLock);
                 LoadChunkModificationFile(SubKey);
                 if (const FVoxelModificationMap* Mods = ChunkModifications.Find(SubKey)) {
                     ResultMods.Append(*Mods);
@@ -276,7 +278,7 @@ void UVoxelTerrainComponent::SpawnChunkAsyncTask(const FChunkKey& Key, int32 Cur
             FVoxelModificationMap ModsCopy;
             if (auto* Self = WeakThis.Get())
             {
-                FScopeLock Lock(&Self->DataLock);
+                //FScopeLock Lock(&Self->DataLock);
                 ModsCopy = Self->GatherModificationsForChunk(Key);
             }
 
