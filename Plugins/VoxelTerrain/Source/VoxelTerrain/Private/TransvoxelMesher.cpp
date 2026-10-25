@@ -59,6 +59,8 @@ namespace
 }
 
 // ============================ GenerateRegular ============================
+
+// ============================ GenerateRegular ============================
 void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
     float VoxelSize,
     int32 LOD,
@@ -67,14 +69,24 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
     Out.Reset();
 
     const int32 ChunkN = VoxelConfig::ChunkSize;
+    const int32 N = VoxelConfig::ChunkStride;       // 33
     const int32 S = 1 << LOD;
     const float WorldStep = VoxelSize * S;
+
+    // ⭐ 边缓存：每个方向边的全局顶点索引（-1 表示未生成）
+    //   Dir 0 = +X, 1 = +Y, 2 = +Z
+    TArray<int32> EdgeCache;
+    EdgeCache.Init(-1, N * N * N * 3);
+
+    auto EdgeIdx = [&EdgeCache, N](int32 ex, int32 ey, int32 ez, int32 Dir) -> int32&
+        {
+            return EdgeCache[((ex * N + ey) * N + ez) * 3 + Dir];
+        };
 
     for (int32 x = 0; x < ChunkN; ++x)
         for (int32 y = 0; y < ChunkN; ++y)
             for (int32 z = 0; z < ChunkN; ++z)
             {
-                // 1) 采样 8 个角点
                 int8 W[8];
                 for (int i = 0; i < 8; ++i)
                 {
@@ -82,7 +94,6 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
                     W[i] = Chunk.At(x + O.X, y + O.Y, z + O.Z).Weight;
                 }
 
-                // 2) case
                 uint32 Case = 0;
                 for (int i = 0; i < 8; ++i)
                     if (W[i] < 0) Case |= (1u << i);
@@ -91,12 +102,12 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
 
                 const uint8 Class = regularCellClass[Case];
                 const RegularCellData& CD = regularCellData[Class];
-
-                const int32 BaseVertex = Out.Positions.Num();
-
-                // 3) 生成顶点
                 const unsigned short* VD = regularVertexData[Case];
+
+                // ⭐ 本 cell 的每个顶点对应的"全局顶点索引"
+                int32 VertexIndices[12];
                 int32 VCount = 0;
+
                 for (int v = 0; v < 12; ++v)
                 {
                     const unsigned short Entry = VD[v];
@@ -106,28 +117,56 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
                     const int32 B = Entry & 0x0F;
                     if (A >= 8 || B >= 8) continue;
 
-                    const float WA = (float)W[A];
-                    const float WB = (float)W[B];
-                    const float Den = WB - WA;
-                    const float t = FMath::IsNearlyZero(Den) ? 0.5f : (-WA) / Den;
-
                     const FIntVector& OA = CornerOffsets[A];
                     const FIntVector& OB = CornerOffsets[B];
-                    const FVector3f PA((float)(x + OA.X), (float)(y + OA.Y), (float)(z + OA.Z));
-                    const FVector3f PB((float)(x + OB.X), (float)(y + OB.Y), (float)(z + OB.Z));
 
-                    const FVector3f LocalP = FMath::Lerp(PA, PB, t);
-                    const FVector3f WorldP = LocalP * WorldStep;
-                    const FVector3f Normal = ComputeGradient(Chunk, LocalP);
+                    // ⭐ 确定边的起点（低端）和方向
+                    const int32 StartX = x + FMath::Min(OA.X, OB.X);
+                    const int32 StartY = y + FMath::Min(OA.Y, OB.Y);
+                    const int32 StartZ = z + FMath::Min(OA.Z, OB.Z);
 
-                    Out.Positions.Add(WorldP);
-                    Out.Normals.Add(Normal);
-                    Out.UVs.Add(FVector2f::ZeroVector);   
-                    Out.Colors.Add(ComputeColor(WorldP, Normal));
+                    int32 Dir;
+                    if (OA.X != OB.X)      Dir = 0;   // X 方向
+                    else if (OA.Y != OB.Y) Dir = 1;   // Y 方向
+                    else                   Dir = 2;   // Z 方向
+
+                    int32& Cached = EdgeIdx(StartX, StartY, StartZ, Dir);
+
+                    int32 GlobalIdx;
+                    if (Cached >= 0)
+                    {
+                        // ⭐ 复用：同一条边已经生成过顶点
+                        GlobalIdx = Cached;
+                    }
+                    else
+                    {
+                        // 生成新顶点（原逻辑不变）
+                        const float WA = (float)W[A];
+                        const float WB = (float)W[B];
+                        const float Den = WB - WA;
+                        const float t = FMath::IsNearlyZero(Den) ? 0.5f : (-WA) / Den;
+
+                        const FVector3f PA((float)(x + OA.X), (float)(y + OA.Y), (float)(z + OA.Z));
+                        const FVector3f PB((float)(x + OB.X), (float)(y + OB.Y), (float)(z + OB.Z));
+
+                        const FVector3f LocalP = FMath::Lerp(PA, PB, t);
+                        const FVector3f WorldP = LocalP * WorldStep;
+                        const FVector3f Normal = ComputeGradient(Chunk, LocalP);
+
+                        GlobalIdx = Out.Positions.Num();
+                        Out.Positions.Add(WorldP);
+                        Out.Normals.Add(Normal);
+                        Out.UVs.Add(FVector2f::ZeroVector);
+                        Out.Colors.Add(ComputeColor(WorldP, Normal));
+
+                        Cached = GlobalIdx;
+                    }
+
+                    VertexIndices[VCount] = GlobalIdx;
                     ++VCount;
                 }
 
-                // 4) 生成三角形（已修正绕序）
+                // ⭐ 三角形：用 VertexIndices 直接引用，不再用 BaseVertex + I0
                 const int32 TCount = CD.GetTriangleCount();
                 for (int t = 0; t < TCount; ++t)
                 {
@@ -137,12 +176,13 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
 
                     if (I0 >= VCount || I1 >= VCount || I2 >= VCount) continue;
 
-                    Out.Indices.Add(BaseVertex + I0);
-                    Out.Indices.Add(BaseVertex + I2);
-                    Out.Indices.Add(BaseVertex + I1);
+                    Out.Indices.Add(VertexIndices[I0]);
+                    Out.Indices.Add(VertexIndices[I2]);
+                    Out.Indices.Add(VertexIndices[I1]);
                 }
             }
 }
+
 
 // ============================ GenerateTransition ============================
 void FTransvoxelMesher::GenerateTransition(const FVoxelChunkData& Chunk,

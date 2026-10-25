@@ -203,6 +203,17 @@ struct UHT_STATICS
 		{ "Category", "Voxel" },
 		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
 	};
+	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_CollisionKeepDuration_MetaData[] = {
+		{ "Category", "Voxel" },
+#if !UE_BUILD_SHIPPING
+		{ "Comment", "// \xe2\xad\x90 \xe8\xa2\xab\xe7\xbc\x96\xe8\xbe\x91\xe8\xbf\x87\xe7\x9a\x84 chunk \xe4\xbf\x9d\xe7\x95\x99\xe7\xa2\xb0\xe6\x92\x9e\xe7\x9a\x84\xe6\x97\xb6\xe9\x95\xbf\xef\xbc\x88\xe7\xa7\x92\xef\xbc\x89\xe2\x80\x94\xe2\x80\x94 \xe8\xa7\xa3\xe5\x86\xb3\"\xe5\xbb\xba\xe5\xa4\xaa\xe9\xab\x98\xe7\xa2\xb0\xe6\x92\x9e\xe6\xb6\x88\xe5\xa4\xb1\"\n" },
+#endif
+		{ "DisplayName", "Collision Keep Duration (s)" },
+		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
+#if !UE_BUILD_SHIPPING
+		{ "ToolTip", "\xe2\xad\x90 \xe8\xa2\xab\xe7\xbc\x96\xe8\xbe\x91\xe8\xbf\x87\xe7\x9a\x84 chunk \xe4\xbf\x9d\xe7\x95\x99\xe7\xa2\xb0\xe6\x92\x9e\xe7\x9a\x84\xe6\x97\xb6\xe9\x95\xbf\xef\xbc\x88\xe7\xa7\x92\xef\xbc\x89\xe2\x80\x94\xe2\x80\x94 \xe8\xa7\xa3\xe5\x86\xb3\"\xe5\xbb\xba\xe5\xa4\xaa\xe9\xab\x98\xe7\xa2\xb0\xe6\x92\x9e\xe6\xb6\x88\xe5\xa4\xb1\"" },
+#endif
+	};
 #endif // WITH_METADATA
 
 // ********** Begin Class UVoxelTerrainComponent constinit property declarations *******************
@@ -218,6 +229,7 @@ struct UHT_STATICS
 	static const UECodeGen_Private::FFloatPropertyParams NewProp_LOD1RadiusZ;
 	static const UECodeGen_Private::FFloatPropertyParams NewProp_CollisionRadius;
 	static const UECodeGen_Private::FFloatPropertyParams NewProp_UnloadDelay;
+	static const UECodeGen_Private::FFloatPropertyParams NewProp_CollisionKeepDuration;
 	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
 // ********** End Class UVoxelTerrainComponent constinit property declarations *********************
 	static constexpr UE::CodeGen::FClassNativeFunction Funcs[] = {
@@ -245,6 +257,7 @@ const UECodeGen_Private::FFloatPropertyParams UHT_STATICS::NewProp_LOD1RadiusXY 
 const UECodeGen_Private::FFloatPropertyParams UHT_STATICS::NewProp_LOD1RadiusZ = { "LOD1RadiusZ", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Float, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, LOD1RadiusZ), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_LOD1RadiusZ_MetaData), NewProp_LOD1RadiusZ_MetaData) };
 const UECodeGen_Private::FFloatPropertyParams UHT_STATICS::NewProp_CollisionRadius = { "CollisionRadius", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Float, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, CollisionRadius), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_CollisionRadius_MetaData), NewProp_CollisionRadius_MetaData) };
 const UECodeGen_Private::FFloatPropertyParams UHT_STATICS::NewProp_UnloadDelay = { "UnloadDelay", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Float, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, UnloadDelay), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_UnloadDelay_MetaData), NewProp_UnloadDelay_MetaData) };
+const UECodeGen_Private::FFloatPropertyParams UHT_STATICS::NewProp_CollisionKeepDuration = { "CollisionKeepDuration", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Float, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, CollisionKeepDuration), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_CollisionKeepDuration_MetaData), NewProp_CollisionKeepDuration_MetaData) };
 const UECodeGen_Private::FPropertyParamsBase* const UHT_STATICS::PropPointers[] = {
 	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_TerrainMaterial,
 	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_bGenerateCollision,
@@ -254,6 +267,7 @@ const UECodeGen_Private::FPropertyParamsBase* const UHT_STATICS::PropPointers[] 
 	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_LOD1RadiusZ,
 	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_CollisionRadius,
 	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_UnloadDelay,
+	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_CollisionKeepDuration,
 };
 static_assert(UE_ARRAY_COUNT(UHT_STATICS::PropPointers) < 2048);
 // ********** End Class UVoxelTerrainComponent Property Definitions ********************************
@@ -328,10 +342,10 @@ UVoxelTerrainComponent::~UVoxelTerrainComponent() {}
 struct UHT_STATICS
 {
 	static constexpr FClassRegisterCompiledInInfo ClassInfo[] = {
-		{ Z_Construct_UClass_UVoxelTerrainComponent, TEXT("UVoxelTerrainComponent"), &Z_Registration_Info_UClass_UVoxelTerrainComponent, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UVoxelTerrainComponent), 831721686U) },
+		{ Z_Construct_UClass_UVoxelTerrainComponent, TEXT("UVoxelTerrainComponent"), &Z_Registration_Info_UClass_UVoxelTerrainComponent, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UVoxelTerrainComponent), 709070310U) },
 	};
 }; // UHT_STATICS 
-static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h__Script_VoxelTerrain_ad090ebfe06e6816f9d68fb14ea17ee0c9365290{
+static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h__Script_VoxelTerrain_daeb74c7e2ba5aa0363ef6f8a8b0209c65e865a2{
 	TEXT("/Script/VoxelTerrain"),
 	UHT_STATICS::ClassInfo, UE_ARRAY_COUNT(UHT_STATICS::ClassInfo),
 	nullptr, 0,

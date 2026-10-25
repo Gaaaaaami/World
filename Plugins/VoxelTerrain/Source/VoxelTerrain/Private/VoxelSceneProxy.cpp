@@ -91,9 +91,6 @@ void FVoxelSceneProxy::AddChunk_RenderThread(
     R->StaticVB.Init(NumVerts, 1);
     R->ColorVB.Init(NumVerts);
 
-    // ⭐ 改名：Bounds → ChunkBounds
-    FBox ChunkBounds(ForceInit);
-
     for (int32 i = 0; i < NumVerts; ++i)
     {
         const FVector3f& P = Mesh->Positions[i];
@@ -109,7 +106,7 @@ void FVoxelSceneProxy::AddChunk_RenderThread(
 
         R->StaticVB.SetVertexTangents(i, T,
             FVector3f::CrossProduct(N, T), N);
-       // R->StaticVB.SetVertexUV(i, 0, FVector2f(0, 0));
+
         const FVector2f UV = Mesh->UVs.IsValidIndex(i)
             ? Mesh->UVs[i]
             : FVector2f(0, 0);
@@ -118,12 +115,12 @@ void FVoxelSceneProxy::AddChunk_RenderThread(
         R->ColorVB.VertexColor(i) = Mesh->Colors.IsValidIndex(i)
             ? Mesh->Colors[i]
             : FColor::White;
-
-        // ⭐ 改名
-        ChunkBounds += FVector(P);
     }
-    // ⭐ 改名
-    R->Bounds = ChunkBounds;
+
+    // ⭐ 直接使用 Async 线程预算好的 world-space bounds
+    R->Bounds = Mesh->Bounds.IsValid
+        ? Mesh->Bounds
+        : FBox(FVector(-HALF_WORLD_MAX), FVector(HALF_WORLD_MAX));
 
     R->IB.SetIndices(Mesh->Indices, EIndexBufferStride::Force32Bit);
 
@@ -146,6 +143,7 @@ void FVoxelSceneProxy::AddChunk_RenderThread(
 
     ChunkRenders.Add(Key, R);
 }
+
 void FVoxelSceneProxy::RemoveChunk_RenderThread(
     FRHICommandListBase& RHICmdList,
     const FChunkKey& Key)
@@ -175,10 +173,21 @@ void FVoxelSceneProxy::GetDynamicMeshElements(
         const FChunkRender& R = *Pair.Value;
         if (!R.bReady) continue;
         if (R.IB.GetNumIndices() == 0) continue;
+        if (!R.Bounds.IsValid) continue;
 
         for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ++ViewIndex)
         {
             if (!(VisibilityMap & (1 << ViewIndex))) continue;
+
+            const FSceneView* View = Views[ViewIndex];
+            if (!View) continue;
+
+            // ⭐ 每 chunk 视锥剔除，稳态帧的 batch 数量大幅下降
+            if (!View->ViewFrustum.IntersectBox(
+                R.Bounds.GetCenter(), R.Bounds.GetExtent()))
+            {
+                continue;
+            }
 
             FMeshBatch& Mesh = Collector.AllocateMesh();
             Mesh.Elements.SetNum(1);

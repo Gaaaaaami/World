@@ -62,19 +62,17 @@ void AVoxelInteractionActor::HandleMouseClick(bool bIsAdd)
         {
             if (UVoxelTerrainComponent* VoxelComp = HitActor->FindComponentByClass<UVoxelTerrainComponent>())
             {
-                // ⭐ 核心修复：如果打中了旧网格，顺着视线强制往里面挖 50 单位，确保能穿透到下一层
-                FVector EditLocation = Hit.Location + CamRot.Vector() * 50.f;
+                // ⭐ 偏置自适应：小半径也能穿透旧表面，避免"点了没反应"
+                const float OffsetDist = FMath::Max(EditRadius * 0.5f, 50.f);
+                FVector EditLocation = Hit.Location + CamRot.Vector() * OffsetDist;
 
                 VoxelComp->ApplyEdit(EditLocation, EditRadius, bIsAdd);
 
-                DrawDebugLine(GetWorld(), CamLoc, Hit.Location, FColor::Green, false, 1.0f, 0, 2.0f);
-                DrawDebugSphere(GetWorld(), EditLocation, EditRadius, 12,
-                    bIsAdd ? FColor::Green : FColor::Red, false, 1.0f);
+                //DrawDebugLine(GetWorld(), CamLoc, Hit.Location, FColor::Green, false, 1.0f, 0, 2.0f);
+                //DrawDebugSphere(GetWorld(), EditLocation, EditRadius, 12,
+                //    bIsAdd ? FColor::Green : FColor::Red, false, 1.0f);
             }
         }
     }
-    else
-    {
-        DrawDebugLine(GetWorld(), CamLoc, End, FColor::Red, false, 1.0f, 0, 2.0f);
-    }
+
 }
