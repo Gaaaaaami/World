@@ -37,7 +37,10 @@
             "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\private\\voxelsceneproxy.cpp",
             "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\public\\voxelsceneproxy.h",
             "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\private\\voxelterrain.cpp",
-            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\public\\voxelterrain.h"
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\public\\voxelterrain.h",
+            "d:\\users\\administrator\\documents\\unreal projects\\world\\plugins\\voxelterrain\\source\\voxelterrain\\private\\voxelterraincomponent.cpp",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\plugins\\runtime\\proceduralmeshcomponent\\source\\proceduralmeshcomponent\\public\\proceduralmeshcomponent.h",
+            "d:\\program files\\epic games\\ue_5.8\\engine\\plugins\\runtime\\proceduralmeshcomponent\\intermediate\\build\\win64\\unrealeditor\\inc\\proceduralmeshcomponent\\uht\\proceduralmeshcomponent.generated.h"
         ],
         "ImportedModules": [],
         "ImportedHeaderUnits": []

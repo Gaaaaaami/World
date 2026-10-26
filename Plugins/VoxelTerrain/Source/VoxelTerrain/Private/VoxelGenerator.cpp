@@ -45,6 +45,7 @@ float FVoxelGenerator::Fbm2D(const FVector2D& P) const
     return Norm > 0.f ? Sum / Norm : 0.f;
 }
 
+
 float FVoxelGenerator::SampleDensity(const FVector& WorldPos) const
 {
     const FVector2D P2D(WorldPos.X, WorldPos.Y);
@@ -76,7 +77,18 @@ float FVoxelGenerator::SampleDensity(const FVector& WorldPos) const
     const float DistB = FMath::Abs(B) - EffectiveRadius;
     const float Dist = SmoothMax(DistA, DistB, 0.05f);
 
-    const float CaveDensity = Dist * 100.f;
+    // ⭐ 将噪声差值转换为真实的物理距离（厘米）
+    // NoiseFreq * 0.7f 是洞穴噪声的频率，1.0f / 频率 = 1 个噪声单位对应的物理长度
+    const float CaveFreq = Settings.NoiseFreq * 0.7f;
+    const float NoiseToWorldScale = 1.0f / (CaveFreq + 1e-5f);
+
+    // ⭐ 这里的 K_Noise 相当于之前的 500，用来控制洞壁的陡峭程度和洞的粗细。
+    // 因为现在乘的是物理距离，K_Noise 取 0.5 ~ 1.5 之间即可（之前 500 是因为没乘物理距离）
+    const float K_Noise = 1.2f;
+
+    const float CaveDensity = Dist * NoiseToWorldScale * K_Noise;
+
+    // 取地表和洞穴的较小值（谁在外面用谁）
     return FMath::Min(SurfaceDensity, CaveDensity);
 }
 
