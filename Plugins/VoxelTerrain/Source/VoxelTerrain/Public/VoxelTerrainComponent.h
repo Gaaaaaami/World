@@ -27,7 +27,7 @@ public:
 
     // ⭐ 改为按 Chunk 数量加载，不再受 VoxelSize 影响
     UPROPERTY(EditAnywhere, Category = "Voxel|LOD", meta = (DisplayName = "LOD0 Radius XY (Chunks)"))
-    int32 LOD0RadiusChunksXY = 6;
+    int32 LOD0RadiusChunksXY = 12;
 
     UPROPERTY(EditAnywhere, Category = "Voxel|LOD", meta = (DisplayName = "LOD0 Radius Z (Chunks)"))
     int32 LOD0RadiusChunksZ = 2;

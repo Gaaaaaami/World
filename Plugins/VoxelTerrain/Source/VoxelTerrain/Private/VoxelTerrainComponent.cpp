@@ -188,7 +188,7 @@ void UVoxelTerrainComponent::FlushAllPendingSaves()
     {
         if (FPlatformTime::Seconds() - StartTime > 10.0)
         {
-            UE_LOG(LogTemp, Warning, TEXT("VoxelTerrain: FlushAllPendingSaves 超时，仍有 %d 个保存未完成"), PendingSaveCounter->GetValue());
+            //UE_LOG(LogTemp, Warning, TEXT("VoxelTerrain: FlushAllPendingSaves 超时，仍有 %d 个保存未完成"), PendingSaveCounter->GetValue());
             break;
         }
         FPlatformProcess::Sleep(0.001f);
@@ -199,6 +199,13 @@ void UVoxelTerrainComponent::LoadChunkModificationFile(const FChunkKey& Key)
 {
     if (Key.LOD != 0) return;
     if (FileLoadedChunks.Contains(Key)) return;
+
+
+    const FString FilePath = GetChunkFilePath(Key);
+    if (!FPaths::FileExists(FilePath))
+    {
+        return;
+    }
 
     TArray<uint8> LoadData;
     if (!FFileHelper::LoadFileToArray(LoadData, *GetChunkFilePath(Key)))
@@ -923,7 +930,7 @@ void UVoxelTerrainComponent::ClearAllSaveData()
     FString Dir = GetWorldSaveDir();
     IFileManager::Get().DeleteDirectory(*Dir, false, true);
 
-    UE_LOG(LogTemp, Warning, TEXT("VoxelTerrain: 存档已清除，目录: %s"), *Dir);
+    //UE_LOG(LogTemp, Warning, TEXT("VoxelTerrain: 存档已清除，目录: %s"), *Dir);
 
     TArray<FChunkKey> Keys;
     ChunkMeshes.GetKeys(Keys);

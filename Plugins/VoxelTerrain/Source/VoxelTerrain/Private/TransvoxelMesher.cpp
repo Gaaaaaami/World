@@ -12,25 +12,23 @@ namespace
         {0,0,1}, {1,0,1}, {0,1,1}, {1,1,1}
     };
 
-    // ============================ 采样权重 ============================
+
+
     FORCEINLINE float SampleWeight(const FVoxelChunkData& Chunk,
         int32 x, int32 y, int32 z)
     {
-        const int32 N = VoxelConfig::ChunkStride;
-        x = FMath::Clamp(x, 0, N - 1);
-        y = FMath::Clamp(y, 0, N - 1);
-        z = FMath::Clamp(z, 0, N - 1);
+        // padded 数组覆盖 [-1, ChunkSize+1]，无需 clamp，都是有效采样
         return (float)Chunk.At(x, y, z).Weight;
     }
 
-    // ============================ 梯度法线 ============================
-    FVector3f ComputeGradient(const FVoxelChunkData& Chunk,
-        const FVector3f& LocalPos)
+    FVector3f ComputeGradient(const FVoxelChunkData& Chunk, const FVector3f& LocalPos)
     {
         const int32 xi = FMath::RoundToInt(LocalPos.X);
         const int32 yi = FMath::RoundToInt(LocalPos.Y);
         const int32 zi = FMath::RoundToInt(LocalPos.Z);
 
+        // ⭐ halo 保证 xi±1 都在 [-1, 33] 有效，无需 clamp，
+        //    即使顶点在 chunk 边界（xi = 0 或 32）也是真正的中心差分
         const float dx = SampleWeight(Chunk, xi + 1, yi, zi)
             - SampleWeight(Chunk, xi - 1, yi, zi);
         const float dy = SampleWeight(Chunk, xi, yi + 1, zi)
@@ -39,11 +37,9 @@ namespace
             - SampleWeight(Chunk, xi, yi, zi - 1);
 
         FVector3f N(dx, dy, dz);
-        if (N.SizeSquared() < 1e-6f)
-            return FVector3f(0, 0, 1);
+        if (N.SizeSquared() < 1e-6f) return FVector3f(0, 0, 1);
         return N.GetSafeNormal();
     }
-
     // ============================ 顶点颜色 ============================
     FColor ComputeColor(const FVector3f& WorldPos, const FVector3f& Normal)
     {

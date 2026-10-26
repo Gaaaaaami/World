@@ -98,10 +98,9 @@ void FVoxelGenerator::GenerateChunk(
     const FVoxelModificationMap& Modifications,
     FVoxel* OutVoxels) const
 {
-    check(LOD >= 0);
-    check(OutVoxels != nullptr);
+    check(LOD >= 0 && OutVoxels != nullptr);
 
-    const int32 N = VoxelConfig::ChunkStride;
+    const int32 N = VoxelConfig::PaddedStride;                    // ⭐ 35
     const int32 S = 1 << LOD;
     const float Step = VoxelConfig::VoxelSize * S;
 
@@ -112,12 +111,15 @@ void FVoxelGenerator::GenerateChunk(
 
     constexpr float Scale = 150.f;
 
-    for (int32 x = 0; x < N; ++x)
+    for (int32 ix = 0; ix < N; ++ix)
     {
-        for (int32 y = 0; y < N; ++y)
+        const int32 x = ix - VoxelConfig::PaddedOffset;          // -1 .. 33
+        for (int32 iy = 0; iy < N; ++iy)
         {
-            for (int32 z = 0; z < N; ++z)
+            const int32 y = iy - VoxelConfig::PaddedOffset;
+            for (int32 iz = 0; iz < N; ++iz)
             {
+                const int32 z = iz - VoxelConfig::PaddedOffset;
                 const FVector WP = Origin + FVector(x, y, z) * Step;
                 const float D = -SampleDensity(WP);
                 const float W = FMath::Clamp(D / Scale, -1.f, 1.f);
@@ -128,16 +130,12 @@ void FVoxelGenerator::GenerateChunk(
                     const FIntVector LOD0VoxelCoord(
                         FMath::FloorToInt((WP.X / VoxelConfig::VoxelSize) + 0.5f),
                         FMath::FloorToInt((WP.Y / VoxelConfig::VoxelSize) + 0.5f),
-                        FMath::FloorToInt((WP.Z / VoxelConfig::VoxelSize) + 0.5f)
-                    );
-
-                    if (const FVoxelWeight* ModifiedWeight = Modifications.Find(LOD0VoxelCoord))
-                    {
-                        FinalWeight = *ModifiedWeight;
-                    }
+                        FMath::FloorToInt((WP.Z / VoxelConfig::VoxelSize) + 0.5f));
+                    if (const FVoxelWeight* M = Modifications.Find(LOD0VoxelCoord))
+                        FinalWeight = *M;
                 }
 
-                OutVoxels[(x * N + y) * N + z].Weight = FinalWeight;
+                OutVoxels[(ix * N + iy) * N + iz].Weight = FinalWeight;
             }
         }
     }
