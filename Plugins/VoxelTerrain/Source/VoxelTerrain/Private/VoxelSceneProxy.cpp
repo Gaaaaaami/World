@@ -74,7 +74,20 @@ void FVoxelSceneProxy::AddChunk_RenderThread(
 
     const int32 NumVerts = Mesh->Positions.Num();
     const int32 NumIndices = Mesh->Indices.Num();
-    if (NumVerts == 0 || NumIndices == 0) return;
+    //if (NumVerts == 0 || NumIndices == 0) return;
+
+    // 空 mesh 也要正确释放旧资源
+    if (NumVerts == 0 || NumIndices == 0)
+    {
+        if (auto* Existing = ChunkRenders.Find(Key))
+        {
+            if (Existing->IsValid())
+                ReleaseChunkResources_RenderThread(**Existing);
+            ChunkRenders.Remove(Key);
+        }
+        return;
+    }
+
 
     // 如果该 Key 已存在，先释放旧的
     if (auto* Existing = ChunkRenders.Find(Key))

@@ -204,6 +204,7 @@ void UVoxelTerrainComponent::LoadChunkModificationFile(const FChunkKey& Key)
     const FString FilePath = GetChunkFilePath(Key);
     if (!FPaths::FileExists(FilePath))
     {
+        FileLoadedChunks.Add(Key);   // ⬅ 补上
         return;
     }
 
@@ -522,9 +523,15 @@ void UVoxelTerrainComponent::OnChunkGenerated(
     ChunkLastActiveTime.Add(Key, FPlatformTime::Seconds());
     PendingRebuilds.Remove(Key);
 
-    if (bIsFirstTime && Mesh->Bounds.IsValid)
+  /*  if (bIsFirstTime && Mesh->Bounds.IsValid)
     {
         LocalBounds += Mesh->Bounds;
+    }*/
+    LocalBounds = FBox(ForceInit);
+    for (auto& Pair : ChunkMeshes)
+    {
+        if (Pair.Value.IsValid() && Pair.Value->Bounds.IsValid)
+            LocalBounds += Pair.Value->Bounds;
     }
     bBoundsDirty = true;
 
