@@ -285,14 +285,18 @@ void UVoxelTerrainComponent::SpawnChunkAsyncTask(const FChunkKey& Key, int32 Cur
             Gen.GenerateChunk(Key.X, Key.Y, Key.Z, Key.LOD, ModsCopy, ChunkData.Voxels.GetData());
 
             auto MeshData = MakeShared<FVoxelMeshData, ESPMode::ThreadSafe>();
-            FTransvoxelMesher::GenerateRegular(ChunkData, VoxelConfig::VoxelSize, Key.LOD, *MeshData);
+            //FTransvoxelMesher::GenerateRegular(ChunkData, VoxelConfig::VoxelSize, Key.LOD, *MeshData);
 
+       
             const float S = (float)(1 << Key.LOD);
             const float LODChunkWorldSize = VoxelConfig::ChunkSize * VoxelConfig::VoxelSize * S;
             const FVector3f Offset(
                 Key.X * LODChunkWorldSize,
                 Key.Y * LODChunkWorldSize,
                 Key.Z * LODChunkWorldSize);
+
+            FTransvoxelMesher::GenerateRegular(
+                ChunkData, VoxelConfig::VoxelSize, Key.LOD, Offset, *MeshData);   // ⭐ 多传一个 Offset
 
             constexpr float UVScale = 400.f;
             const int32 NumVerts = MeshData->Positions.Num();

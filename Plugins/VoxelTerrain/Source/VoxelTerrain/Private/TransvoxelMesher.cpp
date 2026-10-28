@@ -43,14 +43,24 @@ namespace
     // ============================ 顶点颜色 ============================
     FColor ComputeColor(const FVector3f& WorldPos, const FVector3f& Normal)
     {
-        const float Slope = 1.0f - FMath::Clamp(Normal.Z, 0.f, 1.f);
-        const float Height = FMath::Clamp(WorldPos.Z / 3300.f, 0.f, 1.f);
+        // ⭐ 波长 ~1km（之前 12.5km），视野内能看到几个 biome
+        constexpr float BiomeFreq = 0.001f;
+        // ⭐ 过渡带宽：噪声 [-0.5, 0.5] 整段都是过渡
+        constexpr float BlendHalf = 0.5f;
 
-        if (Slope > 0.45f)
-            return FColor(110, 85, 60);      // 岩石棕
-        if (Height > 0.65f)
-            return FColor(240, 240, 245);    // 雪白
-        return FColor(65, 125, 60);          // 草地绿
+        const FVector2D P2D((double)WorldPos.X, (double)WorldPos.Y);
+        const float N = FMath::PerlinNoise2D(P2D * BiomeFreq);
+        const float t = FMath::Clamp((N + BlendHalf) / (BlendHalf * 2.f), 0.f, 1.f);
+        const float S = t * t * (3.f - 2.f * t);   // smoothstep，边界平滑
+
+        // ⭐ 调试版：直接混合颜色，肉眼就能看到过渡带
+        const FColor Forest(0, 200, 0);
+        const FColor Desert(220, 180, 80);
+        return FColor(
+            (uint8)FMath::Lerp((float)Forest.R, (float)Desert.R, S),
+            (uint8)FMath::Lerp((float)Forest.G, (float)Desert.G, S),
+            (uint8)FMath::Lerp((float)Forest.B, (float)Desert.B, S),
+            255);
     }
 }
 
@@ -58,6 +68,7 @@ namespace
 void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
     float VoxelSize,
     int32 LOD,
+    const FVector3f& ChunkWorldOrigin,  
     FVoxelMeshData& Out)
 {
     Out.Reset();
@@ -145,13 +156,14 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
 
                         const FVector3f LocalP = FMath::Lerp(PA, PB, t);
                         const FVector3f WorldP = LocalP * WorldStep;
+                        const FVector3f ActualWorldP = WorldP + ChunkWorldOrigin;   // ⭐ 真世界坐标（用于颜色）
                         const FVector3f Normal = ComputeGradient(Chunk, LocalP);
 
                         GlobalIdx = Out.Positions.Num();
                         Out.Positions.Add(WorldP);
                         Out.Normals.Add(Normal);
                         Out.UVs.Add(FVector2f::ZeroVector);
-                        Out.Colors.Add(ComputeColor(WorldP, Normal));
+                        Out.Colors.Add(ComputeColor(ActualWorldP, Normal));
 
                         Cached = GlobalIdx;
                     }

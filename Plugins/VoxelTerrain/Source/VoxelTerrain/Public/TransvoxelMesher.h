@@ -9,6 +9,7 @@ public:
     static void GenerateRegular(const FVoxelChunkData& Chunk,
         float VoxelSize,
         int32 LOD,
+        const FVector3f& ChunkWorldOrigin,   
         FVoxelMeshData& Out);
 
     // FaceDirection:
