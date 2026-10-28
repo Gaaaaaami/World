@@ -6,4 +6,5 @@
 #include "D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Source/VoxelTerrain/Private/TransvoxelMesher.cpp"
 #include "D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Source/VoxelTerrain/Private/VoxelGenerator.cpp"
 #include "D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Source/VoxelTerrain/Private/VoxelInteractionActor.cpp"
+#include "D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Source/VoxelTerrain/Private/VoxelSceneProxy.cpp"
 #include "D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Source/VoxelTerrain/Private/VoxelTerrain.cpp"

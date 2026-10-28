@@ -9,8 +9,8 @@
 			"TransvoxelMesher.cpp.obj",
 			"VoxelGenerator.cpp.obj",
 			"VoxelInteractionActor.cpp.obj",
-			"VoxelTerrain.cpp.obj",
 			"VoxelSceneProxy.cpp.obj",
+			"VoxelTerrain.cpp.obj",
 			"VoxelTerrainComponent.cpp.obj"
 		]
 	}

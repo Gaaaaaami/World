@@ -900,17 +900,19 @@ void UVoxelTerrainComponent::RebuildTouchedChunks(const TSet<FChunkKey>& Touched
 {
     for (const FChunkKey& Key : TouchedChunks)
     {
-        if (!ChunkMeshes.Contains(Key)) continue;
-
+        // ⭐ 无论 ChunkMeshes 有没有这个 Chunk，都必须增加版本号。
+        // 这样如果它正在后台加载，加载完会发现版本不对，自动接力重新生成最新的。
         PendingRebuilds.Add(Key);
 
         int32& Ver = ChunkVersions.FindOrAdd(Key);
         Ver++;
 
-        if (RequestedChunks.Contains(Key)) continue;
-
-        RequestedChunks.Add(Key);
-        SpawnChunkAsyncTask(Key, Ver);
+        // 如果这个 Chunk 已经有网格并且已经加载在内存中，立刻发起新的生成任务
+        if (ChunkMeshes.Contains(Key) && !RequestedChunks.Contains(Key))
+        {
+            RequestedChunks.Add(Key);
+            SpawnChunkAsyncTask(Key, Ver);
+        }
     }
 }
 
