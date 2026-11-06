@@ -14,7 +14,8 @@ public class VoxelTerrain : ModuleRules
             "RHI",
             "InputCore",  
             "Projects",
-            "ProceduralMeshComponent"     // ← 新增
+            "ProceduralMeshComponent",
+            "ImageCore"
         });
 
         // 没有额外 Private 依赖

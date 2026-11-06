@@ -5,11 +5,50 @@
 #include "HAL/ThreadSafeCounter.h"
 #include "VoxelMeshData.h"
 #include "VoxelTypes.h"
+#include "Engine/VolumeTexture.h" 
 #include "VoxelTerrainComponent.generated.h"
 
 class UMaterialInterface;
 class UProceduralMeshComponent;
 class FVoxelSceneProxy;
+class UTexture2D;
+
+USTRUCT(BlueprintType)
+struct FVoxelNoiseLayerInfo
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, Category = "Noise")
+    TObjectPtr<UTexture2D> Texture = nullptr;
+
+    UPROPERTY(EditAnywhere, Category = "Noise")
+    float Frequency = 1.0f; // 频率：越小贴图铺得越大
+
+    UPROPERTY(EditAnywhere, Category = "Noise")
+    float Amplitude = 1.0f; // 幅度：贡献的高度权重
+    UPROPERTY(EditAnywhere, Category = "Noise")
+    FVector2D Offset = FVector2D::ZeroVector; // ⭐ 新增：偏移量
+};
+
+USTRUCT(BlueprintType)
+struct FVoxelNoiseLayer3DInfo
+{
+    GENERATED_BODY()
+
+    // ⭐ 注意：这里的类型是 UTexture3D
+    UPROPERTY(EditAnywhere, Category = "Noise")
+    TObjectPtr<UVolumeTexture> Texture = nullptr;
+
+    UPROPERTY(EditAnywhere, Category = "Noise")
+    float Frequency = 1.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Noise")
+    float Amplitude = 1.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Noise")
+    FVector Offset = FVector::ZeroVector;
+};
+
 
 UCLASS(ClassGroup = Voxel, meta = (BlueprintSpawnableComponent))
 class VOXELTERRAIN_API UVoxelTerrainComponent : public UPrimitiveComponent
@@ -27,7 +66,7 @@ public:
 
     // ⭐ 改为按 Chunk 数量加载，不再受 VoxelSize 影响
     UPROPERTY(EditAnywhere, Category = "Voxel|LOD", meta = (DisplayName = "LOD0 Radius XY (Chunks)"))
-    int32 LOD0RadiusChunksXY = 12;
+    int32 LOD0RadiusChunksXY = 8;
 
     UPROPERTY(EditAnywhere, Category = "Voxel|LOD", meta = (DisplayName = "LOD0 Radius Z (Chunks)"))
     int32 LOD0RadiusChunksZ = 2;
@@ -109,4 +148,13 @@ private:
 
     FBox LocalBounds = FBox(ForceInit);
     bool bBoundsDirty = false;
+public:
+
+    void LoadNoiseTextureData();
+
+UPROPERTY(EditAnywhere, Category = "Voxel|Noise")
+    TArray<FVoxelNoiseLayerInfo> NoiseLayers;
+UPROPERTY(EditAnywhere, Category = "Voxel|Noise3D")
+    TArray<FVoxelNoiseLayer3DInfo> NoiseLayers3D;
+    
 };

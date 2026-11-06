@@ -163,7 +163,7 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
                         Out.Positions.Add(WorldP);
                         Out.Normals.Add(Normal);
                         Out.UVs.Add(FVector2f::ZeroVector);
-                        Out.Colors.Add(ComputeColor(ActualWorldP, Normal));
+                        //Out.Colors.Add(ComputeColor(ActualWorldP, Normal));
 
                         Cached = GlobalIdx;
                     }
@@ -296,7 +296,7 @@ void FTransvoxelMesher::GenerateTransition(const FVoxelChunkData& Chunk,
                 Out.Positions.Add(WorldP);
                 Out.Normals.Add(Normal);
                 Out.UVs.Add(FVector2f::ZeroVector);   
-                Out.Colors.Add(ComputeColor(WorldP, Normal));
+                //Out.Colors.Add(ComputeColor(WorldP, Normal));
                 ++VCount;
             }
 

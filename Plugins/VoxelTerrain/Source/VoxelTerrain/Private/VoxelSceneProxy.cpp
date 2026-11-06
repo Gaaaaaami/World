@@ -47,7 +47,7 @@ void FVoxelSceneProxy::ReleaseChunkResources_RenderThread(FChunkRender& R)
     R.VertexFactory.ReleaseResource();
     R.PositionVB.ReleaseResource();
     R.StaticVB.ReleaseResource();
-    R.ColorVB.ReleaseResource();
+    //R.ColorVB.ReleaseResource();
     R.IB.ReleaseResource();
     R.bReady = false;
 }
@@ -102,7 +102,7 @@ void FVoxelSceneProxy::AddChunk_RenderThread(
 
     R->PositionVB.Init(NumVerts);
     R->StaticVB.Init(NumVerts, 1);
-    R->ColorVB.Init(NumVerts);
+    //R->ColorVB.Init(NumVerts);
 
     for (int32 i = 0; i < NumVerts; ++i)
     {
@@ -125,9 +125,9 @@ void FVoxelSceneProxy::AddChunk_RenderThread(
             : FVector2f(0, 0);
         R->StaticVB.SetVertexUV(i, 0, UV);
 
-        R->ColorVB.VertexColor(i) = Mesh->Colors.IsValidIndex(i)
-            ? Mesh->Colors[i]
-            : FColor::White;
+        //R->ColorVB.VertexColor(i) = Mesh->Colors.IsValidIndex(i)
+        //    ? Mesh->Colors[i]
+        //    : FColor::White;
     }
 
     // ⭐ 直接使用 Async 线程预算好的 world-space bounds
@@ -140,7 +140,7 @@ void FVoxelSceneProxy::AddChunk_RenderThread(
     // 上传到 GPU
     R->PositionVB.InitResource(RHICmdList);
     R->StaticVB.InitResource(RHICmdList);
-    R->ColorVB.InitResource(RHICmdList);
+    //R->ColorVB.InitResource(RHICmdList);
     R->IB.InitResource(RHICmdList);
 
     // 绑定到 Vertex Factory
@@ -148,7 +148,7 @@ void FVoxelSceneProxy::AddChunk_RenderThread(
     R->PositionVB.BindPositionVertexBuffer(&R->VertexFactory, Data);
     R->StaticVB.BindTangentVertexBuffer(&R->VertexFactory, Data);
     R->StaticVB.BindPackedTexCoordVertexBuffer(&R->VertexFactory, Data);
-    R->ColorVB.BindColorVertexBuffer(&R->VertexFactory, Data);
+    //R->ColorVB.BindColorVertexBuffer(&R->VertexFactory, Data);
     R->VertexFactory.SetData(RHICmdList, Data);
     R->VertexFactory.InitResource(RHICmdList);
 

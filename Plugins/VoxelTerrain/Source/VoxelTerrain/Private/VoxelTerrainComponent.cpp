@@ -17,7 +17,8 @@
 #include "Serialization/MemoryReader.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
-
+#include "Engine/Texture2D.h"
+#include "ImageUtils.h"      
 UVoxelTerrainComponent::UVoxelTerrainComponent()
 {
     PrimaryComponentTick.bCanEverTick = false;
@@ -33,7 +34,7 @@ void UVoxelTerrainComponent::BeginPlay()
     {
         TerrainMaterial->EnsureIsComplete();
     }
-
+    LoadNoiseTextureData(); 
     ChunkMeshes.Reserve(1024);
     ChunkLastActiveTime.Reserve(1024);
     ChunkCollisionKeepTime.Reserve(128);
@@ -65,6 +66,135 @@ void UVoxelTerrainComponent::BeginPlay()
             }), 0.f);
 }
 
+void UVoxelTerrainComponent::LoadNoiseTextureData()
+{
+#if VOXEL_USE_NOISE_TEXTURE
+
+    // ============================================================
+    // 1. 加载 2D 噪声贴图
+    // ============================================================
+    TSharedPtr<TArray<FVoxelGenerator::FNoiseLayerData>> NewLayers2D = MakeShared<TArray<FVoxelGenerator::FNoiseLayerData>>();
+    NewLayers2D->Reserve(NoiseLayers.Num());
+
+    for (const FVoxelNoiseLayerInfo& LayerInfo : NoiseLayers)
+    {
+        if (!LayerInfo.Texture) continue;
+
+        FImage SourceImage;
+        if (LayerInfo.Texture->Source.GetMipImage(SourceImage, 0))
+        {
+            const int32 SX = SourceImage.SizeX;
+            const int32 SY = SourceImage.SizeY;
+            if (SX != SY || SX < 4) continue;
+
+            TArray<float> F;
+            F.SetNumUninitialized(SX * SY);
+            const int32 NumPixels = SX * SY;
+            const uint8* P = (const uint8*)SourceImage.RawData.GetData();
+
+            if (SourceImage.Format == ERawImageFormat::G8)
+            {
+                for (int32 i = 0; i < NumPixels; ++i) F[i] = P[i] / 255.f;
+            }
+            else if (SourceImage.Format == ERawImageFormat::BGRA8)
+            {
+                for (int32 i = 0; i < NumPixels; ++i) F[i] = P[i * 4 + 2] / 255.f; // 取 R 通道
+            }
+            else
+            {
+                FImage RGBAImage;
+                SourceImage.CopyTo(RGBAImage, ERawImageFormat::BGRA8, EGammaSpace::Linear);
+                const uint8* RGBA_P = (const uint8*)RGBAImage.RawData.GetData();
+                for (int32 i = 0; i < NumPixels; ++i) F[i] = RGBA_P[i * 4 + 2] / 255.f;
+            }
+
+            FVoxelGenerator::FNoiseLayerData NewLayer;
+            NewLayer.Data = MakeShared<TArray<float>>(MoveTemp(F));
+            NewLayer.Size = SX;
+            NewLayer.Frequency = LayerInfo.Frequency;
+            NewLayer.Amplitude = LayerInfo.Amplitude;
+            NewLayer.Offset = LayerInfo.Offset;
+
+            NewLayers2D->Add(NewLayer);
+
+            UE_LOG(LogTemp, Warning, TEXT("VoxelTerrain: 加载 2D 噪声图层 %dx%d (Freq: %.2f, Amp: %.2f)"),
+                SX, SY, NewLayer.Frequency, NewLayer.Amplitude);
+        }
+    }
+
+    FVoxelGenerator::GlobalNoiseLayers = NewLayers2D;
+    if (NewLayers2D->Num() == 0)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("VoxelTerrain: 未配置 2D 噪声图层，地表将使用默认 Perlin。"));
+    }
+
+    // ============================================================
+    // 2. 加载 3D 体积贴图
+    // ============================================================
+    TSharedPtr<TArray<FVoxelGenerator::FNoiseLayer3DData>> NewLayers3D = MakeShared<TArray<FVoxelGenerator::FNoiseLayer3DData>>();
+    NewLayers3D->Reserve(NoiseLayers3D.Num());
+
+    for (const FVoxelNoiseLayer3DInfo& LayerInfo : NoiseLayers3D)
+    {
+        if (!LayerInfo.Texture) continue;
+
+        FImage SourceImage;
+        if (LayerInfo.Texture->Source.GetMipImage(SourceImage, 0))
+        {
+            const int32 SX = SourceImage.SizeX;
+            const int32 SY = SourceImage.SizeY;
+            // ⭐ 修复点：FImage 没有 SizeZ，必须从贴图的 Source 里拿
+            const int32 SZ = LayerInfo.Texture->Source.GetVolumeSizeZ();
+            if (SX != SY || SX != SZ || SX < 4)
+            {
+                UE_LOG(LogTemp, Warning, TEXT("VoxelTerrain: 3D 贴图必须 XYZ 尺寸一致 (当前 %dx%dx%d)"), SX, SY, SZ);
+                continue;
+            }
+
+            TArray<float> F;
+            F.SetNumUninitialized(SX * SY * SZ);
+            const int32 NumPixels = SX * SY * SZ;
+            const uint8* P = (const uint8*)SourceImage.RawData.GetData();
+
+            if (SourceImage.Format == ERawImageFormat::G8)
+            {
+                for (int32 i = 0; i < NumPixels; ++i) F[i] = P[i] / 255.f;
+            }
+            else if (SourceImage.Format == ERawImageFormat::BGRA8)
+            {
+                for (int32 i = 0; i < NumPixels; ++i) F[i] = P[i * 4 + 2] / 255.f;
+            }
+            else
+            {
+                FImage RGBAImage;
+                SourceImage.CopyTo(RGBAImage, ERawImageFormat::BGRA8, EGammaSpace::Linear);
+                const uint8* RGBA_P = (const uint8*)RGBAImage.RawData.GetData();
+                for (int32 i = 0; i < NumPixels; ++i) F[i] = RGBA_P[i * 4 + 2] / 255.f;
+            }
+
+            FVoxelGenerator::FNoiseLayer3DData NewLayer;
+            NewLayer.Data = MakeShared<TArray<float>>(MoveTemp(F));
+            NewLayer.Size = SX;
+            NewLayer.Frequency = LayerInfo.Frequency;
+            NewLayer.Amplitude = LayerInfo.Amplitude;
+            NewLayer.Offset = LayerInfo.Offset;
+
+            NewLayers3D->Add(NewLayer);
+
+            UE_LOG(LogTemp, Warning, TEXT("VoxelTerrain: 加载 3D 噪声图层 %dx%dx%d (Freq: %.2f, Amp: %.2f)"),
+                SX, SY, SZ, NewLayer.Frequency, NewLayer.Amplitude);
+        }
+    }
+
+    FVoxelGenerator::GlobalNoiseLayers3D = NewLayers3D;
+    if (NewLayers3D->Num() == 0)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("VoxelTerrain: 未配置 3D 噪声图层，洞穴将使用默认 Perlin。"));
+    }
+
+#endif
+}
+
 FPrimitiveSceneProxy* UVoxelTerrainComponent::CreateSceneProxy()
 {
     return new FVoxelSceneProxy(this, TerrainMaterial);
@@ -76,8 +206,9 @@ FBoxSphereBounds UVoxelTerrainComponent::CalcBounds(const FTransform& LocalToWor
     {
         return FBoxSphereBounds(LocalBounds);
     }
-    return FBoxSphereBounds(FBox(FVector(-100), FVector(100)));
+    return FBoxSphereBounds(FBox(FVector(-100000.f), FVector(100000.f)));
 }
+
 
 void UVoxelTerrainComponent::GetUsedMaterials(
     TArray<UMaterialInterface*>& OutMaterials, bool bGetDebugMaterials) const
@@ -248,12 +379,11 @@ FVoxelModificationMap UVoxelTerrainComponent::GatherModificationsForChunk(const 
         MinY = (Key.Y * S) - 1; MaxY = ((Key.Y + 1) * S);
         MinZ = (Key.Z * S) - 1; MaxZ = ((Key.Z + 1) * S);
     }
-
+    FScopeLock Lock(&DataLock);
     for (int32 x = MinX; x <= MaxX; ++x) {
         for (int32 y = MinY; y <= MaxY; ++y) {
             for (int32 z = MinZ; z <= MaxZ; ++z) {
                 FChunkKey SubKey(x, y, z, 0);
-                FScopeLock Lock(&DataLock);
                 LoadChunkModificationFile(SubKey);
                 if (const FVoxelModificationMap* Mods = ChunkModifications.Find(SubKey)) {
                     ResultMods.Append(*Mods);
@@ -493,7 +623,20 @@ void UVoxelTerrainComponent::StreamTick()
         }
     }
 
-    if (ToUnload.Num() > 0) bBoundsDirty = true;
+    //if (ToUnload.Num() > 0) bBoundsDirty = true;
+
+    if (ToUnload.Num() > 0)
+    {
+        // ⭐ 重建 LocalBounds，避免只增不减
+        LocalBounds = FBox(ForceInit);
+        for (const auto& Pair : ChunkMeshes)
+        {
+            if (Pair.Value.IsValid() && Pair.Value->Bounds.IsValid)
+                LocalBounds += Pair.Value->Bounds;
+        }
+        bBoundsDirty = true;
+    }
+
 
     UpdateCollisions(CamLoc, Now);
 
@@ -502,6 +645,14 @@ void UVoxelTerrainComponent::StreamTick()
         bBoundsDirty = false;
         UpdateBounds();
         MarkRenderTransformDirty();
+    }
+    if (ChunkCollisionKeepTime.Num() > 0)
+    {
+        for (auto It = ChunkCollisionKeepTime.CreateIterator(); It; ++It)
+        {
+            if (Now >= It.Value())    // ⭐ It.Value()，不是 It->Value()
+                It.RemoveCurrent();
+        }
     }
 }
 
@@ -531,6 +682,8 @@ void UVoxelTerrainComponent::OnChunkGenerated(
     {
         LocalBounds += Mesh->Bounds;
     }*/
+
+    #if 1
     LocalBounds = FBox(ForceInit);
     for (auto& Pair : ChunkMeshes)
     {
@@ -538,6 +691,13 @@ void UVoxelTerrainComponent::OnChunkGenerated(
             LocalBounds += Pair.Value->Bounds;
     }
     bBoundsDirty = true;
+    #else
+    if (Mesh.IsValid() && Mesh->Bounds.IsValid)
+    {
+        LocalBounds += Mesh->Bounds;
+    }
+    bBoundsDirty = true;
+    #endif
 
     FVoxelSceneProxy* Proxy = static_cast<FVoxelSceneProxy*>(SceneProxy);
     if (Proxy)
@@ -642,8 +802,10 @@ void UVoxelTerrainComponent::UpdateCollisions(const FVector& CamLoc, double Now)
     }
 }
 
+
 void UVoxelTerrainComponent::ProcessCollisionQueue()
 {
+    // ==================== 移除队列（不变）====================
     int32 RemoveBudget = 2;
     while (PendingCollisionRemoves.Num() > 0 && RemoveBudget > 0)
     {
@@ -654,6 +816,7 @@ void UVoxelTerrainComponent::ProcessCollisionQueue()
 
     if (PendingCollisionAdds.Num() == 0) return;
 
+    // ==================== VIP 优先（不变）====================
     TArray<FChunkKey> VIPKeys;
     for (auto It = PendingCollisionAdds.CreateIterator(); It; ++It)
     {
@@ -670,6 +833,9 @@ void UVoxelTerrainComponent::ProcessCollisionQueue()
         if (MeshPtr && MeshPtr->IsValid()) CreateCollisionForChunk(Key, **MeshPtr);
     }
 
+    if (PendingCollisionAdds.Num() == 0) return;
+
+    // ==================== 玩家位置（只算一次）====================
     FVector PlayerLoc = FVector::ZeroVector;
     if (UWorld* World = GetWorld())
     {
@@ -678,30 +844,56 @@ void UVoxelTerrainComponent::ProcessCollisionQueue()
             if (APawn* Pawn = PC->GetPawnOrSpectator()) PlayerLoc = Pawn->GetActorLocation();
         }
     }
-    const float BaseChunkSize = VoxelConfig::ChunkSize * VoxelConfig::VoxelSize;
-    auto ChunkCenter = [BaseChunkSize](const FChunkKey& K) -> FVector
-        {
-            return FVector((K.X + 0.5f) * BaseChunkSize, (K.Y + 0.5f) * BaseChunkSize, (K.Z + 0.5f) * BaseChunkSize);
-        };
+    const FIntVector PlayerChunk = WorldToBaseChunk(PlayerLoc);
 
+    // ⭐ 优化 1：队列过长时截断（远处 Chunk 反正走不到，先丢弃最远的）
+    constexpr int32 MaxPendingCollisions = 64;
+    if (PendingCollisionAdds.Num() > MaxPendingCollisions)
+    {
+        PendingCollisionAdds.Sort([&PlayerChunk](const FChunkKey& A, const FChunkKey& B)
+            {
+                auto Dist = [&PlayerChunk](const FChunkKey& K) -> int32
+                    {
+                        const int32 dx = K.X - PlayerChunk.X;
+                        const int32 dy = K.Y - PlayerChunk.Y;
+                        const int32 dz = K.Z - PlayerChunk.Z;
+                        return dx * dx + dy * dy + dz * dz;
+                    };
+                return Dist(A) > Dist(B); // 降序，最近的在尾部
+            });
+        PendingCollisionAdds.SetNum(MaxPendingCollisions, EAllowShrinking::No);
+    }
+
+    // ⭐ 优化 2：只在队列比预算大时才排序，否则反正都要处理完
+    constexpr int32 AddBudget = 3;
+    if (PendingCollisionAdds.Num() > AddBudget)
+    {
+        // ⭐ 核心优化：整数距离 + 零 FVector 构造
+        // 降序排序 → Pop 时取尾部 = 最近的
+        PendingCollisionAdds.Sort([&PlayerChunk](const FChunkKey& A, const FChunkKey& B)
+            {
+                auto Dist = [&PlayerChunk](const FChunkKey& K) -> int32
+                    {
+                        const int32 dx = K.X - PlayerChunk.X;
+                        const int32 dy = K.Y - PlayerChunk.Y;
+                        const int32 dz = K.Z - PlayerChunk.Z;
+                        return dx * dx + dy * dy + dz * dz;
+                    };
+                return Dist(A) > Dist(B);
+            });
+    }
+
+    // ==================== 处理（不变）====================
     const double StartTime = FPlatformTime::Seconds();
-    const double MaxTimeBudget = 0.003;
-    int32 AddBudget = 3;
+    constexpr double MaxTimeBudget = 0.003;
+    int32 Budget = AddBudget;
 
-    while (PendingCollisionAdds.Num() > 0 && AddBudget > 0)
+    while (PendingCollisionAdds.Num() > 0 && Budget > 0)
     {
         if (FPlatformTime::Seconds() - StartTime > MaxTimeBudget) break;
 
-        if (PendingCollisionAdds.Num() > 1)
-        {
-            PendingCollisionAdds.Sort([&ChunkCenter, PlayerLoc](const FChunkKey& A, const FChunkKey& B)
-                {
-                    return FVector::DistSquared(ChunkCenter(A), PlayerLoc) > FVector::DistSquared(ChunkCenter(B), PlayerLoc);
-                });
-        }
-
         FChunkKey Key = PendingCollisionAdds.Pop();
-        --AddBudget;
+        --Budget;
 
         TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe>* MeshPtr = ChunkMeshes.Find(Key);
         if (MeshPtr && MeshPtr->IsValid()) CreateCollisionForChunk(Key, **MeshPtr);
@@ -721,19 +913,19 @@ void UVoxelTerrainComponent::CreateCollisionForChunk(const FChunkKey& Key, const
     TArray<FProcMeshTangent> Tangents;
 
     Verts.SetNumUninitialized(NumVerts);
-    Normals.SetNumUninitialized(NumVerts);
-    UVs.SetNumUninitialized(NumVerts);
-    Colors.SetNumUninitialized(NumVerts);
-    Tangents.SetNumUninitialized(NumVerts);
+    //Normals.SetNumUninitialized(NumVerts);
+    //UVs.SetNumUninitialized(NumVerts);
+    //Colors.SetNumUninitialized(NumVerts);
+    //Tangents.SetNumUninitialized(NumVerts);
 
     for (int32 i = 0; i < NumVerts; ++i)
     {
         Verts[i] = FVector(Mesh.Positions[i]);
-        Normals[i] = Mesh.Normals.IsValidIndex(i) ? FVector(Mesh.Normals[i]) : FVector(0, 0, 1);
-        UVs[i] = Mesh.UVs.IsValidIndex(i) ? FVector2D(Mesh.UVs[i]) : FVector2D::ZeroVector;
-        FColor C = Mesh.Colors.IsValidIndex(i) ? Mesh.Colors[i] : FColor::White;
-        Colors[i] = FLinearColor(C);
-        Tangents[i] = FProcMeshTangent(1, 0, 0);
+        //Normals[i] = Mesh.Normals.IsValidIndex(i) ? FVector(Mesh.Normals[i]) : FVector(0, 0, 1);
+        //UVs[i] = Mesh.UVs.IsValidIndex(i) ? FVector2D(Mesh.UVs[i]) : FVector2D::ZeroVector;
+        //FColor C = Mesh.Colors.IsValidIndex(i) ? Mesh.Colors[i] : FColor::White;
+        //Colors[i] = FLinearColor(C);
+        //Tangents[i] = FProcMeshTangent(1, 0, 0);
     }
 
     Tris.SetNumUninitialized(Mesh.Indices.Num());

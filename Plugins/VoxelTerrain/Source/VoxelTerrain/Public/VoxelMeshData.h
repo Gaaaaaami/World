@@ -6,7 +6,7 @@ struct FVoxelMeshData
     TArray<FVector3f> Positions;
     TArray<FVector3f> Normals;
     TArray<FVector2f> UVs;
-    TArray<FColor>    Colors;
+    //TArray<FColor>    Colors;
     TArray<uint32>    Indices;
 
     // ⭐ Async 线程预算好的 world-space bounds，主线程只做 O(1) 合并
@@ -17,7 +17,7 @@ struct FVoxelMeshData
         Positions.Reset();
         Normals.Reset();
         UVs.Reset();
-        Colors.Reset();
+        //Colors.Reset();
         Indices.Reset();
         Bounds.Init();
     }

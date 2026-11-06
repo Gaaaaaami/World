@@ -19,7 +19,7 @@ public:
     {
         FPositionVertexBuffer   PositionVB;
         FStaticMeshVertexBuffer StaticVB;
-        FColorVertexBuffer      ColorVB;
+        //FColorVertexBuffer      ColorVB;
         FRawStaticIndexBuffer   IB;
         FLocalVertexFactory     VertexFactory;
         FBox                    Bounds = FBox(ForceInit);
