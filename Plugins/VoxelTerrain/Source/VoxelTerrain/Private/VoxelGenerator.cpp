@@ -229,7 +229,6 @@ float FVoxelGenerator::SampleDensityWithSurface(const FVector& WorldPos, float S
 void FVoxelGenerator::GenerateChunk(
     int32 ChunkX, int32 ChunkY, int32 ChunkZ,
     int32 LOD,
-    const FVoxelModificationMap& Modifications,
     FVoxel* OutVoxels) const
 {
     check(LOD >= 0 && OutVoxels != nullptr);
@@ -248,7 +247,7 @@ void FVoxelGenerator::GenerateChunk(
     const float InvVoxelSize = 1.f / VoxelConfig::VoxelSize;
 
     // ⭐ 分支提升：整个 chunk 只判断一次
-    const bool bHasMods = Modifications.Num() > 0;
+  //  const bool bHasMods = Modifications.Num() > 0;
 
     const float StartX = Origin.X - VoxelConfig::PaddedOffset * Step;
     const float StartY = Origin.Y - VoxelConfig::PaddedOffset * Step;
@@ -274,17 +273,7 @@ void FVoxelGenerator::GenerateChunk(
                 const float D = -SampleDensityWithSurface(WP, SurfaceZ);
                 const float W = FMath::Clamp(D * InvScale, -1.f, 1.f);
                 int8 FinalWeight = (FVoxelWeight)FMath::RoundToInt(W * 127.f);
-
-                if (bHasMods)
-                {
-                    const FIntVector LOD0VoxelCoord(
-                        FMath::FloorToInt(WP.X * InvVoxelSize + 0.5f),
-                        FMath::FloorToInt(WP.Y * InvVoxelSize + 0.5f),
-                        FMath::FloorToInt(WP.Z * InvVoxelSize + 0.5f));
-                    if (const FVoxelWeight* M = Modifications.Find(LOD0VoxelCoord))
-                        FinalWeight = *M;
-                }
-
+        
                 OutVoxels[(ix * N + iy) * N + iz].Weight = FinalWeight;
             }
         }

@@ -21,7 +21,7 @@ PRAGMA_DISABLE_DEPRECATION_WARNINGS
 struct Z_Construct_UScriptStruct_FVoxelNoiseLayerInfo_Statics;
 VOXELTERRAIN_API UScriptStruct* Z_Construct_UScriptStruct_FVoxelNoiseLayerInfo(ETypeConstructPhase);
 
-#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_19_GENERATED_BODY \
+#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_18_GENERATED_BODY \
 	friend struct ::Z_Construct_UScriptStruct_FVoxelNoiseLayerInfo_Statics; \
 	UE_NODEBUG static UScriptStruct* StaticStruct() { return Z_Construct_UScriptStruct_FVoxelNoiseLayerInfo(ETypeConstructPhase::Inner); }
 
@@ -42,15 +42,14 @@ struct FVoxelNoiseLayer3DInfo;
 // ********** End ScriptStruct FVoxelNoiseLayer3DInfo **********************************************
 
 // ********** Begin Class UVoxelTerrainComponent ***************************************************
-#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_56_RPC_WRAPPERS_NO_PURE_DECLS \
-	DECLARE_FUNCTION(execClearAllSaveData); \
+#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_55_RPC_WRAPPERS_NO_PURE_DECLS \
 	DECLARE_FUNCTION(execApplyEdit);
 
 
 struct Z_Construct_UClass_UVoxelTerrainComponent_Statics;
 VOXELTERRAIN_API UClass* Z_Construct_UClass_UVoxelTerrainComponent(ETypeConstructPhase);
 
-#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_56_INCLASS_NO_PURE_DECLS \
+#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_55_INCLASS_NO_PURE_DECLS \
 private: \
 	friend struct ::Z_Construct_UClass_UVoxelTerrainComponent_Statics; \
 	friend VOXELTERRAIN_API UClass* ::Z_Construct_UClass_UVoxelTerrainComponent(ETypeConstructPhase); \
@@ -59,7 +58,7 @@ public: \
 	DECLARE_SERIALIZER(UVoxelTerrainComponent)
 
 
-#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_56_ENHANCED_CONSTRUCTORS \
+#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_55_ENHANCED_CONSTRUCTORS \
 	/** Deleted move- and copy-constructors, should never be used */ \
 	UVoxelTerrainComponent(UVoxelTerrainComponent&&) = delete; \
 	UVoxelTerrainComponent(const UVoxelTerrainComponent&) = delete; \
@@ -69,13 +68,13 @@ public: \
 	NO_API virtual ~UVoxelTerrainComponent();
 
 
-#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_53_PROLOG
-#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_56_GENERATED_BODY \
+#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_52_PROLOG
+#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_55_GENERATED_BODY \
 PRAGMA_DISABLE_DEPRECATION_WARNINGS \
 public: \
-	FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_56_RPC_WRAPPERS_NO_PURE_DECLS \
-	FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_56_INCLASS_NO_PURE_DECLS \
-	FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_56_ENHANCED_CONSTRUCTORS \
+	FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_55_RPC_WRAPPERS_NO_PURE_DECLS \
+	FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_55_INCLASS_NO_PURE_DECLS \
+	FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_55_ENHANCED_CONSTRUCTORS \
 private: \
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
 

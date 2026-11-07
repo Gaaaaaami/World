@@ -2,16 +2,15 @@
 #include "CoreMinimal.h"
 #include "Components/PrimitiveComponent.h"
 #include "Containers/Ticker.h"
-#include "HAL/ThreadSafeCounter.h"
 #include "VoxelMeshData.h"
 #include "VoxelTypes.h"
 #include "Engine/VolumeTexture.h" 
 #include "VoxelTerrainComponent.generated.h"
 
 class UMaterialInterface;
-class UProceduralMeshComponent;
 class FVoxelSceneProxy;
 class UTexture2D;
+class UProceduralMeshComponent;
 
 USTRUCT(BlueprintType)
 struct FVoxelNoiseLayerInfo
@@ -22,12 +21,13 @@ struct FVoxelNoiseLayerInfo
     TObjectPtr<UTexture2D> Texture = nullptr;
 
     UPROPERTY(EditAnywhere, Category = "Noise")
-    float Frequency = 1.0f; // 频率：越小贴图铺得越大
+    float Frequency = 1.0f;
 
     UPROPERTY(EditAnywhere, Category = "Noise")
-    float Amplitude = 1.0f; // 幅度：贡献的高度权重
+    float Amplitude = 1.0f;
+
     UPROPERTY(EditAnywhere, Category = "Noise")
-    FVector2D Offset = FVector2D::ZeroVector; // ⭐ 新增：偏移量
+    FVector2D Offset = FVector2D::ZeroVector;
 };
 
 USTRUCT(BlueprintType)
@@ -35,7 +35,6 @@ struct FVoxelNoiseLayer3DInfo
 {
     GENERATED_BODY()
 
-    // ⭐ 注意：这里的类型是 UTexture3D
     UPROPERTY(EditAnywhere, Category = "Noise")
     TObjectPtr<UVolumeTexture> Texture = nullptr;
 
@@ -61,106 +60,86 @@ public:
     UPROPERTY(EditAnywhere, Category = "Voxel")
     TObjectPtr<UMaterialInterface> TerrainMaterial;
 
-    UPROPERTY(EditAnywhere, Category = "Voxel")
-    bool bGenerateCollision = true;
-
-    // ⭐ 改为按 Chunk 数量加载，不再受 VoxelSize 影响
     UPROPERTY(EditAnywhere, Category = "Voxel|LOD", meta = (DisplayName = "LOD0 Radius XY (Chunks)"))
     int32 LOD0RadiusChunksXY = 8;
 
     UPROPERTY(EditAnywhere, Category = "Voxel|LOD", meta = (DisplayName = "LOD0 Radius Z (Chunks)"))
     int32 LOD0RadiusChunksZ = 2;
 
-    // ⭐ 碰撞范围（单位：Chunk 数量）
-    UPROPERTY(EditAnywhere, Category = "Voxel", meta = (DisplayName = "Collision Radius (Chunks)"))
-    int32 CollisionRadiusChunks = 1;
-
     UPROPERTY(EditAnywhere, Category = "Voxel")
     float UnloadDelay = 5.0f;
 
-    UPROPERTY(EditAnywhere, Category = "Voxel", meta = (DisplayName = "Collision Keep Duration (s)"))
-    float CollisionKeepDuration = 60.0f;
+    UPROPERTY(EditAnywhere, Category = "Voxel")
+    bool bGenerateCollision = true;
+
+    UPROPERTY(EditAnywhere, Category = "Voxel|Collision")
+    FIntVector CollisionRadius = FIntVector(1, 1, 1);
 
     UFUNCTION(BlueprintCallable, Category = "Voxel")
     void ApplyEdit(const FVector& WorldPos, float Radius, bool bIsAdd);
 
-    UFUNCTION(BlueprintCallable, Category = "Voxel")
-    void ClearAllSaveData();
-
     virtual FPrimitiveSceneProxy* CreateSceneProxy() override;
     virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override;
     virtual void GetUsedMaterials(TArray<UMaterialInterface*>& OutMaterials, bool bGetDebugMaterials = false) const override;
-public:
-    UProceduralMeshComponent* CreateCollisionComponent();
-    UProceduralMeshComponent* AcquireCollisionComponent();
-    void PrewarmCollisionPool(int32 PoolSize);
-    void ReturnCollisionComponent(UProceduralMeshComponent* PMC);
-
 
 protected:
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 
 private:
+    // ==================== 核心逻辑 ====================
     FIntVector WorldToBaseChunk(const FVector& WorldPos) const;
     void StreamTick();
     void FlushPendingPushToSceneProxy();
     void OnChunkGenerated(FChunkKey Key, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> Mesh, int32 Version);
-
-    void UpdateCollisions(const FVector& CamLoc, double Now);
-    void ProcessCollisionQueue();
-    bool CreateCollisionForChunk(const FChunkKey& Key, const FVoxelMeshData& Mesh);
-    void RemoveCollisionForChunk(const FChunkKey& Key);
-    void ClearAllCollisions();
-
-    void RequestChunkImmediate(const FChunkKey& Key);
     void RebuildTouchedChunks(const TSet<FChunkKey>& TouchedChunks);
     void SpawnChunkAsyncTask(const FChunkKey& Key, int32 CurrentVersion);
 
-    // 存档系统
-    FString GetWorldSaveDir() const;
-    FString GetChunkFilePath(const FChunkKey& Key) const;
-    void SaveChunkModificationFile(const FChunkKey& Key);
-    void SaveChunkModificationFileAsync(const FChunkKey& Key);
-    void FlushAllPendingSaves();
-    void LoadChunkModificationFile(const FChunkKey& Key);
-    FVoxelModificationMap GatherModificationsForChunk(const FChunkKey& Key);
-
-    // 核心数据
-    TSet<FChunkKey> RequestedChunks;
+    // ==================== 视觉网格数据 ====================
     TMap<FChunkKey, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe>> ChunkMeshes;
     TMap<FChunkKey, double> ChunkLastActiveTime;
-    TMap<FChunkKey, double> ChunkCollisionKeepTime;
-
     TMap<FChunkKey, FVoxelModificationMap> ChunkModifications;
-    TSet<FChunkKey> FileLoadedChunks;
-    TSet<FChunkKey> DirtyChunks;
-
-    TSharedPtr<FThreadSafeCounter> PendingSaveCounter;
-
-    double LastEditTime = 0.0;
-    FCriticalSection DataLock;
-
-    TSet<FChunkKey> PendingRebuilds;
     TMap<FChunkKey, int32> ChunkVersions;
 
+    // ⭐ 正在生成中的 chunk（防止重复派发）
+    TSet<FChunkKey> RequestedChunks;
+
+    // 编辑触发的重建标记（OnChunkGenerated 里用于判断 bWasRebuild）
+    TSet<FChunkKey> PendingRebuilds;
+
+    // 待推送渲染线程（SceneProxy 未就绪时暂存）
     TArray<FChunkKey> PendingPushToSceneProxy;
-    TArray<FChunkKey> PendingCollisionAdds;
-    TArray<FChunkKey> PendingCollisionRemoves;
+
+    FBox LocalBounds = FBox(ForceInit);
+    bool bBoundsDirty = false;
 
     FTSTicker::FDelegateHandle TickHandle;
     FTSTicker::FDelegateHandle CollisionTickHandle;
 
-    FBox LocalBounds = FBox(ForceInit);
-    bool bBoundsDirty = false;
+    // ==================== 碰撞系统 ====================
 public:
+    void PrewarmCollisionPool(int32 PoolSize);
+    UProceduralMeshComponent* AcquireCollisionComponent();
+    void ReturnCollisionComponent(UProceduralMeshComponent* PMC);
 
+private:
+    void ProcessCollisionQueue();
+    void RemoveCollisionForChunk(const FChunkKey& Key);
+    void ClearAllCollisions();
+
+    UPROPERTY()
+    TArray<TObjectPtr<UProceduralMeshComponent>> CollisionComponentPool;
+
+    TMap<FChunkKey, TObjectPtr<UProceduralMeshComponent>> ChunkCollisionProxies;
+
+    TSet<FChunkKey> PendingCollisionUpdates;
+
+public:
     void LoadNoiseTextureData();
 
-UPROPERTY(EditAnywhere, Category = "Voxel|Noise")
+    UPROPERTY(EditAnywhere, Category = "Voxel|Noise")
     TArray<FVoxelNoiseLayerInfo> NoiseLayers;
-UPROPERTY(EditAnywhere, Category = "Voxel|Noise3D")
+
+    UPROPERTY(EditAnywhere, Category = "Voxel|Noise3D")
     TArray<FVoxelNoiseLayer3DInfo> NoiseLayers3D;
-    TArray<TObjectPtr<UProceduralMeshComponent>> CollisionComponentPool;  
-    TMap<FChunkKey, TObjectPtr<UProceduralMeshComponent>> ChunkCollisionProxies;
 };

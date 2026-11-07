@@ -12,12 +12,14 @@ static_assert(!UE_WITH_CONSTINIT_UOBJECT, "This generated code can only be compi
 void EmptyLinkFunctionForGeneratedCodeVoxelTerrainComponent() {}
 
 // ********** Begin Cross Module References ********************************************************
+COREUOBJECT_API UScriptStruct* Z_Construct_UScriptStruct_FIntVector(ETypeConstructPhase);
 COREUOBJECT_API UScriptStruct* Z_Construct_UScriptStruct_FVector(ETypeConstructPhase);
 COREUOBJECT_API UScriptStruct* Z_Construct_UScriptStruct_FVector2D(ETypeConstructPhase);
 ENGINE_API UClass* Z_Construct_UClass_UPrimitiveComponent(ETypeConstructPhase);
 ENGINE_API UClass* Z_Construct_UClass_UMaterialInterface(ETypeConstructPhase);
 ENGINE_API UClass* Z_Construct_UClass_UTexture2D(ETypeConstructPhase);
 ENGINE_API UClass* Z_Construct_UClass_UVolumeTexture(ETypeConstructPhase);
+PROCEDURALMESHCOMPONENT_API UClass* Z_Construct_UClass_UProceduralMeshComponent(ETypeConstructPhase);
 // ********** End Cross Module References **********************************************************
 
 // ********** Begin Same Module References *********************************************************
@@ -53,23 +55,11 @@ struct UHT_STATICS
 	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_Amplitude_MetaData[] = {
 		{ "Category", "Noise" },
-#if !UE_BUILD_SHIPPING
-		{ "Comment", "// \xe9\xa2\x91\xe7\x8e\x87\xef\xbc\x9a\xe8\xb6\x8a\xe5\xb0\x8f\xe8\xb4\xb4\xe5\x9b\xbe\xe9\x93\xba\xe5\xbe\x97\xe8\xb6\x8a\xe5\xa4\xa7\n" },
-#endif
 		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
-#if !UE_BUILD_SHIPPING
-		{ "ToolTip", "\xe9\xa2\x91\xe7\x8e\x87\xef\xbc\x9a\xe8\xb6\x8a\xe5\xb0\x8f\xe8\xb4\xb4\xe5\x9b\xbe\xe9\x93\xba\xe5\xbe\x97\xe8\xb6\x8a\xe5\xa4\xa7" },
-#endif
 	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_Offset_MetaData[] = {
 		{ "Category", "Noise" },
-#if !UE_BUILD_SHIPPING
-		{ "Comment", "// \xe5\xb9\x85\xe5\xba\xa6\xef\xbc\x9a\xe8\xb4\xa1\xe7\x8c\xae\xe7\x9a\x84\xe9\xab\x98\xe5\xba\xa6\xe6\x9d\x83\xe9\x87\x8d\n" },
-#endif
 		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
-#if !UE_BUILD_SHIPPING
-		{ "ToolTip", "\xe5\xb9\x85\xe5\xba\xa6\xef\xbc\x9a\xe8\xb4\xa1\xe7\x8c\xae\xe7\x9a\x84\xe9\xab\x98\xe5\xba\xa6\xe6\x9d\x83\xe9\x87\x8d" },
-#endif
 	};
 #endif // WITH_METADATA
 
@@ -149,13 +139,7 @@ struct UHT_STATICS
 	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_Texture_MetaData[] = {
 		{ "Category", "Noise" },
-#if !UE_BUILD_SHIPPING
-		{ "Comment", "// \xe2\xad\x90 \xe6\xb3\xa8\xe6\x84\x8f\xef\xbc\x9a\xe8\xbf\x99\xe9\x87\x8c\xe7\x9a\x84\xe7\xb1\xbb\xe5\x9e\x8b\xe6\x98\xaf UTexture3D\n" },
-#endif
 		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
-#if !UE_BUILD_SHIPPING
-		{ "ToolTip", "\xe2\xad\x90 \xe6\xb3\xa8\xe6\x84\x8f\xef\xbc\x9a\xe8\xbf\x99\xe9\x87\x8c\xe7\x9a\x84\xe7\xb1\xbb\xe5\x9e\x8b\xe6\x98\xaf UTexture3D" },
-#endif
 	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_Frequency_MetaData[] = {
 		{ "Category", "Noise" },
@@ -302,44 +286,6 @@ DEFINE_FUNCTION(UVoxelTerrainComponent::execApplyEdit)
 }
 // ********** End Class UVoxelTerrainComponent Function ApplyEdit **********************************
 
-// ********** Begin Class UVoxelTerrainComponent Function ClearAllSaveData *************************
-#ifdef UHT_STATICS
-#error UHT_STATICS already defined
-#endif
-#define UHT_STATICS Z_Construct_UFunction_UVoxelTerrainComponent_ClearAllSaveData_Statics
-struct UHT_STATICS
-{
-#if WITH_METADATA
-	static constexpr UECodeGen_Private::FMetaDataPairParam Type_MetaData[] = {
-		{ "Category", "Voxel" },
-		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
-	};
-#endif // WITH_METADATA
-
-// ********** Begin Function ClearAllSaveData constinit property declarations **********************
-// ********** End Function ClearAllSaveData constinit property declarations ************************
-	static const UECodeGen_Private::FFunctionParams FuncParams;
-};
-const UECodeGen_Private::FFunctionParams UHT_STATICS::FuncParams = { { (FTypeConstructFunc*)Z_Construct_UClass_UVoxelTerrainComponent, nullptr, "ClearAllSaveData", nullptr, 0, 0, RF_Public|RF_Transient|RF_MarkAsNative, (EFunctionFlags)0x04020401, 0, 0, METADATA_PARAMS(UE_ARRAY_COUNT(UHT_STATICS::Type_MetaData), UHT_STATICS::Type_MetaData)},  };
-UFunction* Z_Construct_UFunction_UVoxelTerrainComponent_ClearAllSaveData(ETypeConstructPhase Phase)
-{
-	static UFunction* ReturnFunction = nullptr;
-	if (!ReturnFunction)
-	{
-		UECodeGen_Private::ConstructUFunction(&ReturnFunction, UHT_STATICS::FuncParams);
-	}
-	return ReturnFunction;
-}
-#undef UHT_STATICS
-DEFINE_FUNCTION(UVoxelTerrainComponent::execClearAllSaveData)
-{
-	P_FINISH;
-	P_NATIVE_BEGIN;
-	P_THIS->ClearAllSaveData();
-	P_NATIVE_END;
-}
-// ********** End Class UVoxelTerrainComponent Function ClearAllSaveData ***************************
-
 // ********** Begin Class UVoxelTerrainComponent ***************************************************
 #ifdef UHT_STATICS
 #error UHT_STATICS already defined
@@ -359,44 +305,30 @@ struct UHT_STATICS
 		{ "Category", "Voxel" },
 		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_bGenerateCollision_MetaData[] = {
-		{ "Category", "Voxel" },
-		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
-	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_LOD0RadiusChunksXY_MetaData[] = {
 		{ "Category", "Voxel|LOD" },
-#if !UE_BUILD_SHIPPING
-		{ "Comment", "// \xe2\xad\x90 \xe6\x94\xb9\xe4\xb8\xba\xe6\x8c\x89 Chunk \xe6\x95\xb0\xe9\x87\x8f\xe5\x8a\xa0\xe8\xbd\xbd\xef\xbc\x8c\xe4\xb8\x8d\xe5\x86\x8d\xe5\x8f\x97 VoxelSize \xe5\xbd\xb1\xe5\x93\x8d\n" },
-#endif
 		{ "DisplayName", "LOD0 Radius XY (Chunks)" },
 		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
-#if !UE_BUILD_SHIPPING
-		{ "ToolTip", "\xe2\xad\x90 \xe6\x94\xb9\xe4\xb8\xba\xe6\x8c\x89 Chunk \xe6\x95\xb0\xe9\x87\x8f\xe5\x8a\xa0\xe8\xbd\xbd\xef\xbc\x8c\xe4\xb8\x8d\xe5\x86\x8d\xe5\x8f\x97 VoxelSize \xe5\xbd\xb1\xe5\x93\x8d" },
-#endif
 	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_LOD0RadiusChunksZ_MetaData[] = {
 		{ "Category", "Voxel|LOD" },
 		{ "DisplayName", "LOD0 Radius Z (Chunks)" },
 		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_CollisionRadiusChunks_MetaData[] = {
-		{ "Category", "Voxel" },
-#if !UE_BUILD_SHIPPING
-		{ "Comment", "// \xe2\xad\x90 \xe7\xa2\xb0\xe6\x92\x9e\xe8\x8c\x83\xe5\x9b\xb4\xef\xbc\x88\xe5\x8d\x95\xe4\xbd\x8d\xef\xbc\x9a""Chunk \xe6\x95\xb0\xe9\x87\x8f\xef\xbc\x89\n" },
-#endif
-		{ "DisplayName", "Collision Radius (Chunks)" },
-		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
-#if !UE_BUILD_SHIPPING
-		{ "ToolTip", "\xe2\xad\x90 \xe7\xa2\xb0\xe6\x92\x9e\xe8\x8c\x83\xe5\x9b\xb4\xef\xbc\x88\xe5\x8d\x95\xe4\xbd\x8d\xef\xbc\x9a""Chunk \xe6\x95\xb0\xe9\x87\x8f\xef\xbc\x89" },
-#endif
-	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_UnloadDelay_MetaData[] = {
 		{ "Category", "Voxel" },
 		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
 	};
-	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_CollisionKeepDuration_MetaData[] = {
+	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_bGenerateCollision_MetaData[] = {
 		{ "Category", "Voxel" },
-		{ "DisplayName", "Collision Keep Duration (s)" },
+		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
+	};
+	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_CollisionRadius_MetaData[] = {
+		{ "Category", "Voxel|Collision" },
+		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
+	};
+	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_CollisionComponentPool_MetaData[] = {
+		{ "EditInline", "true" },
 		{ "ModuleRelativePath", "Public/VoxelTerrainComponent.h" },
 	};
 	static constexpr UECodeGen_Private::FMetaDataPairParam NewProp_NoiseLayers_MetaData[] = {
@@ -411,16 +343,17 @@ struct UHT_STATICS
 
 // ********** Begin Class UVoxelTerrainComponent constinit property declarations *******************
 	static const UECodeGen_Private::FObjectPropertyParams NewProp_TerrainMaterial;
+	static const UECodeGen_Private::FIntPropertyParams NewProp_LOD0RadiusChunksXY;
+	static const UECodeGen_Private::FIntPropertyParams NewProp_LOD0RadiusChunksZ;
+	static const UECodeGen_Private::FFloatPropertyParams NewProp_UnloadDelay;
 	static void NewProp_bGenerateCollision_SetBit(void* Obj)
 	{
 		((UVoxelTerrainComponent*)Obj)->bGenerateCollision = 1;
 	}
 	static const UECodeGen_Private::FBoolPropertyParams NewProp_bGenerateCollision;
-	static const UECodeGen_Private::FIntPropertyParams NewProp_LOD0RadiusChunksXY;
-	static const UECodeGen_Private::FIntPropertyParams NewProp_LOD0RadiusChunksZ;
-	static const UECodeGen_Private::FIntPropertyParams NewProp_CollisionRadiusChunks;
-	static const UECodeGen_Private::FFloatPropertyParams NewProp_UnloadDelay;
-	static const UECodeGen_Private::FFloatPropertyParams NewProp_CollisionKeepDuration;
+	static const UECodeGen_Private::FStructPropertyParams NewProp_CollisionRadius;
+	static const UECodeGen_Private::FObjectPropertyParams NewProp_CollisionComponentPool_Inner;
+	static const UECodeGen_Private::FArrayPropertyParams NewProp_CollisionComponentPool;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_NoiseLayers_Inner;
 	static const UECodeGen_Private::FArrayPropertyParams NewProp_NoiseLayers;
 	static const UECodeGen_Private::FStructPropertyParams NewProp_NoiseLayers3D_Inner;
@@ -429,12 +362,10 @@ struct UHT_STATICS
 // ********** End Class UVoxelTerrainComponent constinit property declarations *********************
 	static constexpr UE::CodeGen::FClassNativeFunction Funcs[] = {
 		{ .NameUTF8 = UTF8TEXT("ApplyEdit"), .Pointer = &UVoxelTerrainComponent::execApplyEdit },
-		{ .NameUTF8 = UTF8TEXT("ClearAllSaveData"), .Pointer = &UVoxelTerrainComponent::execClearAllSaveData },
 	};
 	static FTypeConstructFunc* DependentSingletons[];
 	static constexpr FClassFunctionLinkInfo FuncInfo[] = {
 		{ &Z_Construct_UFunction_UVoxelTerrainComponent_ApplyEdit, "ApplyEdit" }, // c2436e9c6f20010e7cf1f092b5a7ef761a69d398
-		{ &Z_Construct_UFunction_UVoxelTerrainComponent_ClearAllSaveData, "ClearAllSaveData" }, // daa29b6d64eef781a25a9c636dcfd5979fa8f492
 	};
 	static_assert(UE_ARRAY_COUNT(FuncInfo) < 2048);
 	static constexpr FCppClassTypeInfoStatic StaticCppClassTypeInfo = {
@@ -445,24 +376,26 @@ struct UHT_STATICS
 
 // ********** Begin Class UVoxelTerrainComponent Property Definitions ******************************
 const UECodeGen_Private::FObjectPropertyParams UHT_STATICS::NewProp_TerrainMaterial = { "TerrainMaterial", nullptr, (EPropertyFlags)0x0114000000000001, UECodeGen_Private::EPropertyGenFlags::Object | UECodeGen_Private::EPropertyGenFlags::ObjectPtr, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, TerrainMaterial), Z_Construct_UClass_UMaterialInterface, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_TerrainMaterial_MetaData), NewProp_TerrainMaterial_MetaData) };
-const UECodeGen_Private::FBoolPropertyParams UHT_STATICS::NewProp_bGenerateCollision = { "bGenerateCollision", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Bool | UECodeGen_Private::EPropertyGenFlags::NativeBool, nullptr, nullptr, 1, sizeof(bool), sizeof(UVoxelTerrainComponent), &UHT_STATICS::NewProp_bGenerateCollision_SetBit, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_bGenerateCollision_MetaData), NewProp_bGenerateCollision_MetaData) };
 const UECodeGen_Private::FIntPropertyParams UHT_STATICS::NewProp_LOD0RadiusChunksXY = { "LOD0RadiusChunksXY", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Int, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, LOD0RadiusChunksXY), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_LOD0RadiusChunksXY_MetaData), NewProp_LOD0RadiusChunksXY_MetaData) };
 const UECodeGen_Private::FIntPropertyParams UHT_STATICS::NewProp_LOD0RadiusChunksZ = { "LOD0RadiusChunksZ", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Int, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, LOD0RadiusChunksZ), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_LOD0RadiusChunksZ_MetaData), NewProp_LOD0RadiusChunksZ_MetaData) };
-const UECodeGen_Private::FIntPropertyParams UHT_STATICS::NewProp_CollisionRadiusChunks = { "CollisionRadiusChunks", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Int, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, CollisionRadiusChunks), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_CollisionRadiusChunks_MetaData), NewProp_CollisionRadiusChunks_MetaData) };
 const UECodeGen_Private::FFloatPropertyParams UHT_STATICS::NewProp_UnloadDelay = { "UnloadDelay", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Float, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, UnloadDelay), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_UnloadDelay_MetaData), NewProp_UnloadDelay_MetaData) };
-const UECodeGen_Private::FFloatPropertyParams UHT_STATICS::NewProp_CollisionKeepDuration = { "CollisionKeepDuration", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Float, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, CollisionKeepDuration), METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_CollisionKeepDuration_MetaData), NewProp_CollisionKeepDuration_MetaData) };
-const UECodeGen_Private::FStructPropertyParams UHT_STATICS::NewProp_NoiseLayers_Inner = { "NoiseLayers", nullptr, (EPropertyFlags)0x0000000000000000, UECodeGen_Private::EPropertyGenFlags::Struct, nullptr, nullptr, 1, 0, Z_Construct_UScriptStruct_FVoxelNoiseLayerInfo, METADATA_PARAMS(0, nullptr) }; // 7bc80d840451a14c895b50c4934ca0fb18b7a3cd
-const UECodeGen_Private::FArrayPropertyParams UHT_STATICS::NewProp_NoiseLayers = { "NoiseLayers", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Array, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, NoiseLayers), EArrayPropertyFlags::None, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_NoiseLayers_MetaData), NewProp_NoiseLayers_MetaData) }; // 7bc80d840451a14c895b50c4934ca0fb18b7a3cd
-const UECodeGen_Private::FStructPropertyParams UHT_STATICS::NewProp_NoiseLayers3D_Inner = { "NoiseLayers3D", nullptr, (EPropertyFlags)0x0000000000000000, UECodeGen_Private::EPropertyGenFlags::Struct, nullptr, nullptr, 1, 0, Z_Construct_UScriptStruct_FVoxelNoiseLayer3DInfo, METADATA_PARAMS(0, nullptr) }; // 9856a57d3f48d28ba1de55c90d5b750d7dca503d
-const UECodeGen_Private::FArrayPropertyParams UHT_STATICS::NewProp_NoiseLayers3D = { "NoiseLayers3D", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Array, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, NoiseLayers3D), EArrayPropertyFlags::None, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_NoiseLayers3D_MetaData), NewProp_NoiseLayers3D_MetaData) }; // 9856a57d3f48d28ba1de55c90d5b750d7dca503d
+const UECodeGen_Private::FBoolPropertyParams UHT_STATICS::NewProp_bGenerateCollision = { "bGenerateCollision", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Bool | UECodeGen_Private::EPropertyGenFlags::NativeBool, nullptr, nullptr, 1, sizeof(bool), sizeof(UVoxelTerrainComponent), &UHT_STATICS::NewProp_bGenerateCollision_SetBit, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_bGenerateCollision_MetaData), NewProp_bGenerateCollision_MetaData) };
+const UECodeGen_Private::FStructPropertyParams UHT_STATICS::NewProp_CollisionRadius = { "CollisionRadius", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Struct, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, CollisionRadius), Z_Construct_UScriptStruct_FIntVector, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_CollisionRadius_MetaData), NewProp_CollisionRadius_MetaData) };
+const UECodeGen_Private::FObjectPropertyParams UHT_STATICS::NewProp_CollisionComponentPool_Inner = { "CollisionComponentPool", nullptr, (EPropertyFlags)0x0104000000080008, UECodeGen_Private::EPropertyGenFlags::Object | UECodeGen_Private::EPropertyGenFlags::ObjectPtr, nullptr, nullptr, 1, 0, Z_Construct_UClass_UProceduralMeshComponent, METADATA_PARAMS(0, nullptr) };
+const UECodeGen_Private::FArrayPropertyParams UHT_STATICS::NewProp_CollisionComponentPool = { "CollisionComponentPool", nullptr, (EPropertyFlags)0x0144008000000008, UECodeGen_Private::EPropertyGenFlags::Array, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, CollisionComponentPool), EArrayPropertyFlags::None, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_CollisionComponentPool_MetaData), NewProp_CollisionComponentPool_MetaData) };
+const UECodeGen_Private::FStructPropertyParams UHT_STATICS::NewProp_NoiseLayers_Inner = { "NoiseLayers", nullptr, (EPropertyFlags)0x0000000000000000, UECodeGen_Private::EPropertyGenFlags::Struct, nullptr, nullptr, 1, 0, Z_Construct_UScriptStruct_FVoxelNoiseLayerInfo, METADATA_PARAMS(0, nullptr) }; // 0623884665795223aacb6bd36db67d0726694754
+const UECodeGen_Private::FArrayPropertyParams UHT_STATICS::NewProp_NoiseLayers = { "NoiseLayers", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Array, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, NoiseLayers), EArrayPropertyFlags::None, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_NoiseLayers_MetaData), NewProp_NoiseLayers_MetaData) }; // 0623884665795223aacb6bd36db67d0726694754
+const UECodeGen_Private::FStructPropertyParams UHT_STATICS::NewProp_NoiseLayers3D_Inner = { "NoiseLayers3D", nullptr, (EPropertyFlags)0x0000000000000000, UECodeGen_Private::EPropertyGenFlags::Struct, nullptr, nullptr, 1, 0, Z_Construct_UScriptStruct_FVoxelNoiseLayer3DInfo, METADATA_PARAMS(0, nullptr) }; // 982729d5df116956271d18feee385be6fed872dd
+const UECodeGen_Private::FArrayPropertyParams UHT_STATICS::NewProp_NoiseLayers3D = { "NoiseLayers3D", nullptr, (EPropertyFlags)0x0010000000000001, UECodeGen_Private::EPropertyGenFlags::Array, nullptr, nullptr, 1, STRUCT_OFFSET(UVoxelTerrainComponent, NoiseLayers3D), EArrayPropertyFlags::None, METADATA_PARAMS(UE_ARRAY_COUNT(NewProp_NoiseLayers3D_MetaData), NewProp_NoiseLayers3D_MetaData) }; // 982729d5df116956271d18feee385be6fed872dd
 const UECodeGen_Private::FPropertyParamsBase* const UHT_STATICS::PropPointers[] = {
 	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_TerrainMaterial,
-	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_bGenerateCollision,
 	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_LOD0RadiusChunksXY,
 	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_LOD0RadiusChunksZ,
-	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_CollisionRadiusChunks,
 	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_UnloadDelay,
-	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_CollisionKeepDuration,
+	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_bGenerateCollision,
+	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_CollisionRadius,
+	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_CollisionComponentPool_Inner,
+	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_CollisionComponentPool,
 	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_NoiseLayers_Inner,
 	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_NoiseLayers,
 	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_NoiseLayers3D_Inner,
@@ -541,14 +474,14 @@ UVoxelTerrainComponent::~UVoxelTerrainComponent() {}
 struct UHT_STATICS
 {
 	static constexpr FStructRegisterCompiledInInfo ScriptStructInfo[] = {
-		{ Z_Construct_UScriptStruct_FVoxelNoiseLayerInfo, Z_Construct_UScriptStruct_FVoxelNoiseLayerInfo_Statics::NewStructOps, TEXT("VoxelNoiseLayerInfo"),&Z_Registration_Info_UScriptStruct_FVoxelNoiseLayerInfo, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FVoxelNoiseLayerInfo), 2076708228U) },
-		{ Z_Construct_UScriptStruct_FVoxelNoiseLayer3DInfo, Z_Construct_UScriptStruct_FVoxelNoiseLayer3DInfo_Statics::NewStructOps, TEXT("VoxelNoiseLayer3DInfo"),&Z_Registration_Info_UScriptStruct_FVoxelNoiseLayer3DInfo, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FVoxelNoiseLayer3DInfo), 2555815293U) },
+		{ Z_Construct_UScriptStruct_FVoxelNoiseLayerInfo, Z_Construct_UScriptStruct_FVoxelNoiseLayerInfo_Statics::NewStructOps, TEXT("VoxelNoiseLayerInfo"),&Z_Registration_Info_UScriptStruct_FVoxelNoiseLayerInfo, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FVoxelNoiseLayerInfo), 102991942U) },
+		{ Z_Construct_UScriptStruct_FVoxelNoiseLayer3DInfo, Z_Construct_UScriptStruct_FVoxelNoiseLayer3DInfo_Statics::NewStructOps, TEXT("VoxelNoiseLayer3DInfo"),&Z_Registration_Info_UScriptStruct_FVoxelNoiseLayer3DInfo, CONSTRUCT_RELOAD_VERSION_INFO(FStructReloadVersionInfo, sizeof(FVoxelNoiseLayer3DInfo), 2552703445U) },
 	};
 	static constexpr FClassRegisterCompiledInInfo ClassInfo[] = {
-		{ Z_Construct_UClass_UVoxelTerrainComponent, TEXT("UVoxelTerrainComponent"), &Z_Registration_Info_UClass_UVoxelTerrainComponent, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UVoxelTerrainComponent), 3512352847U) },
+		{ Z_Construct_UClass_UVoxelTerrainComponent, TEXT("UVoxelTerrainComponent"), &Z_Registration_Info_UClass_UVoxelTerrainComponent, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UVoxelTerrainComponent), 1977972115U) },
 	};
 }; // UHT_STATICS 
-static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h__Script_VoxelTerrain_a28b619b17214552f6cd571bebd9a753bec96b54{
+static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h__Script_VoxelTerrain_389bed4573c50eeffd0daa7f1f5868aa20b1566b{
 	TEXT("/Script/VoxelTerrain"),
 	UHT_STATICS::ClassInfo, UE_ARRAY_COUNT(UHT_STATICS::ClassInfo),
 	UHT_STATICS::ScriptStructInfo, UE_ARRAY_COUNT(UHT_STATICS::ScriptStructInfo),
