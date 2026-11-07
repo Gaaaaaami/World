@@ -1,0 +1,12 @@
+/NOLOGO
+/errorReport:prompt
+/MACHINE:x64
+/SUBSYSTEM:WINDOWS
+/experimental:deterministic
+/DEF
+/NAME:"UnrealEditor-VoxelTerrain-Win64-DebugGame.dll"
+/IGNORE:4221
+/NODEFAULTLIB
+"D:/Users/Administrator/Documents/Unreal Projects/World/Intermediate/Build/Win64/x64/WorldEditor/DebugGame/UnrealEd/SharedPCH.UnrealEd.Project.NonOpt.ValApi.ValExpApi.Cpp20.InclOrderUnreal5_6.h.obj"
+"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/VoxelTerrain/Module.VoxelTerrain.cpp.obj"
+/OUT:"D:/Users/Administrator/Documents/Unreal Projects/World/Plugins/VoxelTerrain/Intermediate/Build/Win64/x64/UnrealEditor/DebugGame/VoxelTerrain/UnrealEditor-VoxelTerrain-Win64-DebugGame.lib"

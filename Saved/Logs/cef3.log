@@ -1,3 +1,6 @@
-[21432:3096:1106/213801.423:WARNING:chrome_main_delegate.cc(745)] This is Chrome version 128.0.6613.138 (not a warning)
-[21432:3096:1106/213801.538:WARNING:account_consistency_mode_manager.cc(77)] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
-[10612:8712:1106/213814.013:WARNING:spdy_session.cc(2985)] Received HEADERS for invalid stream 1
+[11132:21696:1107/094218.374:WARNING:chrome_main_delegate.cc(745)] This is Chrome version 128.0.6613.138 (not a warning)
+[11132:21696:1107/094218.496:WARNING:account_consistency_mode_manager.cc(77)] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
+[22316:21904:1107/094233.211:WARNING:spdy_session.cc(2985)] Received HEADERS for invalid stream 1
+[22316:21904:1107/094233.211:WARNING:spdy_session.cc(2985)] Received HEADERS for invalid stream 3
+[22316:21904:1107/094556.489:ERROR:ssl_client_socket_impl.cc(882)] handshake failed; returned -1, SSL error code 1, net_error -101
+[22316:21904:1107/094556.750:ERROR:ssl_client_socket_impl.cc(882)] handshake failed; returned -1, SSL error code 1, net_error -101

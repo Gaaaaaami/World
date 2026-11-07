@@ -90,6 +90,12 @@ public:
     virtual FPrimitiveSceneProxy* CreateSceneProxy() override;
     virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override;
     virtual void GetUsedMaterials(TArray<UMaterialInterface*>& OutMaterials, bool bGetDebugMaterials = false) const override;
+public:
+    UProceduralMeshComponent* CreateCollisionComponent();
+    UProceduralMeshComponent* AcquireCollisionComponent();
+    void PrewarmCollisionPool(int32 PoolSize);
+    void ReturnCollisionComponent(UProceduralMeshComponent* PMC);
+
 
 protected:
     virtual void BeginPlay() override;
@@ -103,7 +109,7 @@ private:
 
     void UpdateCollisions(const FVector& CamLoc, double Now);
     void ProcessCollisionQueue();
-    void CreateCollisionForChunk(const FChunkKey& Key, const FVoxelMeshData& Mesh);
+    bool CreateCollisionForChunk(const FChunkKey& Key, const FVoxelMeshData& Mesh);
     void RemoveCollisionForChunk(const FChunkKey& Key);
     void ClearAllCollisions();
 
@@ -139,7 +145,6 @@ private:
     TMap<FChunkKey, int32> ChunkVersions;
 
     TArray<FChunkKey> PendingPushToSceneProxy;
-    TMap<FChunkKey, TObjectPtr<UProceduralMeshComponent>> ChunkCollisionProxies;
     TArray<FChunkKey> PendingCollisionAdds;
     TArray<FChunkKey> PendingCollisionRemoves;
 
@@ -156,5 +161,6 @@ UPROPERTY(EditAnywhere, Category = "Voxel|Noise")
     TArray<FVoxelNoiseLayerInfo> NoiseLayers;
 UPROPERTY(EditAnywhere, Category = "Voxel|Noise3D")
     TArray<FVoxelNoiseLayer3DInfo> NoiseLayers3D;
-    
+    TArray<TObjectPtr<UProceduralMeshComponent>> CollisionComponentPool;  
+    TMap<FChunkKey, TObjectPtr<UProceduralMeshComponent>> ChunkCollisionProxies;
 };
