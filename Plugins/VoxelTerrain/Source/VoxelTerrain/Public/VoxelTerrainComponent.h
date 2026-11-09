@@ -3,6 +3,7 @@
 #include "Components/PrimitiveComponent.h"
 #include "Containers/Ticker.h"
 #include "VoxelMeshData.h"
+#include "VoxelChunkData.h"
 #include "VoxelTypes.h"
 #include "Engine/VolumeTexture.h" 
 #include "VoxelTerrainComponent.generated.h"
@@ -49,6 +50,7 @@ struct FVoxelNoiseLayer3DInfo
 };
 
 
+
 UCLASS(ClassGroup = Voxel, meta = (BlueprintSpawnableComponent))
 class VOXELTERRAIN_API UVoxelTerrainComponent : public UPrimitiveComponent
 {
@@ -91,23 +93,29 @@ private:
     FIntVector WorldToBaseChunk(const FVector& WorldPos) const;
     void StreamTick();
     void FlushPendingPushToSceneProxy();
-    void OnChunkGenerated(FChunkKey Key, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> Mesh, int32 Version);
+
+    // ⭐ 自然加载回调：4 参数（含 VoxelData）
+    void OnChunkGenerated(
+        FChunkKey Key,
+        TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> Mesh,
+        TSharedPtr<FVoxelChunkData> VoxelData,
+        int32 Version);
+
+    // ⭐ 编辑：主线程同步生成 + 推渲染 + 更新碰撞
     void RebuildTouchedChunks(const TSet<FChunkKey>& TouchedChunks);
+
+    // 自然加载：后台异步生成
     void SpawnChunkAsyncTask(const FChunkKey& Key, int32 CurrentVersion);
 
-    // ==================== 视觉网格数据 ====================
+    // ==================== 数据 ====================
     TMap<FChunkKey, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe>> ChunkMeshes;
+    TMap<FChunkKey, TSharedPtr<FVoxelChunkData>> ChunkVoxelData;   // ⭐ 体素缓存
     TMap<FChunkKey, double> ChunkLastActiveTime;
     TMap<FChunkKey, FVoxelModificationMap> ChunkModifications;
     TMap<FChunkKey, int32> ChunkVersions;
 
-    // ⭐ 正在生成中的 chunk（防止重复派发）
     TSet<FChunkKey> RequestedChunks;
 
-    // 编辑触发的重建标记（OnChunkGenerated 里用于判断 bWasRebuild）
-    TSet<FChunkKey> PendingRebuilds;
-
-    // 待推送渲染线程（SceneProxy 未就绪时暂存）
     TArray<FChunkKey> PendingPushToSceneProxy;
 
     FBox LocalBounds = FBox(ForceInit);
@@ -115,6 +123,7 @@ private:
 
     FTSTicker::FDelegateHandle TickHandle;
     FTSTicker::FDelegateHandle CollisionTickHandle;
+    FTSTicker::FDelegateHandle EditTickHandle;
 
     // ==================== 碰撞系统 ====================
 public:
@@ -132,8 +141,6 @@ private:
 
     TMap<FChunkKey, TObjectPtr<UProceduralMeshComponent>> ChunkCollisionProxies;
 
-    TSet<FChunkKey> PendingCollisionUpdates;
-
 public:
     void LoadNoiseTextureData();
 
@@ -142,4 +149,11 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Voxel|Noise3D")
     TArray<FVoxelNoiseLayer3DInfo> NoiseLayers3D;
+public:
+    UFUNCTION(BlueprintCallable, Category = "Voxel")
+    void RequestEdit(const FVector& WorldPos, float Radius, bool bIsAdd);
+
+private:
+    TSet<FVoxelEditTask> PendingEditTasks;
+    void EditTaskTick();
 };

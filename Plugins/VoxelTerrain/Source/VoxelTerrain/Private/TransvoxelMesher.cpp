@@ -12,48 +12,17 @@ namespace
         {0,0,1}, {1,0,1}, {0,1,1}, {1,1,1}
     };
 
-
-
-    FORCEINLINE float SampleWeight(const FVoxelChunkData& Chunk,
-        int32 x, int32 y, int32 z)
-    {
-        // padded 数组覆盖 [-1, ChunkSize+1]，无需 clamp，都是有效采样
-        return (float)Chunk.At(x, y, z).Weight;
-    }
-
-    FVector3f ComputeGradient(const FVoxelChunkData& Chunk, const FVector3f& LocalPos)
-    {
-        const int32 xi = FMath::RoundToInt(LocalPos.X);
-        const int32 yi = FMath::RoundToInt(LocalPos.Y);
-        const int32 zi = FMath::RoundToInt(LocalPos.Z);
-
-        // ⭐ halo 保证 xi±1 都在 [-1, 33] 有效，无需 clamp，
-        //    即使顶点在 chunk 边界（xi = 0 或 32）也是真正的中心差分
-        const float dx = SampleWeight(Chunk, xi + 1, yi, zi)
-            - SampleWeight(Chunk, xi - 1, yi, zi);
-        const float dy = SampleWeight(Chunk, xi, yi + 1, zi)
-            - SampleWeight(Chunk, xi, yi - 1, zi);
-        const float dz = SampleWeight(Chunk, xi, yi, zi + 1)
-            - SampleWeight(Chunk, xi, yi, zi - 1);
-
-        FVector3f N(dx, dy, dz);
-        if (N.SizeSquared() < 1e-6f) return FVector3f(0, 0, 1);
-        return N.GetSafeNormal();
-    }
-    // ============================ 顶点颜色 ============================
+    // ============================ 顶点颜色（可选，未使用）============================
     FColor ComputeColor(const FVector3f& WorldPos, const FVector3f& Normal)
     {
-        // ⭐ 波长 ~1km（之前 12.5km），视野内能看到几个 biome
         constexpr float BiomeFreq = 0.001f;
-        // ⭐ 过渡带宽：噪声 [-0.5, 0.5] 整段都是过渡
         constexpr float BlendHalf = 0.5f;
 
         const FVector2D P2D((double)WorldPos.X, (double)WorldPos.Y);
         const float N = FMath::PerlinNoise2D(P2D * BiomeFreq);
         const float t = FMath::Clamp((N + BlendHalf) / (BlendHalf * 2.f), 0.f, 1.f);
-        const float S = t * t * (3.f - 2.f * t);   // smoothstep，边界平滑
+        const float S = t * t * (3.f - 2.f * t);
 
-        // ⭐ 调试版：直接混合颜色，肉眼就能看到过渡带
         const FColor Forest(0, 200, 0);
         const FColor Desert(220, 180, 80);
         return FColor(
@@ -68,40 +37,69 @@ namespace
 void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
     float VoxelSize,
     int32 LOD,
-    const FVector3f& ChunkWorldOrigin,  
+    const FVector3f& ChunkWorldOrigin,
     FVoxelMeshData& Out)
 {
     Out.Reset();
 
-    const int32 ChunkN = VoxelConfig::ChunkSize;
-    const int32 N = VoxelConfig::ChunkStride;       // 33
+    // ⭐ 预分配（避免 TArray 10+ 次扩容）
+    Out.Positions.Reserve(4096);
+    Out.Normals.Reserve(4096);
+    Out.UVs.Reserve(4096);
+    Out.Indices.Reserve(8192);
+
+    const int32 ChunkN = VoxelConfig::ChunkSize;     // 32
+    const int32 EdgeN = VoxelConfig::ChunkStride;   // 33（EdgeCache 用）
+    const int32 PaddedN = VoxelConfig::PaddedStride;  // 35（VoxelsBase 用）
+    const int32 PaddedNN = PaddedN * PaddedN;          // 1225
     const int32 S = 1 << LOD;
     const float WorldStep = VoxelSize * S;
 
-    // ⭐ 边缓存：每个方向边的全局顶点索引（-1 表示未生成）
-    //   Dir 0 = +X, 1 = +Y, 2 = +Z
-    TArray<int32> EdgeCache;
-    EdgeCache.Init(-1, N * N * N * 3);
+    // ⭐ EdgeCache 静态复用（thread_local，只 malloc 一次）
+    //    边起点坐标范围 0..ChunkN-1，所以用 EdgeN = 33 足够
+    static thread_local TArray<int32> EdgeCache;
+    const int32 Required = EdgeN * EdgeN * EdgeN * 3;
+    if (EdgeCache.Num() < Required)
+    {
+        EdgeCache.SetNumUninitialized(Required);
+    }
+    FMemory::Memset(EdgeCache.GetData(), 0xFF, Required * sizeof(int32));
+    int32* EdgeCacheData = EdgeCache.GetData();
 
-    auto EdgeIdx = [&EdgeCache, N](int32 ex, int32 ey, int32 ez, int32 Dir) -> int32&
-        {
-            return EdgeCache[((ex * N + ey) * N + ez) * 3 + Dir];
-        };
+    // ⭐ VoxelsBase 直指内存（偏移量用 PaddedNN / PaddedN）
+    const FVoxel* VoxelsBase = Chunk.Voxels.GetData();
 
     for (int32 x = 0; x < ChunkN; ++x)
+    {
         for (int32 y = 0; y < ChunkN; ++y)
+        {
             for (int32 z = 0; z < ChunkN; ++z)
             {
-                int8 W[8];
-                for (int i = 0; i < 8; ++i)
-                {
-                    const FIntVector& O = CornerOffsets[i];
-                    W[i] = Chunk.At(x + O.X, y + O.Y, z + O.Z).Weight;
-                }
+                // ⭐ cell 基础索引只算 1 次（替代原来的 8 次 Chunk.At）
+                //    Index(x, y, z) = (x+1)*PaddedNN + (y+1)*PaddedN + (z+1)
+                const int32 BaseIdx = (x + 1) * PaddedNN + (y + 1) * PaddedN + (z + 1);
 
-                uint32 Case = 0;
-                for (int i = 0; i < 8; ++i)
-                    if (W[i] < 0) Case |= (1u << i);
+                // ⭐ 8 角点用偏移量直接访问（无乘法）
+                int8 W[8];
+                W[0] = VoxelsBase[BaseIdx].Weight;
+                W[1] = VoxelsBase[BaseIdx + PaddedNN].Weight;
+                W[2] = VoxelsBase[BaseIdx + PaddedN].Weight;
+                W[3] = VoxelsBase[BaseIdx + PaddedNN + PaddedN].Weight;
+                W[4] = VoxelsBase[BaseIdx + 1].Weight;
+                W[5] = VoxelsBase[BaseIdx + PaddedNN + 1].Weight;
+                W[6] = VoxelsBase[BaseIdx + PaddedN + 1].Weight;
+                W[7] = VoxelsBase[BaseIdx + PaddedNN + PaddedN + 1].Weight;
+
+                // ⭐ Case 用位运算（替代循环）
+                const uint32 Case =
+                    ((W[0] < 0) ? 0x01u : 0u) |
+                    ((W[1] < 0) ? 0x02u : 0u) |
+                    ((W[2] < 0) ? 0x04u : 0u) |
+                    ((W[3] < 0) ? 0x08u : 0u) |
+                    ((W[4] < 0) ? 0x10u : 0u) |
+                    ((W[5] < 0) ? 0x20u : 0u) |
+                    ((W[6] < 0) ? 0x40u : 0u) |
+                    ((W[7] < 0) ? 0x80u : 0u);
 
                 if (Case == 0 || Case == 255) continue;
 
@@ -109,7 +107,6 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
                 const RegularCellData& CD = regularCellData[Class];
                 const unsigned short* VD = regularVertexData[Case];
 
-                // ⭐ 本 cell 的每个顶点对应的"全局顶点索引"
                 int32 VertexIndices[12];
                 int32 VCount = 0;
 
@@ -125,45 +122,69 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
                     const FIntVector& OA = CornerOffsets[A];
                     const FIntVector& OB = CornerOffsets[B];
 
-                    // ⭐ 确定边的起点（低端）和方向
                     const int32 StartX = x + FMath::Min(OA.X, OB.X);
                     const int32 StartY = y + FMath::Min(OA.Y, OB.Y);
                     const int32 StartZ = z + FMath::Min(OA.Z, OB.Z);
 
                     int32 Dir;
-                    if (OA.X != OB.X)      Dir = 0;   // X 方向
-                    else if (OA.Y != OB.Y) Dir = 1;   // Y 方向
-                    else                   Dir = 2;   // Z 方向
+                    if (OA.X != OB.X)      Dir = 0;
+                    else if (OA.Y != OB.Y) Dir = 1;
+                    else                   Dir = 2;
 
-                    int32& Cached = EdgeIdx(StartX, StartY, StartZ, Dir);
+                    // ⭐ EdgeCache 用 EdgeN（边起点坐标范围 0..32）
+                    const int32 EdgeIdxPos = ((StartX * EdgeN + StartY) * EdgeN + StartZ) * 3 + Dir;
+                    int32& Cached = EdgeCacheData[EdgeIdxPos];
 
                     int32 GlobalIdx;
                     if (Cached >= 0)
                     {
-                        // ⭐ 复用：同一条边已经生成过顶点
                         GlobalIdx = Cached;
                     }
                     else
                     {
-                        // 生成新顶点（原逻辑不变）
                         const float WA = (float)W[A];
                         const float WB = (float)W[B];
                         const float Den = WB - WA;
                         const float t = FMath::IsNearlyZero(Den) ? 0.5f : (-WA) / Den;
 
-                        const FVector3f PA((float)(x + OA.X), (float)(y + OA.Y), (float)(z + OA.Z));
-                        const FVector3f PB((float)(x + OB.X), (float)(y + OB.Y), (float)(z + OB.Z));
+                        const float PAX = (float)(x + OA.X);
+                        const float PAY = (float)(y + OA.Y);
+                        const float PAZ = (float)(z + OA.Z);
+                        const float PBX = (float)(x + OB.X);
+                        const float PBY = (float)(y + OB.Y);
+                        const float PBZ = (float)(z + OB.Z);
 
-                        const FVector3f LocalP = FMath::Lerp(PA, PB, t);
+                        // ⭐ 手动 Lerp 展开
+                        const FVector3f LocalP(
+                            PAX + (PBX - PAX) * t,
+                            PAY + (PBY - PAY) * t,
+                            PAZ + (PBZ - PAZ) * t);
                         const FVector3f WorldP = LocalP * WorldStep;
-                        const FVector3f ActualWorldP = WorldP + ChunkWorldOrigin;   // ⭐ 真世界坐标（用于颜色）
-                        const FVector3f Normal = ComputeGradient(Chunk, LocalP);
+
+                        // ⭐ ComputeGradient 内联（VoxelsBase 用 PaddedNN / PaddedN）
+                        const int32 xi = FMath::RoundToInt(LocalP.X);
+                        const int32 yi = FMath::RoundToInt(LocalP.Y);
+                        const int32 zi = FMath::RoundToInt(LocalP.Z);
+                        const int32 CenterIdx = (xi + 1) * PaddedNN + (yi + 1) * PaddedN + (zi + 1);
+
+                        const float dx = (float)VoxelsBase[CenterIdx + PaddedNN].Weight
+                            - (float)VoxelsBase[CenterIdx - PaddedNN].Weight;
+                        const float dy = (float)VoxelsBase[CenterIdx + PaddedN].Weight
+                            - (float)VoxelsBase[CenterIdx - PaddedN].Weight;
+                        const float dz = (float)VoxelsBase[CenterIdx + 1].Weight
+                            - (float)VoxelsBase[CenterIdx - 1].Weight;
+
+                        // ⭐ 归一化（和原版 ComputeGradient 一致）
+                        FVector3f Normal(dx, dy, dz);
+                        if (Normal.SizeSquared() < 1e-6f)
+                            Normal = FVector3f(0, 0, 1);
+                        else
+                            Normal = Normal.GetSafeNormal();
 
                         GlobalIdx = Out.Positions.Num();
                         Out.Positions.Add(WorldP);
                         Out.Normals.Add(Normal);
                         Out.UVs.Add(FVector2f::ZeroVector);
-                        //Out.Colors.Add(ComputeColor(ActualWorldP, Normal));
 
                         Cached = GlobalIdx;
                     }
@@ -172,7 +193,6 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
                     ++VCount;
                 }
 
-                // ⭐ 三角形：用 VertexIndices 直接引用，不再用 BaseVertex + I0
                 const int32 TCount = CD.GetTriangleCount();
                 for (int t = 0; t < TCount; ++t)
                 {
@@ -187,8 +207,9 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
                     Out.Indices.Add(VertexIndices[I1]);
                 }
             }
+        }
+    }
 }
-
 
 // ============================ GenerateTransition ============================
 void FTransvoxelMesher::GenerateTransition(const FVoxelChunkData& Chunk,
@@ -197,13 +218,20 @@ void FTransvoxelMesher::GenerateTransition(const FVoxelChunkData& Chunk,
     int32 FaceDirection,
     FVoxelMeshData& Out)
 {
-    const int32 ChunkN = VoxelConfig::ChunkSize;
+    // ⭐ 预分配
+    Out.Positions.Reserve(2048);
+    Out.Normals.Reserve(2048);
+    Out.UVs.Reserve(2048);
+    Out.Indices.Reserve(4096);
+
+    const int32 ChunkN = VoxelConfig::ChunkSize;     // 32
+    const int32 PaddedN = VoxelConfig::PaddedStride;  // 35
+    const int32 PaddedNN = PaddedN * PaddedN;          // 1225
     const int32 S = 1 << LOD;
     const float WorldStep = VoxelSize * S;
 
-    // 13 个角点在过渡面上的 (u, v) 偏移。
-    // 前 9 个是低分辨率 3x3 角点，间距 2 个高分辨率单位；
-    // 后 4 个是高分辨率侧单元格中心。
+    const FVoxel* VoxelsBase = Chunk.Voxels.GetData();
+
     static const float CornerUV[13][2] = {
         {0.f, 0.f}, {1.f, 0.f}, {2.f, 0.f},
         {0.f, 1.f}, {1.f, 1.f}, {2.f, 1.f},
@@ -218,22 +246,21 @@ void FTransvoxelMesher::GenerateTransition(const FVoxelChunkData& Chunk,
             const float V = BaseV + v;
             switch (FaceDirection)
             {
-            case 0: return FVector3f((float)ChunkN, U, V); // +X
-            case 1: return FVector3f(0.f, U, V);           // -X
-            case 2: return FVector3f(U, (float)ChunkN, V); // +Y
-            case 3: return FVector3f(U, 0.f, V);           // -Y
-            case 4: return FVector3f(U, V, (float)ChunkN); // +Z
-            case 5: return FVector3f(U, V, 0.f);           // -Z
+            case 0: return FVector3f((float)ChunkN, U, V);
+            case 1: return FVector3f(0.f, U, V);
+            case 2: return FVector3f(U, (float)ChunkN, V);
+            case 3: return FVector3f(U, 0.f, V);
+            case 4: return FVector3f(U, V, (float)ChunkN);
+            case 5: return FVector3f(U, V, 0.f);
             default: return FVector3f::ZeroVector;
             }
         };
 
-    // 每个过渡单元格覆盖 2x2 个高分辨率单位，也就是 1x1 个低分辨率单位。
     for (int32 BaseU = 0; BaseU < ChunkN; BaseU += 2)
     {
         for (int32 BaseV = 0; BaseV < ChunkN; BaseV += 2)
         {
-            // 1) 采样 13 个角点
+            // 采样 13 个角点
             int8 W[13];
             for (int i = 0; i < 13; ++i)
             {
@@ -245,17 +272,25 @@ void FTransvoxelMesher::GenerateTransition(const FVoxelChunkData& Chunk,
                 const int32 yi = FMath::Clamp(FMath::RoundToInt(Local.Y), 0, ChunkN);
                 const int32 zi = FMath::Clamp(FMath::RoundToInt(Local.Z), 0, ChunkN);
 
-                W[i] = Chunk.At(xi, yi, zi).Weight;
+                // ⭐ 用 PaddedNN / PaddedN
+                const int32 Idx = (xi + 1) * PaddedNN + (yi + 1) * PaddedN + (zi + 1);
+                W[i] = VoxelsBase[Idx].Weight;
             }
 
-            // 2) 用前 9 个角点构造 9 位 case
-            uint32 Case = 0;
-            for (int i = 0; i < 9; ++i)
-                if (W[i] < 0) Case |= (1u << i);
+            // 9 位 Case 用位运算
+            const uint32 Case =
+                ((W[0] < 0) ? 0x001u : 0u) |
+                ((W[1] < 0) ? 0x002u : 0u) |
+                ((W[2] < 0) ? 0x004u : 0u) |
+                ((W[3] < 0) ? 0x008u : 0u) |
+                ((W[4] < 0) ? 0x010u : 0u) |
+                ((W[5] < 0) ? 0x020u : 0u) |
+                ((W[6] < 0) ? 0x040u : 0u) |
+                ((W[7] < 0) ? 0x080u : 0u) |
+                ((W[8] < 0) ? 0x100u : 0u);
 
             if (Case == 0 || Case == 511) continue;
 
-            // 3) 查表
             uint8 Class = transitionCellClass[Case];
             const bool bFlipWinding = (Class & 0x80) != 0;
             Class &= 0x7F;
@@ -266,7 +301,6 @@ void FTransvoxelMesher::GenerateTransition(const FVoxelChunkData& Chunk,
             const int32 BaseVertex = Out.Positions.Num();
             int32 VCount = 0;
 
-            // 4) 生成顶点
             for (int v = 0; v < 12; ++v)
             {
                 const unsigned short Entry = VD[v];
@@ -288,19 +322,39 @@ void FTransvoxelMesher::GenerateTransition(const FVoxelChunkData& Chunk,
                     (float)BaseU, (float)BaseV,
                     CornerUV[B][0], CornerUV[B][1]);
 
-                const FVector3f LocalP = FMath::Lerp(PA, PB, t);
+                // ⭐ 手动 Lerp 展开
+                const FVector3f LocalP(
+                    PA.X + (PB.X - PA.X) * t,
+                    PA.Y + (PB.Y - PA.Y) * t,
+                    PA.Z + (PB.Z - PA.Z) * t);
                 const FVector3f WorldP = LocalP * WorldStep;
 
-                const FVector3f Normal = ComputeGradient(Chunk, LocalP);
+                // ⭐ ComputeGradient 内联
+                const int32 xi = FMath::RoundToInt(LocalP.X);
+                const int32 yi = FMath::RoundToInt(LocalP.Y);
+                const int32 zi = FMath::RoundToInt(LocalP.Z);
+                const int32 CenterIdx = (xi + 1) * PaddedNN + (yi + 1) * PaddedN + (zi + 1);
+
+                const float dx = (float)VoxelsBase[CenterIdx + PaddedNN].Weight
+                    - (float)VoxelsBase[CenterIdx - PaddedNN].Weight;
+                const float dy = (float)VoxelsBase[CenterIdx + PaddedN].Weight
+                    - (float)VoxelsBase[CenterIdx - PaddedN].Weight;
+                const float dz = (float)VoxelsBase[CenterIdx + 1].Weight
+                    - (float)VoxelsBase[CenterIdx - 1].Weight;
+
+                // ⭐ 归一化
+                FVector3f Normal(dx, dy, dz);
+                if (Normal.SizeSquared() < 1e-6f)
+                    Normal = FVector3f(0, 0, 1);
+                else
+                    Normal = Normal.GetSafeNormal();
 
                 Out.Positions.Add(WorldP);
                 Out.Normals.Add(Normal);
-                Out.UVs.Add(FVector2f::ZeroVector);   
-                //Out.Colors.Add(ComputeColor(WorldP, Normal));
+                Out.UVs.Add(FVector2f::ZeroVector);
                 ++VCount;
             }
 
-            // 5) 生成三角形
             const int32 TCount = CD.GetTriangleCount();
             for (int t = 0; t < TCount; ++t)
             {

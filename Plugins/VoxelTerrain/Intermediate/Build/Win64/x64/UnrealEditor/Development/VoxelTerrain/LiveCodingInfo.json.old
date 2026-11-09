@@ -8,9 +8,9 @@
 			"PerModuleInline.gen.cpp.obj",
 			"TransvoxelMesher.cpp.obj",
 			"VoxelGenerator.cpp.obj",
-			"VoxelTerrain.cpp.obj",
 			"VoxelInteractionActor.cpp.obj",
 			"VoxelSceneProxy.cpp.obj",
+			"VoxelTerrain.cpp.obj",
 			"VoxelTerrainComponent.cpp.obj"
 		]
 	}

@@ -23,7 +23,7 @@ namespace
         auto FastWrap = [S](float V) {
             float f = V - FMath::FloorToFloat(V / S) * S;
             return f < 0.f ? f + S : f;
-        };
+            };
 
         float fx = FastWrap(UV.X);
         float fy = FastWrap(UV.Y);
@@ -48,7 +48,7 @@ namespace
         auto FastWrap = [S](float V) {
             float f = V - FMath::FloorToFloat(V / S) * S;
             return f < 0.f ? f + S : f;
-        };
+            };
 
         const float fx = FastWrap(UVW.X);
         const float fy = FastWrap(UVW.Y);
@@ -63,7 +63,7 @@ namespace
         const int32 ZStride = Size * Size;
         auto GetVal = [&](int32 x, int32 y, int32 z) -> float {
             return A[z * ZStride + y * Size + x];
-        };
+            };
 
         const float v00 = FMath::Lerp(GetVal(x0, y0, z0), GetVal(x1, y0, z0), tx);
         const float v10 = FMath::Lerp(GetVal(x0, y1, z0), GetVal(x1, y1, z0), tx);
@@ -122,7 +122,7 @@ float FVoxelGenerator::Fbm2D(const FVector2D& P) const
 float FVoxelGenerator::TexFbm2D(const FVector2D& WorldXY) const
 {
 #if VOXEL_USE_NOISE_TEXTURE
-    const TSharedPtr<TArray<FNoiseLayerData>> &Layers = GlobalNoiseLayers;
+    const TSharedPtr<TArray<FNoiseLayerData>>& Layers = GlobalNoiseLayers;
     if (Layers.IsValid() && Layers->Num() > 0)
     {
         float TotalNoise = 0.f;
@@ -150,7 +150,7 @@ float FVoxelGenerator::TexFbm2D(const FVector2D& WorldXY) const
 float FVoxelGenerator::TexFbm3D(const FVector& WorldXYZ) const
 {
 #if VOXEL_USE_NOISE_TEXTURE
-    const TSharedPtr<TArray<FNoiseLayer3DData>> &Layers = GlobalNoiseLayers3D;
+    const TSharedPtr<TArray<FNoiseLayer3DData>>& Layers = GlobalNoiseLayers3D;
     if (Layers.IsValid() && Layers->Num() > 0)
     {
         float TotalNoise = 0.f;
@@ -229,6 +229,7 @@ float FVoxelGenerator::SampleDensityWithSurface(const FVector& WorldPos, float S
 void FVoxelGenerator::GenerateChunk(
     int32 ChunkX, int32 ChunkY, int32 ChunkZ,
     int32 LOD,
+    const FVoxelModificationMap& Modifications,
     FVoxel* OutVoxels) const
 {
     check(LOD >= 0 && OutVoxels != nullptr);
@@ -247,7 +248,7 @@ void FVoxelGenerator::GenerateChunk(
     const float InvVoxelSize = 1.f / VoxelConfig::VoxelSize;
 
     // ⭐ 分支提升：整个 chunk 只判断一次
-  //  const bool bHasMods = Modifications.Num() > 0;
+    const bool bHasMods = Modifications.Num() > 0;
 
     const float StartX = Origin.X - VoxelConfig::PaddedOffset * Step;
     const float StartY = Origin.Y - VoxelConfig::PaddedOffset * Step;
@@ -273,7 +274,17 @@ void FVoxelGenerator::GenerateChunk(
                 const float D = -SampleDensityWithSurface(WP, SurfaceZ);
                 const float W = FMath::Clamp(D * InvScale, -1.f, 1.f);
                 int8 FinalWeight = (FVoxelWeight)FMath::RoundToInt(W * 127.f);
-        
+
+                if (bHasMods)
+                {
+                    const FIntVector LOD0VoxelCoord(
+                        FMath::FloorToInt(WP.X * InvVoxelSize + 0.5f),
+                        FMath::FloorToInt(WP.Y * InvVoxelSize + 0.5f),
+                        FMath::FloorToInt(WP.Z * InvVoxelSize + 0.5f));
+                    if (const FVoxelWeight* M = Modifications.Find(LOD0VoxelCoord))
+                        FinalWeight = *M;
+                }
+
                 OutVoxels[(ix * N + iy) * N + iz].Weight = FinalWeight;
             }
         }
