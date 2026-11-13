@@ -46,6 +46,7 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
     Out.Positions.Reserve(4096);
     Out.Normals.Reserve(4096);
     Out.UVs.Reserve(4096);
+    Out.SurfaceHeights.Reserve(4096);
     Out.Indices.Reserve(8192);
 
     const int32 ChunkN = VoxelConfig::ChunkSize;     // 32
@@ -54,6 +55,8 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
     const int32 PaddedNN = PaddedN * PaddedN;          // 1225
     const int32 S = 1 << LOD;
     const float WorldStep = VoxelSize * S;
+
+    const float* SurfaceGridData = Chunk.SurfaceGrid.GetData();
 
     // ⭐ EdgeCache 静态复用（thread_local，只 malloc 一次）
     //    边起点坐标范围 0..ChunkN-1，所以用 EdgeN = 33 足够
@@ -182,6 +185,14 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
                             Normal = Normal.GetSafeNormal();
 
                         GlobalIdx = Out.Positions.Num();
+                        const int32 pix = FMath::RoundToInt(LocalP.X) + VoxelConfig::PaddedOffset;
+                        const int32 piy = FMath::RoundToInt(LocalP.Y) + VoxelConfig::PaddedOffset;
+                        const float GroundZ = SurfaceGridData[pix * PaddedN + piy];
+
+                        // ⭐ 优化 2：只算 Z，不构建 3D 向量
+                        const float Depth = GroundZ - (WorldP.Z + ChunkWorldOrigin.Z);
+
+                        Out.SurfaceHeights.Add(Depth);
                         Out.Positions.Add(WorldP);
                         Out.Normals.Add(Normal);
                         Out.UVs.Add(FVector2f::ZeroVector);
@@ -211,172 +222,3 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
     }
 }
 
-// ============================ GenerateTransition ============================
-void FTransvoxelMesher::GenerateTransition(const FVoxelChunkData& Chunk,
-    float VoxelSize,
-    int32 LOD,
-    int32 FaceDirection,
-    FVoxelMeshData& Out)
-{
-    // ⭐ 预分配
-    Out.Positions.Reserve(2048);
-    Out.Normals.Reserve(2048);
-    Out.UVs.Reserve(2048);
-    Out.Indices.Reserve(4096);
-
-    const int32 ChunkN = VoxelConfig::ChunkSize;     // 32
-    const int32 PaddedN = VoxelConfig::PaddedStride;  // 35
-    const int32 PaddedNN = PaddedN * PaddedN;          // 1225
-    const int32 S = 1 << LOD;
-    const float WorldStep = VoxelSize * S;
-
-    const FVoxel* VoxelsBase = Chunk.Voxels.GetData();
-
-    static const float CornerUV[13][2] = {
-        {0.f, 0.f}, {1.f, 0.f}, {2.f, 0.f},
-        {0.f, 1.f}, {1.f, 1.f}, {2.f, 1.f},
-        {0.f, 2.f}, {1.f, 2.f}, {2.f, 2.f},
-        {0.5f, 0.5f}, {1.5f, 0.5f},
-        {0.5f, 1.5f}, {1.5f, 1.5f}
-    };
-
-    auto UVToLocal = [&](float BaseU, float BaseV, float u, float v) -> FVector3f
-        {
-            const float U = BaseU + u;
-            const float V = BaseV + v;
-            switch (FaceDirection)
-            {
-            case 0: return FVector3f((float)ChunkN, U, V);
-            case 1: return FVector3f(0.f, U, V);
-            case 2: return FVector3f(U, (float)ChunkN, V);
-            case 3: return FVector3f(U, 0.f, V);
-            case 4: return FVector3f(U, V, (float)ChunkN);
-            case 5: return FVector3f(U, V, 0.f);
-            default: return FVector3f::ZeroVector;
-            }
-        };
-
-    for (int32 BaseU = 0; BaseU < ChunkN; BaseU += 2)
-    {
-        for (int32 BaseV = 0; BaseV < ChunkN; BaseV += 2)
-        {
-            // 采样 13 个角点
-            int8 W[13];
-            for (int i = 0; i < 13; ++i)
-            {
-                const FVector3f Local = UVToLocal(
-                    (float)BaseU, (float)BaseV,
-                    CornerUV[i][0], CornerUV[i][1]);
-
-                const int32 xi = FMath::Clamp(FMath::RoundToInt(Local.X), 0, ChunkN);
-                const int32 yi = FMath::Clamp(FMath::RoundToInt(Local.Y), 0, ChunkN);
-                const int32 zi = FMath::Clamp(FMath::RoundToInt(Local.Z), 0, ChunkN);
-
-                // ⭐ 用 PaddedNN / PaddedN
-                const int32 Idx = (xi + 1) * PaddedNN + (yi + 1) * PaddedN + (zi + 1);
-                W[i] = VoxelsBase[Idx].Weight;
-            }
-
-            // 9 位 Case 用位运算
-            const uint32 Case =
-                ((W[0] < 0) ? 0x001u : 0u) |
-                ((W[1] < 0) ? 0x002u : 0u) |
-                ((W[2] < 0) ? 0x004u : 0u) |
-                ((W[3] < 0) ? 0x008u : 0u) |
-                ((W[4] < 0) ? 0x010u : 0u) |
-                ((W[5] < 0) ? 0x020u : 0u) |
-                ((W[6] < 0) ? 0x040u : 0u) |
-                ((W[7] < 0) ? 0x080u : 0u) |
-                ((W[8] < 0) ? 0x100u : 0u);
-
-            if (Case == 0 || Case == 511) continue;
-
-            uint8 Class = transitionCellClass[Case];
-            const bool bFlipWinding = (Class & 0x80) != 0;
-            Class &= 0x7F;
-
-            const TransitionCellData& CD = transitionCellData[Class];
-            const unsigned short* VD = transitionVertexData[Case];
-
-            const int32 BaseVertex = Out.Positions.Num();
-            int32 VCount = 0;
-
-            for (int v = 0; v < 12; ++v)
-            {
-                const unsigned short Entry = VD[v];
-                if (Entry == 0) break;
-
-                const int32 A = (Entry >> 4) & 0x0F;
-                const int32 B = Entry & 0x0F;
-                if (A > 12 || B > 12) continue;
-
-                const float WA = (float)W[A];
-                const float WB = (float)W[B];
-                const float Den = WB - WA;
-                const float t = FMath::IsNearlyZero(Den) ? 0.5f : (-WA) / Den;
-
-                const FVector3f PA = UVToLocal(
-                    (float)BaseU, (float)BaseV,
-                    CornerUV[A][0], CornerUV[A][1]);
-                const FVector3f PB = UVToLocal(
-                    (float)BaseU, (float)BaseV,
-                    CornerUV[B][0], CornerUV[B][1]);
-
-                // ⭐ 手动 Lerp 展开
-                const FVector3f LocalP(
-                    PA.X + (PB.X - PA.X) * t,
-                    PA.Y + (PB.Y - PA.Y) * t,
-                    PA.Z + (PB.Z - PA.Z) * t);
-                const FVector3f WorldP = LocalP * WorldStep;
-
-                // ⭐ ComputeGradient 内联
-                const int32 xi = FMath::RoundToInt(LocalP.X);
-                const int32 yi = FMath::RoundToInt(LocalP.Y);
-                const int32 zi = FMath::RoundToInt(LocalP.Z);
-                const int32 CenterIdx = (xi + 1) * PaddedNN + (yi + 1) * PaddedN + (zi + 1);
-
-                const float dx = (float)VoxelsBase[CenterIdx + PaddedNN].Weight
-                    - (float)VoxelsBase[CenterIdx - PaddedNN].Weight;
-                const float dy = (float)VoxelsBase[CenterIdx + PaddedN].Weight
-                    - (float)VoxelsBase[CenterIdx - PaddedN].Weight;
-                const float dz = (float)VoxelsBase[CenterIdx + 1].Weight
-                    - (float)VoxelsBase[CenterIdx - 1].Weight;
-
-                // ⭐ 归一化
-                FVector3f Normal(dx, dy, dz);
-                if (Normal.SizeSquared() < 1e-6f)
-                    Normal = FVector3f(0, 0, 1);
-                else
-                    Normal = Normal.GetSafeNormal();
-
-                Out.Positions.Add(WorldP);
-                Out.Normals.Add(Normal);
-                Out.UVs.Add(FVector2f::ZeroVector);
-                ++VCount;
-            }
-
-            const int32 TCount = CD.GetTriangleCount();
-            for (int t = 0; t < TCount; ++t)
-            {
-                const int32 I0 = CD.vertexIndex[t * 3 + 0];
-                const int32 I1 = CD.vertexIndex[t * 3 + 1];
-                const int32 I2 = CD.vertexIndex[t * 3 + 2];
-
-                if (I0 >= VCount || I1 >= VCount || I2 >= VCount) continue;
-
-                if (bFlipWinding)
-                {
-                    Out.Indices.Add(BaseVertex + I0);
-                    Out.Indices.Add(BaseVertex + I2);
-                    Out.Indices.Add(BaseVertex + I1);
-                }
-                else
-                {
-                    Out.Indices.Add(BaseVertex + I0);
-                    Out.Indices.Add(BaseVertex + I1);
-                    Out.Indices.Add(BaseVertex + I2);
-                }
-            }
-        }
-    }
-}

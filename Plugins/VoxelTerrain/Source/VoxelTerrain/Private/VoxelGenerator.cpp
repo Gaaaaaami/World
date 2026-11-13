@@ -230,9 +230,10 @@ void FVoxelGenerator::GenerateChunk(
     int32 ChunkX, int32 ChunkY, int32 ChunkZ,
     int32 LOD,
     const FVoxelModificationMap& Modifications,
-    FVoxel* OutVoxels) const
+    FVoxelChunkData& OutChunk) const
 {
-    check(LOD >= 0 && OutVoxels != nullptr);
+
+    auto *OutVoxels = OutChunk.Voxels.GetData();
 
     const int32 N = VoxelConfig::PaddedStride;
     const int32 S = 1 << LOD;
@@ -265,6 +266,7 @@ void FVoxelGenerator::GenerateChunk(
             // ⭐ 核心优化：(X, Y) 的 2D 噪声只算一次（原版每 voxel 一次）
             const float SurfaceNoise = TexFbm2D(FVector2D(WX, WY));
             const float SurfaceZ = Settings.BaseWorldZ + SurfaceNoise * Settings.HillHeight;
+            OutChunk.SurfaceAt(ix, iy) = SurfaceZ;  
 
             for (int32 iz = 0; iz < N; ++iz)
             {
@@ -284,6 +286,7 @@ void FVoxelGenerator::GenerateChunk(
                     if (const FVoxelWeight* M = Modifications.Find(LOD0VoxelCoord))
                         FinalWeight = *M;
                 }
+
 
                 OutVoxels[(ix * N + iy) * N + iz].Weight = FinalWeight;
             }

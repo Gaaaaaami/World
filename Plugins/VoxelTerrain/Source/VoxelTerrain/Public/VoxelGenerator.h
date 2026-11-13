@@ -46,7 +46,7 @@ public:
 
     void GenerateChunk(int32 ChunkX, int32 ChunkY, int32 ChunkZ, int32 LOD,
         const FVoxelModificationMap& Modifications,
-        FVoxel* OutVoxels) const;
+        FVoxelChunkData& OutChunk) const;
 
     // ⭐ 外部接口不变（ApplyEdit 用）
     float SampleDensity(const FVector& WorldPos) const;

@@ -17,7 +17,7 @@ namespace VoxelConfig
     static constexpr int32 ChunkStride = ChunkSize + 1;         // 33：chunk 内部采样点
     static constexpr int32 PaddedStride = ChunkStride + 2;       // 35：加 ±1 的 halo
     static constexpr int32 PaddedOffset = 1;                      // padded 数组的索引偏移
-    static constexpr float VoxelSize = 50.f;
+    static constexpr float VoxelSize = 100.f;
 }
 
 struct FChunkKey
@@ -65,9 +65,14 @@ FORCEINLINE uint32 GetTypeHash(const FVoxelEditTask& T)
     return H;
 }
 
-
-
-
+// 植被系统专用结构体（纯数据，供后台计算和主线程接收使用）
+struct FVegetationInstanceData
+{
+    FVector Location;
+    FRotator Rotation;
+    FVector Scale;
+    int32 PlantId; // 用作 VegetationConfigs 数组的索引，0是树，1是草等
+};
 
 // 修改记录：坐标 -> 新的密度权重
 using FVoxelModificationMap = TMap<FIntVector, FVoxelWeight>;

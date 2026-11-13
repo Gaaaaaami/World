@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "CoreMinimal.h"
 #include "Components/PrimitiveComponent.h"
+#include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Containers/Ticker.h"
 #include "VoxelMeshData.h"
 #include "VoxelChunkData.h"
@@ -49,6 +50,33 @@ struct FVoxelNoiseLayer3DInfo
     FVector Offset = FVector::ZeroVector;
 };
 
+USTRUCT(BlueprintType)
+struct FVoxelVegetationConfig
+{
+    GENERATED_BODY()
+
+    // 这个模型在哪个噪点区间生成（支持多个模型填同样的区间来实现混合）
+    UPROPERTY(EditAnywhere, Category = "Vegetation")
+    float MinID = 0.f;
+
+    UPROPERTY(EditAnywhere, Category = "Vegetation")
+    float MaxID = 130.f;
+
+    UPROPERTY(EditAnywhere, Category = "Vegetation")
+    TObjectPtr<UStaticMesh> Mesh = nullptr;
+
+    UPROPERTY(EditAnywhere, Category = "Vegetation")
+    float Density = 0.05f;
+
+    UPROPERTY(EditAnywhere, Category = "Vegetation")
+    float PlaceRadius = 100.f; // 防重叠半径
+
+    UPROPERTY(EditAnywhere, Category = "Vegetation")
+    float MinScale = 0.8f;
+
+    UPROPERTY(EditAnywhere, Category = "Vegetation")
+    float MaxScale = 1.2f;
+};
 
 
 UCLASS(ClassGroup = Voxel, meta = (BlueprintSpawnableComponent))
@@ -156,4 +184,35 @@ public:
 private:
     TSet<FVoxelEditTask> PendingEditTasks;
     void EditTaskTick();
+
+private: // 植被系统
+    void InitBiomeTexture();
+    void DispatchVegetationTask(FChunkKey Key, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> Mesh);
+    TArray<FVegetationInstanceData> CalculateVegetationForChunk(
+        const FVoxelMeshData& Mesh,
+        const FChunkKey& Key,
+        const TArray<float>& LocalData,
+        int32 LocalSize,
+        float WorldSize,
+        const TArray<FVoxelVegetationConfig>& Configs) const;
+public:
+    UPROPERTY(EditAnywhere, Category = "Voxel|Vegetation")
+    TObjectPtr<UTexture2D> BiomeTexture = nullptr;
+private:
+    TArray<float> CachedBiomeData;
+public:
+    UPROPERTY(EditAnywhere, Category = "Voxel|Vegetation")
+    TArray<FVoxelVegetationConfig> VegetationConfigs;
+private:
+    // ⭐ HISM 对象池
+    UPROPERTY()
+    TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> HISMPool;
+
+    // 记录每个 Chunk 当前正在使用的 HISM
+    TMap<FChunkKey, TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>>> ChunkActiveHISMs;
+
+    // 核心方法
+    void PrewarmHISMPool(int32 PoolSize);
+    UHierarchicalInstancedStaticMeshComponent* AcquireHISM(UStaticMesh* Mesh);
+    void ReturnHISM(UHierarchicalInstancedStaticMeshComponent* HISM);
 };

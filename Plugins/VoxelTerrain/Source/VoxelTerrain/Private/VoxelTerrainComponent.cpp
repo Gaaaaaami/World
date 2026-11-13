@@ -74,9 +74,10 @@ void UVoxelTerrainComponent::BeginPlay()
     {
         TerrainMaterial->EnsureIsComplete();
     }
-
+    InitBiomeTexture(); // 初始化生物群系的noise贴图
     LoadNoiseTextureData();
-    PrewarmCollisionPool(256);
+    PrewarmCollisionPool(256);  //初始化碰撞对象池
+    PrewarmHISMPool(256);   //初始化植被对象池
 
     ChunkMeshes.Reserve(1024);
     ChunkVoxelData.Reserve(1024);
@@ -309,7 +310,7 @@ void UVoxelTerrainComponent::SpawnChunkAsyncTask(const FChunkKey& Key, int32 Cur
         {
             FVoxelGenerator Gen;
             FVoxelChunkData ChunkData;
-            Gen.GenerateChunk(Key.X, Key.Y, Key.Z, Key.LOD, ModsSnapshot, ChunkData.Voxels.GetData());
+            Gen.GenerateChunk(Key.X, Key.Y, Key.Z, Key.LOD, ModsSnapshot, /*ChunkData.Voxels.GetData()*/ ChunkData);
 
             auto MeshData = MakeShared<FVoxelMeshData, ESPMode::ThreadSafe>();
 
@@ -554,6 +555,9 @@ void UVoxelTerrainComponent::OnChunkGenerated(
     {
         PendingPushToSceneProxy.Add(Key);
     }
+
+    DispatchVegetationTask(Key, Mesh);  // 渲染植物线程
+
 }
 
 void UVoxelTerrainComponent::FlushPendingPushToSceneProxy()
@@ -854,9 +858,11 @@ void UVoxelTerrainComponent::RebuildTouchedChunks(const TSet<FChunkKey>& Touched
 
         // 推渲染线程（复用同一个 SharedPtr）
         FVoxelSceneProxy* Proxy = static_cast<FVoxelSceneProxy*>(SceneProxy);
+
         if (Proxy)
         {
-            TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> MeshPtr = *ExistingMesh;
+            //TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> MeshPtr = *ExistingMesh;
+            auto MeshPtr = MakeShared<FVoxelMeshData, ESPMode::ThreadSafe>(**ExistingMesh);
             ENQUEUE_RENDER_COMMAND(AddVoxelChunk)(
                 [Proxy, Key, MeshPtr](FRHICommandListImmediate& RHICmdList)
                 {
@@ -1079,4 +1085,274 @@ void UVoxelTerrainComponent::EditTaskTick()
 
     for (const FVoxelEditTask& T : Tasks)
         ApplyEdit(T.WorldPos, T.Radius, T.bIsAdd);
+}
+
+// ============================================================
+// 表面植被系统
+// ============================================================
+void UVoxelTerrainComponent::InitBiomeTexture()
+{
+    CachedBiomeData.Reset();
+
+    if (!BiomeTexture)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UVoxelTerrainComponent: BiomeTexture is null."));
+        return;
+    }
+
+    FImage Img;
+    if (BiomeTexture->Source.GetMipImage(Img, 0))
+    {
+        const int32 Size = BiomeTexture->GetSizeX();
+        CachedBiomeData.SetNumUninitialized(Size * Size);
+
+        const uint8* P = Img.RawData.GetData();
+
+        if (Img.Format == ERawImageFormat::G8)
+        {
+            for (int32 i = 0; i < CachedBiomeData.Num(); ++i)
+                CachedBiomeData[i] = P[i] / 255.f;
+        }
+        else if (Img.Format == ERawImageFormat::BGRA8)
+        {
+            // 取 R 通道（对齐 HLSL 的 .r）
+            for (int32 i = 0; i < CachedBiomeData.Num(); ++i)
+                CachedBiomeData[i] = P[i * 4 + 2] / 255.f;
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("UVoxelTerrainComponent: Unsupported BiomeTexture format."));
+            return;
+        }
+
+        UE_LOG(LogTemp, Log, TEXT("UVoxelTerrainComponent: BiomeTexture initialized. Size = %d"), Size);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("UVoxelTerrainComponent: Failed to read BiomeTexture pixels."));
+    }
+}
+
+
+
+void UVoxelTerrainComponent::DispatchVegetationTask(FChunkKey Key, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> Mesh)
+{
+    // ⭐ 如果没配贴图，或者没填配置表，直接退出
+    if (!Mesh.IsValid() || !BiomeTexture || CachedBiomeData.Num() == 0 || VegetationConfigs.Num() == 0) return;
+
+    TWeakObjectPtr<UVoxelTerrainComponent> WeakThis(this);
+
+    const int32 LocalSize = BiomeTexture->GetSizeX();
+    //const TArray<float> LocalData = CachedBiomeData;
+    //const TArray<FVoxelVegetationConfig> LocalConfigs = VegetationConfigs; // ⭐ 拷贝配置
+    const float WorldSize = 100000.f;
+    Async(EAsyncExecution::ThreadPool, [WeakThis, Key, Mesh, LocalSize, WorldSize]()
+        {
+            const UVoxelTerrainComponent* Self = WeakThis.Get();
+            if (!Self) return;
+
+            // ⭐ 传入配置表
+            TArray<FVegetationInstanceData> Results = Self->CalculateVegetationForChunk(
+                *Mesh, Key, Self->CachedBiomeData, LocalSize, WorldSize, Self->VegetationConfigs
+            );
+            AsyncTask(ENamedThreads::GameThread, [WeakThis, Results = MoveTemp(Results)]()
+                {
+                    if (auto* MainSelf = WeakThis.Get())
+                    {
+                        if (UWorld* World = MainSelf->GetWorld())
+                        {
+          
+
+                        }
+                    }
+                });
+        });
+
+}
+// ⭐ 独立出来的纯计算函数：无副作用，仅做数学计算
+TArray<FVegetationInstanceData> UVoxelTerrainComponent::CalculateVegetationForChunk(
+    const FVoxelMeshData& Mesh,
+    const FChunkKey& Key,
+    const TArray<float>& LocalData,
+    int32 LocalSize,
+    float WorldSize,
+    const TArray<FVoxelVegetationConfig>& Configs) const // ⭐ 接收配置表
+{
+    const int32 NumVerts = Mesh.Positions.Num();
+    TArray<FVegetationInstanceData> FinalResults;
+    if (NumVerts == 0 || Configs.Num() == 0) return FinalResults;
+
+    const float InvWorldSize = LocalSize / WorldSize;
+
+    struct FHitData { FVector Location; int32 ConfigIndex; float Radius; };
+    TArray<FHitData> Hits;
+    Hits.Reserve(NumVerts / 20);
+
+    const uint32 BaseSeed = HashCombine(HashCombine(Key.X, Key.Y), Key.Z);
+
+    for (int32 i = 0; i < NumVerts; ++i)
+    {
+        // 1. 法线过滤
+        if (Mesh.Normals[i].Z <= 0.5f) continue;
+
+        const FVector Pos = FVector(Mesh.Positions[i]);
+
+        // 2. 采样群系贴图
+        float FX = Pos.X * InvWorldSize;
+        float FY = Pos.Y * InvWorldSize;
+
+        int32 X0 = FMath::FloorToInt(FX) % LocalSize; if (X0 < 0) X0 += LocalSize;
+        int32 Y0 = FMath::FloorToInt(FY) % LocalSize; if (Y0 < 0) Y0 += LocalSize;
+        int32 X1 = (X0 + 1) % LocalSize;
+        int32 Y1 = (Y0 + 1) % LocalSize;
+
+        const float tx = FX - FMath::FloorToFloat(FX);
+        const float ty = FY - FMath::FloorToFloat(FY);
+
+        const float Gray = FMath::Lerp(
+            FMath::Lerp(LocalData[Y0 * LocalSize + X0], LocalData[Y0 * LocalSize + X1], tx),
+            FMath::Lerp(LocalData[Y1 * LocalSize + X0], LocalData[Y1 * LocalSize + X1], tx),
+            ty
+        );
+
+        const float ID = FMath::FloorToFloat(Gray * 255.f + 0.5f);
+
+        // 3. ⭐ 完全数据驱动：遍历你的配置
+        for (int32 c = 0; c < Configs.Num(); ++c)
+        {
+            const auto& Config = Configs[c];
+
+            // 当前噪点 ID 是否在这个配置的区间内
+            if (ID >= Config.MinID && ID <= Config.MaxID)
+            {
+                // 用确定性随机数做概率判定
+                uint32 Seed = HashCombine(BaseSeed, i * 1000 + c);
+                Seed ^= Seed >> 16; Seed *= 0x7feb352dU;
+                Seed ^= Seed >> 15; Seed *= 0x846ca68bU;
+                Seed ^= Seed >> 16;
+                float RandVal = (Seed & 0xFFFFFF) * (1.0f / 16777216.0f);
+
+                if (RandVal < Config.Density)
+                {
+                    Hits.Add({ Pos, c, Config.PlaceRadius });
+                }
+            }
+        }
+    }
+
+    if (Hits.Num() == 0) return FinalResults;
+
+    // 4. 防重叠排序（半径大的先占位）
+    Hits.Sort([](const FHitData& A, const FHitData& B) {
+        return A.Radius > B.Radius;
+        });
+
+    // 5. 空间哈希网格防重叠
+    const float CellSize = 200.f;
+    TMap<FIntPoint, TArray<int32>> Grid;
+    FinalResults.Reserve(Hits.Num());
+
+    for (const auto& Hit : Hits)
+    {
+        const FIntPoint Cell(FMath::FloorToInt(Hit.Location.X / CellSize), FMath::FloorToInt(Hit.Location.Y / CellSize));
+        bool bOverlap = false;
+
+        for (int32 dx = -1; dx <= 1 && !bOverlap; ++dx)
+        {
+            for (int32 dy = -1; dy <= 1 && !bOverlap; ++dy)
+            {
+                if (const TArray<int32>* Nearby = Grid.Find(FIntPoint(Cell.X + dx, Cell.Y + dy)))
+                {
+                    for (int32 Idx : *Nearby)
+                    {
+                        const auto& Existing = FinalResults[Idx];
+                        const float MinDist = Configs[Hit.ConfigIndex].PlaceRadius + Configs[Existing.PlantId].PlaceRadius;
+
+                        if (FVector::DistSquared2D(Existing.Location, Hit.Location) < MinDist * MinDist)
+                        {
+                            bOverlap = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!bOverlap)
+        {
+            FVegetationInstanceData NewInst;
+            NewInst.Location = Hit.Location;
+            NewInst.PlantId = Hit.ConfigIndex; // 记录配置索引
+
+            // 6. 随机缩放和旋转
+            uint32 ScaleSeed = HashCombine(BaseSeed, (int32)(Hit.Location.X + Hit.Location.Y));
+            ScaleSeed ^= ScaleSeed >> 16; ScaleSeed *= 0x7feb352dU;
+            float RandScale = (ScaleSeed & 0xFFFFFF) * (1.0f / 16777216.0f);
+
+            const auto& Config = Configs[Hit.ConfigIndex];
+            float FinalScale = FMath::Lerp(Config.MinScale, Config.MaxScale, RandScale);
+
+            NewInst.Scale = FVector(FinalScale);
+            NewInst.Rotation = FRotator(0.f, RandScale * 360.f, 0.f);
+
+            int32 NewIdx = FinalResults.Add(NewInst);
+            Grid.FindOrAdd(Cell).Add(NewIdx);
+        }
+    }
+
+    return FinalResults;
+}
+
+// 植被系统 HISM 对象池逻辑
+
+void UVoxelTerrainComponent::PrewarmHISMPool(int32 PoolSize)
+{
+    if (PoolSize <= 0) return;
+    HISMPool.Reserve(PoolSize);
+
+    for (int32 i = 0; i < PoolSize; ++i)
+    {
+        UHierarchicalInstancedStaticMeshComponent* HISM = NewObject<UHierarchicalInstancedStaticMeshComponent>(this, NAME_None, RF_Transient);
+        if (!HISM) continue;
+
+        HISM->SetupAttachment(this);
+        HISM->RegisterComponent();
+        HISM->SetMobility(EComponentMobility::Movable);
+        HISM->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        HISM->bAutoRebuildTreeOnInstanceChanges = false; // 批量添加时提升性能
+        HISM->SetVisibility(false); // 先隐藏，用到再开
+
+        HISMPool.Add(HISM);
+    }
+}
+
+UHierarchicalInstancedStaticMeshComponent* UVoxelTerrainComponent::AcquireHISM(UStaticMesh* Mesh)
+{
+    if (HISMPool.Num() == 0)
+    {
+        // 如果池子空了，备用动态扩容（确保不会崩）
+        UHierarchicalInstancedStaticMeshComponent* NewHISM = NewObject<UHierarchicalInstancedStaticMeshComponent>(this, NAME_None, RF_Transient);
+        NewHISM->SetupAttachment(this);
+        NewHISM->RegisterComponent();
+        NewHISM->SetMobility(EComponentMobility::Movable);
+        NewHISM->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        NewHISM->bAutoRebuildTreeOnInstanceChanges = false;
+        return NewHISM;
+    }
+
+    UHierarchicalInstancedStaticMeshComponent* HISM = HISMPool.Pop();
+    HISM->ClearInstances();
+    HISM->SetStaticMesh(Mesh);
+    HISM->SetVisibility(true);
+    return HISM;
+}
+
+void UVoxelTerrainComponent::ReturnHISM(UHierarchicalInstancedStaticMeshComponent* HISM)
+{
+    if (!IsValid(HISM)) return;
+
+    HISM->ClearInstances(); // 清空所有实例
+    HISM->SetVisibility(false);
+    HISM->SetStaticMesh(nullptr);
+    HISMPool.Add(HISM); // 放回池子
 }

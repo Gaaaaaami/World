@@ -21,7 +21,7 @@ PRAGMA_DISABLE_DEPRECATION_WARNINGS
 struct Z_Construct_UScriptStruct_FVoxelNoiseLayerInfo_Statics;
 VOXELTERRAIN_API UScriptStruct* Z_Construct_UScriptStruct_FVoxelNoiseLayerInfo(ETypeConstructPhase);
 
-#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_19_GENERATED_BODY \
+#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_20_GENERATED_BODY \
 	friend struct ::Z_Construct_UScriptStruct_FVoxelNoiseLayerInfo_Statics; \
 	UE_NODEBUG static UScriptStruct* StaticStruct() { return Z_Construct_UScriptStruct_FVoxelNoiseLayerInfo(ETypeConstructPhase::Inner); }
 
@@ -33,7 +33,7 @@ struct FVoxelNoiseLayerInfo;
 struct Z_Construct_UScriptStruct_FVoxelNoiseLayer3DInfo_Statics;
 VOXELTERRAIN_API UScriptStruct* Z_Construct_UScriptStruct_FVoxelNoiseLayer3DInfo(ETypeConstructPhase);
 
-#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_37_GENERATED_BODY \
+#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_38_GENERATED_BODY \
 	friend struct ::Z_Construct_UScriptStruct_FVoxelNoiseLayer3DInfo_Statics; \
 	UE_NODEBUG static UScriptStruct* StaticStruct() { return Z_Construct_UScriptStruct_FVoxelNoiseLayer3DInfo(ETypeConstructPhase::Inner); }
 
@@ -41,8 +41,20 @@ VOXELTERRAIN_API UScriptStruct* Z_Construct_UScriptStruct_FVoxelNoiseLayer3DInfo
 struct FVoxelNoiseLayer3DInfo;
 // ********** End ScriptStruct FVoxelNoiseLayer3DInfo **********************************************
 
+// ********** Begin ScriptStruct FVoxelVegetationConfig ********************************************
+struct Z_Construct_UScriptStruct_FVoxelVegetationConfig_Statics;
+VOXELTERRAIN_API UScriptStruct* Z_Construct_UScriptStruct_FVoxelVegetationConfig(ETypeConstructPhase);
+
+#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_56_GENERATED_BODY \
+	friend struct ::Z_Construct_UScriptStruct_FVoxelVegetationConfig_Statics; \
+	UE_NODEBUG static UScriptStruct* StaticStruct() { return Z_Construct_UScriptStruct_FVoxelVegetationConfig(ETypeConstructPhase::Inner); }
+
+
+struct FVoxelVegetationConfig;
+// ********** End ScriptStruct FVoxelVegetationConfig **********************************************
+
 // ********** Begin Class UVoxelTerrainComponent ***************************************************
-#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_57_RPC_WRAPPERS_NO_PURE_DECLS \
+#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_85_RPC_WRAPPERS_NO_PURE_DECLS \
 	DECLARE_FUNCTION(execRequestEdit); \
 	DECLARE_FUNCTION(execApplyEdit);
 
@@ -50,7 +62,7 @@ struct FVoxelNoiseLayer3DInfo;
 struct Z_Construct_UClass_UVoxelTerrainComponent_Statics;
 VOXELTERRAIN_API UClass* Z_Construct_UClass_UVoxelTerrainComponent(ETypeConstructPhase);
 
-#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_57_INCLASS_NO_PURE_DECLS \
+#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_85_INCLASS_NO_PURE_DECLS \
 private: \
 	friend struct ::Z_Construct_UClass_UVoxelTerrainComponent_Statics; \
 	friend VOXELTERRAIN_API UClass* ::Z_Construct_UClass_UVoxelTerrainComponent(ETypeConstructPhase); \
@@ -59,7 +71,7 @@ public: \
 	DECLARE_SERIALIZER(UVoxelTerrainComponent)
 
 
-#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_57_ENHANCED_CONSTRUCTORS \
+#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_85_ENHANCED_CONSTRUCTORS \
 	/** Deleted move- and copy-constructors, should never be used */ \
 	UVoxelTerrainComponent(UVoxelTerrainComponent&&) = delete; \
 	UVoxelTerrainComponent(const UVoxelTerrainComponent&) = delete; \
@@ -69,13 +81,13 @@ public: \
 	NO_API virtual ~UVoxelTerrainComponent();
 
 
-#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_54_PROLOG
-#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_57_GENERATED_BODY \
+#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_82_PROLOG
+#define FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_85_GENERATED_BODY \
 PRAGMA_DISABLE_DEPRECATION_WARNINGS \
 public: \
-	FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_57_RPC_WRAPPERS_NO_PURE_DECLS \
-	FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_57_INCLASS_NO_PURE_DECLS \
-	FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_57_ENHANCED_CONSTRUCTORS \
+	FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_85_RPC_WRAPPERS_NO_PURE_DECLS \
+	FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_85_INCLASS_NO_PURE_DECLS \
+	FID_Users_Administrator_Documents_Unreal_Projects_World_Plugins_VoxelTerrain_Source_VoxelTerrain_Public_VoxelTerrainComponent_h_85_ENHANCED_CONSTRUCTORS \
 private: \
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
