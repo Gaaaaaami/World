@@ -82,7 +82,7 @@ void UVoxelTerrainComponent::BeginPlay()
     ChunkMeshes.Reserve(1024);
     ChunkVoxelData.Reserve(1024);
     ChunkLastActiveTime.Reserve(1024);
-    ChunkModifications.Reserve(1024);
+    //ChunkModifications.Reserve(1024);
     ChunkVersions.Reserve(1024);
     RequestedChunks.Reserve(1024);
     PendingPushToSceneProxy.Reserve(64);
@@ -280,37 +280,37 @@ FIntVector UVoxelTerrainComponent::WorldToBaseChunk(const FVector& WorldPos) con
 void UVoxelTerrainComponent::SpawnChunkAsyncTask(const FChunkKey& Key, int32 CurrentVersion)
 {
     // 主线程：收集 27 个邻居 chunk 的修改数据快照
-    FVoxelModificationMap ModsSnapshot;
-    if (ChunkModifications.Num() > 0)
-    {
-        int32 MinX, MaxX, MinY, MaxY, MinZ, MaxZ;
-        if (Key.LOD == 0) {
-            MinX = Key.X - 1; MaxX = Key.X + 1;
-            MinY = Key.Y - 1; MaxY = Key.Y + 1;
-            MinZ = Key.Z - 1; MaxZ = Key.Z + 1;
-        }
-        else {
-            int32 S = 1 << Key.LOD;
-            MinX = (Key.X * S) - 1; MaxX = ((Key.X + 1) * S);
-            MinY = (Key.Y * S) - 1; MaxY = ((Key.Y + 1) * S);
-            MinZ = (Key.Z * S) - 1; MaxZ = ((Key.Z + 1) * S);
-        }
+    //FVoxelModificationMap ModsSnapshot;
+    //if (ChunkModifications.Num() > 0)
+    //{
+    //    int32 MinX, MaxX, MinY, MaxY, MinZ, MaxZ;
+    //    if (Key.LOD == 0) {
+    //        MinX = Key.X - 1; MaxX = Key.X + 1;
+    //        MinY = Key.Y - 1; MaxY = Key.Y + 1;
+    //        MinZ = Key.Z - 1; MaxZ = Key.Z + 1;
+    //    }
+    //    else {
+    //        int32 S = 1 << Key.LOD;
+    //        MinX = (Key.X * S) - 1; MaxX = ((Key.X + 1) * S);
+    //        MinY = (Key.Y * S) - 1; MaxY = ((Key.Y + 1) * S);
+    //        MinZ = (Key.Z * S) - 1; MaxZ = ((Key.Z + 1) * S);
+    //    }
 
-        for (int32 x = MinX; x <= MaxX; ++x)
-            for (int32 y = MinY; y <= MaxY; ++y)
-                for (int32 z = MinZ; z <= MaxZ; ++z)
-                    if (const FVoxelModificationMap* M = ChunkModifications.Find(FChunkKey(x, y, z, 0)))
-                        ModsSnapshot.Append(*M);
-    }
+    //    for (int32 x = MinX; x <= MaxX; ++x)
+    //        for (int32 y = MinY; y <= MaxY; ++y)
+    //            for (int32 z = MinZ; z <= MaxZ; ++z)
+    //                if (const FVoxelModificationMap* M = ChunkModifications.Find(FChunkKey(x, y, z, 0)))
+    //                    ModsSnapshot.Append(*M);
+    //}
 
     TWeakObjectPtr<UVoxelTerrainComponent> WeakThis(this);
 
     Async(EAsyncExecution::ThreadPool,
-        [WeakThis, Key, CurrentVersion, ModsSnapshot = MoveTemp(ModsSnapshot)]()
+        [WeakThis, Key, CurrentVersion /*, ModsSnapshot = MoveTemp(ModsSnapshot)*/]()
         {
             FVoxelGenerator Gen;
             FVoxelChunkData ChunkData;
-            Gen.GenerateChunk(Key.X, Key.Y, Key.Z, Key.LOD, ModsSnapshot, /*ChunkData.Voxels.GetData()*/ ChunkData);
+            Gen.GenerateChunk(Key.X, Key.Y, Key.Z, Key.LOD, /*ChunkData.Voxels.GetData()*/ ChunkData);
 
             auto MeshData = MakeShared<FVoxelMeshData, ESPMode::ThreadSafe>();
 
@@ -601,6 +601,7 @@ void UVoxelTerrainComponent::ApplyEdit(const FVector& WorldPos, float Radius, bo
     const float SearchRadius = Radius + Scale;
     const float SearchRadiusSq = SearchRadius * SearchRadius;
 
+    // AABB 范围（voxel 坐标）
     const FIntVector MinGrid(
         FMath::FloorToInt(GridPos.X - RadiusInVoxels - 1),
         FMath::FloorToInt(GridPos.Y - RadiusInVoxels - 1),
@@ -611,21 +612,20 @@ void UVoxelTerrainComponent::ApplyEdit(const FVector& WorldPos, float Radius, bo
         FMath::FloorToInt(GridPos.Z + RadiusInVoxels + 1));
 
     const float BaseChunkSize = VoxelConfig::ChunkSize * VoxelConfig::VoxelSize;
-    constexpr int32 ChunkN = VoxelConfig::ChunkSize;    // 32
-    constexpr int32 MaxHalo = ChunkN + 1;               // 33
+    constexpr int32 ChunkN = VoxelConfig::ChunkSize;
+    constexpr int32 MaxHalo = ChunkN + 1;
 
     TSet<FChunkKey> TouchedChunks;
     TouchedChunks.Reserve(16);
 
-    // ⭐ 27 邻居缓存：只在 ChunkCoord 变化时刷新
     FIntVector LastChunkCoord(INT32_MIN, INT32_MIN, INT32_MIN);
     FVoxelChunkData* NeighborData[27] = {};
-    FVoxelModificationMap* MainMods = nullptr;
     FIntVector MainChunkOriginVoxel(0, 0, 0);
 
-    for (int32 x = MinGrid.X; x <= MaxGrid.X; ++x) {
-        for (int32 y = MinGrid.Y; y <= MaxGrid.Y; ++y) {
-            for (int32 z = MinGrid.Z; z <= MaxGrid.Z; ++z) {
+    for (int32 x = MinGrid.X; x <= MaxGrid.X; ++x)
+        for (int32 y = MinGrid.Y; y <= MaxGrid.Y; ++y)
+            for (int32 z = MinGrid.Z; z <= MaxGrid.Z; ++z)
+            {
                 const FVector VoxelWorldPos(x * VoxelSize, y * VoxelSize, z * VoxelSize);
                 const float DistSq = FVector::DistSquared(VoxelWorldPos, WorldPos);
                 if (DistSq > SearchRadiusSq) continue;
@@ -641,7 +641,7 @@ void UVoxelTerrainComponent::ApplyEdit(const FVector& WorldPos, float Radius, bo
                     FMath::FloorToInt((z * VoxelSize) / BaseChunkSize));
                 const FChunkKey LOD0Key(ChunkCoord.X, ChunkCoord.Y, ChunkCoord.Z, 0);
 
-                // ⭐ 只在小 chunk 变化时刷新 27 邻居指针
+                // 主 chunk 变化 → 刷新 27 邻居指针
                 if (ChunkCoord != LastChunkCoord)
                 {
                     LastChunkCoord = ChunkCoord;
@@ -655,50 +655,29 @@ void UVoxelTerrainComponent::ApplyEdit(const FVector& WorldPos, float Radius, bo
                         for (int32 cdy = -1; cdy <= 1; ++cdy)
                             for (int32 cdz = -1; cdz <= 1; ++cdz)
                             {
-                                const FChunkKey NK(
-                                    ChunkCoord.X + cdx,
-                                    ChunkCoord.Y + cdy,
-                                    ChunkCoord.Z + cdz,
-                                    0);
                                 NeighborData[idx] = nullptr;
+                                const FChunkKey NK(ChunkCoord.X + cdx, ChunkCoord.Y + cdy, ChunkCoord.Z + cdz, 0);
                                 if (auto* P = ChunkVoxelData.Find(NK))
                                     if (P->IsValid()) NeighborData[idx] = P->Get();
                                 ++idx;
                             }
-
-                    // 主 chunk（idx == 13）已加载 → 才处理
-                    MainMods = NeighborData[13]
-                        ? &ChunkModifications.FindOrAdd(LOD0Key)
-                        : nullptr;
                 }
 
-                // ⭐ 主 chunk 没加载 → 不反应（不做兜底）
-                if (!MainMods) continue;
+                // 主 chunk 未加载 → 跳过
+                if (!NeighborData[13]) continue;
 
-                // ① 读当前值：优先 Mods，其次从主 chunk 缓存读
-                const FIntVector VoxelCoord(x, y, z);
-                int8 CurrentWeight;
-                if (const FVoxelWeight* Existing = MainMods->Find(VoxelCoord))
-                {
-                    CurrentWeight = *Existing;
-                }
-                else
-                {
-                    const int32 LX = x - MainChunkOriginVoxel.X;
-                    const int32 LY = y - MainChunkOriginVoxel.Y;
-                    const int32 LZ = z - MainChunkOriginVoxel.Z;
-                    const int32 PaddedIdx = NeighborData[13]->Index(LX, LY, LZ);
-                    CurrentWeight = NeighborData[13]->Voxels[PaddedIdx].Weight;
-                }
+                // 主 chunk 内本地坐标（0..31）
+                const int32 LX0 = x - MainChunkOriginVoxel.X;
+                const int32 LY0 = y - MainChunkOriginVoxel.Y;
+                const int32 LZ0 = z - MainChunkOriginVoxel.Z;
 
+                // 读当前权重，min/max 合并
+                const int8 CurrentWeight = NeighborData[13]->At(LX0, LY0, LZ0).Weight;
                 const int8 FinalWeight = bIsAdd
                     ? FMath::Min<int8>(CurrentWeight, SDFWeight)
                     : FMath::Max<int8>(CurrentWeight, SDFWeight);
 
-                // ② 持久化到 ChunkModifications
-                MainMods->Add(VoxelCoord, FinalWeight);
-
-                // ③ 原地写 27 邻居 halo（只写已加载的）
+                // 写主 chunk + 已加载邻居的 halo
                 {
                     int32 idx = 0;
                     for (int32 cdx = -1; cdx <= 1; ++cdx)
@@ -708,10 +687,9 @@ void UVoxelTerrainComponent::ApplyEdit(const FVector& WorldPos, float Radius, bo
                                 FVoxelChunkData* Data = NeighborData[idx];
                                 if (Data)
                                 {
-                                    const int32 LX = x - (MainChunkOriginVoxel.X + cdx * ChunkN);
-                                    const int32 LY = y - (MainChunkOriginVoxel.Y + cdy * ChunkN);
-                                    const int32 LZ = z - (MainChunkOriginVoxel.Z + cdz * ChunkN);
-
+                                    const int32 LX = LX0 - cdx * ChunkN;
+                                    const int32 LY = LY0 - cdy * ChunkN;
+                                    const int32 LZ = LZ0 - cdz * ChunkN;
                                     if (LX >= -1 && LX <= MaxHalo &&
                                         LY >= -1 && LY <= MaxHalo &&
                                         LZ >= -1 && LZ <= MaxHalo)
@@ -723,19 +701,12 @@ void UVoxelTerrainComponent::ApplyEdit(const FVector& WorldPos, float Radius, bo
                             }
                 }
 
-                // ④ 标记受影响的 chunk（halo 边界：LocalX <= 1 或 >= ChunkN-1）
+                // 主 chunk + 边界邻居
                 TouchedChunks.Add(LOD0Key);
 
-                const int32 LocalX = x - MainChunkOriginVoxel.X;
-                const int32 LocalY = y - MainChunkOriginVoxel.Y;
-                const int32 LocalZ = z - MainChunkOriginVoxel.Z;
-
-                const bool bNegX = (LocalX <= 1);
-                const bool bPosX = (LocalX >= ChunkN - 1);
-                const bool bNegY = (LocalY <= 1);
-                const bool bPosY = (LocalY >= ChunkN - 1);
-                const bool bNegZ = (LocalZ <= 1);
-                const bool bPosZ = (LocalZ >= ChunkN - 1);
+                const bool bNegX = (LX0 <= 1), bPosX = (LX0 >= ChunkN - 1);
+                const bool bNegY = (LY0 <= 1), bPosY = (LY0 >= ChunkN - 1);
+                const bool bNegZ = (LZ0 <= 1), bPosZ = (LZ0 >= ChunkN - 1);
 
                 if (bNegX) TouchedChunks.Add(FChunkKey(ChunkCoord.X - 1, ChunkCoord.Y, ChunkCoord.Z, 0));
                 if (bPosX) TouchedChunks.Add(FChunkKey(ChunkCoord.X + 1, ChunkCoord.Y, ChunkCoord.Z, 0));
@@ -744,7 +715,6 @@ void UVoxelTerrainComponent::ApplyEdit(const FVector& WorldPos, float Radius, bo
                 if (bNegZ) TouchedChunks.Add(FChunkKey(ChunkCoord.X, ChunkCoord.Y, ChunkCoord.Z - 1, 0));
                 if (bPosZ) TouchedChunks.Add(FChunkKey(ChunkCoord.X, ChunkCoord.Y, ChunkCoord.Z + 1, 0));
 
-                // 角组合（XY / XZ / YZ）
                 if (bNegX && bNegY) TouchedChunks.Add(FChunkKey(ChunkCoord.X - 1, ChunkCoord.Y - 1, ChunkCoord.Z, 0));
                 if (bNegX && bPosY) TouchedChunks.Add(FChunkKey(ChunkCoord.X - 1, ChunkCoord.Y + 1, ChunkCoord.Z, 0));
                 if (bPosX && bNegY) TouchedChunks.Add(FChunkKey(ChunkCoord.X + 1, ChunkCoord.Y - 1, ChunkCoord.Z, 0));
@@ -758,14 +728,10 @@ void UVoxelTerrainComponent::ApplyEdit(const FVector& WorldPos, float Radius, bo
                 if (bPosY && bNegZ) TouchedChunks.Add(FChunkKey(ChunkCoord.X, ChunkCoord.Y + 1, ChunkCoord.Z - 1, 0));
                 if (bPosY && bPosZ) TouchedChunks.Add(FChunkKey(ChunkCoord.X, ChunkCoord.Y + 1, ChunkCoord.Z + 1, 0));
             }
-        }
-    }
 
     if (TouchedChunks.Num() == 0) return;
-
     RebuildTouchedChunks(TouchedChunks);
 }
-
 
 // ============================================================
 // RebuildTouchedChunks

@@ -139,7 +139,7 @@ private:
     TMap<FChunkKey, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe>> ChunkMeshes;
     TMap<FChunkKey, TSharedPtr<FVoxelChunkData>> ChunkVoxelData;   // ⭐ 体素缓存
     TMap<FChunkKey, double> ChunkLastActiveTime;
-    TMap<FChunkKey, FVoxelModificationMap> ChunkModifications;
+    //TMap<FChunkKey, FVoxelModificationMap> ChunkModifications;
     TMap<FChunkKey, int32> ChunkVersions;
 
     TSet<FChunkKey> RequestedChunks;
