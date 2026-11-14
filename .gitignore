@@ -10,3 +10,5 @@
 /Automation_World.slnx
 /World.sln
 /World.slnx
+/Plugins/ConsoleCommandPanel/Binaries/*
+/Plugins/VoxelTerrain/Binaries/*
