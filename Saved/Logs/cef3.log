@@ -1,8 +1,3 @@
-[18472:20548:1113/202533.254:WARNING:chrome_main_delegate.cc(745)] This is Chrome version 128.0.6613.138 (not a warning)
-[18472:20548:1113/202533.797:WARNING:account_consistency_mode_manager.cc(77)] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
-[11092:9252:1113/202555.443:WARNING:spdy_session.cc(2985)] Received HEADERS for invalid stream 21
-[11092:9252:1113/202555.448:WARNING:spdy_session.cc(2985)] Received HEADERS for invalid stream 29
-[11092:9252:1113/202555.452:WARNING:spdy_session.cc(2985)] Received HEADERS for invalid stream 27
-[11092:9252:1113/202555.468:WARNING:spdy_session.cc(2985)] Received HEADERS for invalid stream 23
-[11092:9252:1113/202555.472:WARNING:spdy_session.cc(2985)] Received HEADERS for invalid stream 25
-[18472:20548:1113/202713.834:WARNING:page_discarding_helper.cc(138)] Discarding multiple pages with target (kb): 0
+[22524:21224:1114/154726.332:WARNING:chrome_main_delegate.cc(745)] This is Chrome version 128.0.6613.138 (not a warning)
+[22524:21224:1114/154726.490:WARNING:account_consistency_mode_manager.cc(77)] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
+[22524:21224:1114/154904.841:WARNING:page_discarding_helper.cc(138)] Discarding multiple pages with target (kb): 0

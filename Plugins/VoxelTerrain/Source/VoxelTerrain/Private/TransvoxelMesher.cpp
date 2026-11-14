@@ -222,3 +222,335 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
     }
 }
 
+void FTransvoxelMesher::GenerateRegularPartial(
+    const FVoxelChunkData& Chunk,
+    float VoxelSize,
+    const FVector3f& ChunkWorldOrigin,
+    const FIntVector& CellMin,
+    const FIntVector& CellMax,
+    FVoxelMeshData& InOut)
+{
+    // 常量提取，避免循环内反复读取
+    const int32 PaddedN = VoxelConfig::PaddedStride;
+    const int32 PaddedNN = PaddedN * PaddedN;
+    const float InvVoxelSize = 1.0f / VoxelSize;
+    const float OffX = ChunkWorldOrigin.X;
+    const float OffY = ChunkWorldOrigin.Y;
+    const float OffZ = ChunkWorldOrigin.Z;
+
+    const int32 ACellX = CellMax.X - CellMin.X + 1;
+    const int32 ACellY = CellMax.Y - CellMin.Y + 1;
+    const int32 ACellZ = CellMax.Z - CellMin.Z + 1;
+    if (ACellX <= 0 || ACellY <= 0 || ACellZ <= 0) return;
+
+    const int32 OldNumIndices = InOut.Indices.Num();
+    const int32 OldNumVerts = InOut.Positions.Num();
+
+    // ============ 1 & 2. 过滤与重排（全部裸指针，无函数调用） ============
+    if (OldNumIndices == 0)
+    {
+        InOut.Reset();
+    }
+    else
+    {
+        TArray<uint32> KeptIndices;
+        KeptIndices.SetNumUninitialized(OldNumIndices);
+
+        TArray<bool> VertexUsed;
+        VertexUsed.SetNumZeroed(OldNumVerts);
+
+        const uint32* OldIndices = InOut.Indices.GetData();
+        const FVector3f* OldPositions = InOut.Positions.GetData();
+        uint32* KeptData = KeptIndices.GetData();
+        int32 KeptCount = 0;
+
+        const int32 CMinX = CellMin.X, CMaxX = CellMax.X;
+        const int32 CMinY = CellMin.Y, CMaxY = CellMax.Y;
+        const int32 CMinZ = CellMin.Z, CMaxZ = CellMax.Z;
+
+        const int32 NumTris = OldNumIndices / 3;
+        const uint32* I = OldIndices;
+        for (int32 t = 0; t < NumTris; ++t)
+        {
+            const uint32 I0 = I[0], I1 = I[1], I2 = I[2];
+            I += 3;
+
+            const FVector3f& P0 = OldPositions[I0];
+            const FVector3f& P1 = OldPositions[I1];
+            const FVector3f& P2 = OldPositions[I2];
+
+            // 手写极速 Min
+            const float MinX = P0.X < P1.X ? (P0.X < P2.X ? P0.X : P2.X) : (P1.X < P2.X ? P1.X : P2.X);
+            const float MinY = P0.Y < P1.Y ? (P0.Y < P2.Y ? P0.Y : P2.Y) : (P1.Y < P2.Y ? P1.Y : P2.Y);
+            const float MinZ = P0.Z < P1.Z ? (P0.Z < P2.Z ? P0.Z : P2.Z) : (P1.Z < P2.Z ? P1.Z : P2.Z);
+
+            // floorf 替代 FMath::FloorToInt
+            const int32 CX = (int32)floorf((MinX - OffX) * InvVoxelSize + 1e-3f);
+            const int32 CY = (int32)floorf((MinY - OffY) * InvVoxelSize + 1e-3f);
+            const int32 CZ = (int32)floorf((MinZ - OffZ) * InvVoxelSize + 1e-3f);
+
+            if (CX >= CMinX && CX <= CMaxX &&
+                CY >= CMinY && CY <= CMaxY &&
+                CZ >= CMinZ && CZ <= CMaxZ)
+            {
+                continue; // 丢弃
+            }
+
+            KeptData[KeptCount++] = I0;
+            KeptData[KeptCount++] = I1;
+            KeptData[KeptCount++] = I2;
+
+            VertexUsed[I0] = true;
+            VertexUsed[I1] = true;
+            VertexUsed[I2] = true;
+        }
+        KeptIndices.SetNum(KeptCount, EAllowShrinking::No);
+
+        // 顶点重排
+        TArray<int32> OldToNew;
+        OldToNew.SetNumUninitialized(OldNumVerts);
+        int32* OldToNewData = OldToNew.GetData();
+        for (int32 i = 0; i < OldNumVerts; ++i) OldToNewData[i] = -1;
+
+        TArray<FVector3f> NewPositions;
+        TArray<FVector3f> NewNormals;
+        TArray<FVector2f> NewUVs;
+        TArray<float>     NewSurfaceHeights;
+
+        NewPositions.SetNumUninitialized(OldNumVerts);
+        NewNormals.SetNumUninitialized(OldNumVerts);
+        NewUVs.SetNumUninitialized(OldNumVerts);
+        NewSurfaceHeights.SetNumUninitialized(OldNumVerts);
+
+        FVector3f* NewPosData = NewPositions.GetData();
+        FVector3f* NewNormData = NewNormals.GetData();
+        FVector2f* NewUVData = NewUVs.GetData();
+        float* NewHeightData = NewSurfaceHeights.GetData();
+
+        const FVector3f* OldNormals = InOut.Normals.GetData();
+        const FVector2f* OldUVs = InOut.UVs.GetData();
+        const float* OldHeights = InOut.SurfaceHeights.GetData();
+
+        int32 NewVertCount = 0;
+        for (int32 i = 0; i < OldNumVerts; ++i)
+        {
+            if (!VertexUsed[i]) continue;
+            OldToNewData[i] = NewVertCount;
+            NewPosData[NewVertCount] = OldPositions[i];
+            NewNormData[NewVertCount] = OldNormals[i];
+            NewUVData[NewVertCount] = OldUVs[i];
+            NewHeightData[NewVertCount] = OldHeights[i];
+            ++NewVertCount;
+        }
+
+        NewPositions.SetNum(NewVertCount, EAllowShrinking::No);
+        NewNormals.SetNum(NewVertCount, EAllowShrinking::No);
+        NewUVs.SetNum(NewVertCount, EAllowShrinking::No);
+        NewSurfaceHeights.SetNum(NewVertCount, EAllowShrinking::No);
+
+        for (int32 i = 0; i < KeptCount; ++i)
+        {
+            KeptData[i] = (uint32)OldToNewData[KeptData[i]];
+        }
+
+        InOut.Reset();
+        InOut.Positions = MoveTemp(NewPositions);
+        InOut.Normals = MoveTemp(NewNormals);
+        InOut.UVs = MoveTemp(NewUVs);
+        InOut.SurfaceHeights = MoveTemp(NewSurfaceHeights);
+        InOut.Indices = MoveTemp(KeptIndices);
+    }
+
+    // ============ 3. 局部 EdgeCache ============
+    const int32 LocalN = FMath::Max(ACellX, FMath::Max(ACellY, ACellZ)) + 1;
+    const int32 LocalEdgeCount = LocalN * LocalN * LocalN * 3;
+
+    static thread_local TArray<int32> LocalEdgeCache;
+    if (LocalEdgeCache.Num() < LocalEdgeCount)
+        LocalEdgeCache.SetNumUninitialized(LocalEdgeCount);
+    FMemory::Memset(LocalEdgeCache.GetData(), 0xFF, LocalEdgeCount * sizeof(int32));
+    int32* EdgeCacheData = LocalEdgeCache.GetData();
+
+    // ============ 4. 暴力预分配（不考虑空间，直接按每 Cell 最大理论值预分配） ============
+    const int32 EstCells = ACellX * ACellY * ACellZ;
+    const int32 EstVerts = EstCells * 12;
+    const int32 EstIndices = EstCells * 15 * 3;
+
+    const int32 OldVerts = InOut.Positions.Num();
+    const int32 OldIndicesCount = InOut.Indices.Num();
+
+    InOut.Positions.SetNumUninitialized(OldVerts + EstVerts, EAllowShrinking::No);
+    InOut.Normals.SetNumUninitialized(OldVerts + EstVerts, EAllowShrinking::No);
+    InOut.UVs.SetNumUninitialized(OldVerts + EstVerts, EAllowShrinking::No);
+    InOut.SurfaceHeights.SetNumUninitialized(OldVerts + EstVerts, EAllowShrinking::No);
+    InOut.Indices.SetNumUninitialized(OldIndicesCount + EstIndices, EAllowShrinking::No);
+
+    FVector3f* PosData = InOut.Positions.GetData();
+    FVector3f* NormData = InOut.Normals.GetData();
+    FVector2f* UVData = InOut.UVs.GetData();
+    float* HeightData = InOut.SurfaceHeights.GetData();
+    uint32* IndicesData = InOut.Indices.GetData();
+
+    int32 CurVertCount = OldVerts;
+    int32 CurIndexCount = OldIndicesCount;
+
+    const FVoxel* VoxelsBase = Chunk.Voxels.GetData();
+    const float* SurfaceGridData = Chunk.SurfaceGrid.GetData();
+
+    // 静态数组替代 FIntVector 构造
+    static const int32 CornerX[8] = { 0,1,0,1,0,1,0,1 };
+    static const int32 CornerY[8] = { 0,0,1,1,0,0,1,1 };
+    static const int32 CornerZ[8] = { 0,0,0,0,1,1,1,1 };
+    constexpr int32 PaddedOffset = VoxelConfig::PaddedOffset;
+    const float InvUV = 1.0f / 400.0f;
+
+    // ============ 5. 核心生成（全部裸指针与标量运算） ============
+    for (int32 x = CellMin.X; x <= CellMax.X; ++x)
+    {
+        const int32 XOffset = (x + 1) * PaddedNN;
+        for (int32 y = CellMin.Y; y <= CellMax.Y; ++y)
+        {
+            const int32 YOffset = (y + 1) * PaddedN;
+            for (int32 z = CellMin.Z; z <= CellMax.Z; ++z)
+            {
+                const int32 BaseIdx = XOffset + YOffset + z + 1;
+
+                const int8 W0 = VoxelsBase[BaseIdx].Weight;
+                const int8 W1 = VoxelsBase[BaseIdx + PaddedNN].Weight;
+                const int8 W2 = VoxelsBase[BaseIdx + PaddedN].Weight;
+                const int8 W3 = VoxelsBase[BaseIdx + PaddedNN + PaddedN].Weight;
+                const int8 W4 = VoxelsBase[BaseIdx + 1].Weight;
+                const int8 W5 = VoxelsBase[BaseIdx + PaddedNN + 1].Weight;
+                const int8 W6 = VoxelsBase[BaseIdx + PaddedN + 1].Weight;
+                const int8 W7 = VoxelsBase[BaseIdx + PaddedNN + PaddedN + 1].Weight;
+
+                const uint32 Case =
+                    ((W0 < 0) ? 0x01u : 0u) | ((W1 < 0) ? 0x02u : 0u) |
+                    ((W2 < 0) ? 0x04u : 0u) | ((W3 < 0) ? 0x08u : 0u) |
+                    ((W4 < 0) ? 0x10u : 0u) | ((W5 < 0) ? 0x20u : 0u) |
+                    ((W6 < 0) ? 0x40u : 0u) | ((W7 < 0) ? 0x80u : 0u);
+                if (Case == 0 || Case == 255) continue;
+
+                int8 W[8] = { W0, W1, W2, W3, W4, W5, W6, W7 };
+
+                const uint8 Class = regularCellClass[Case];
+                const RegularCellData& CD = regularCellData[Class];
+                const unsigned short* VD = regularVertexData[Case];
+
+                int32 VertexIndices[12];
+                int32 VCount = 0;
+
+                for (int v = 0; v < 12; ++v)
+                {
+                    const unsigned short Entry = VD[v];
+                    if (Entry == 0) break;
+
+                    const int32 A = (Entry >> 4) & 0x0F;
+                    const int32 B = Entry & 0x0F;
+                    if (A >= 8 || B >= 8) continue;
+
+                    const int32 AX = CornerX[A], AY = CornerY[A], AZ = CornerZ[A];
+                    const int32 BX = CornerX[B], BY = CornerY[B], BZ = CornerZ[B];
+
+                    const int32 StartX = x + (AX < BX ? AX : BX);
+                    const int32 StartY = y + (AY < BY ? AY : BY);
+                    const int32 StartZ = z + (AZ < BZ ? AZ : BZ);
+
+                    int32 Dir;
+                    if (AX != BX)      Dir = 0;
+                    else if (AY != BY) Dir = 1;
+                    else               Dir = 2;
+
+                    const int32 LX = StartX - CellMin.X;
+                    const int32 LY = StartY - CellMin.Y;
+                    const int32 LZ = StartZ - CellMin.Z;
+                    const int32 EdgeIdxPos = ((LX * LocalN + LY) * LocalN + LZ) * 3 + Dir;
+                    int32& Cached = EdgeCacheData[EdgeIdxPos];
+
+                    int32 GlobalIdx;
+                    if (Cached >= 0)
+                    {
+                        GlobalIdx = Cached;
+                    }
+                    else
+                    {
+                        const float WA = (float)W[A];
+                        const float WB = (float)W[B];
+                        const float Den = WB - WA;
+                        const float t = (Den > -1e-6f && Den < 1e-6f) ? 0.5f : (-WA) / Den;
+
+                        const float PAX = (float)(x + AX);
+                        const float PAY = (float)(y + AY);
+                        const float PAZ = (float)(z + AZ);
+                        const float PBX = (float)(x + BX);
+                        const float PBY = (float)(y + BY);
+                        const float PBZ = (float)(z + BZ);
+
+                        const float LPX = PAX + (PBX - PAX) * t;
+                        const float LPY = PAY + (PBY - PAY) * t;
+                        const float LPZ = PAZ + (PBZ - PAZ) * t;
+
+                        const float WPX = LPX * VoxelSize + OffX;
+                        const float WPY = LPY * VoxelSize + OffY;
+                        const float WPZ = LPZ * VoxelSize + OffZ;
+
+                        const int32 xi = (int32)(LPX + 0.5f);
+                        const int32 yi = (int32)(LPY + 0.5f);
+                        const int32 zi = (int32)(LPZ + 0.5f);
+                        const int32 CenterIdx = (xi + 1) * PaddedNN + (yi + 1) * PaddedN + (zi + 1);
+
+                        const float dx = (float)VoxelsBase[CenterIdx + PaddedNN].Weight - (float)VoxelsBase[CenterIdx - PaddedNN].Weight;
+                        const float dy = (float)VoxelsBase[CenterIdx + PaddedN].Weight - (float)VoxelsBase[CenterIdx - PaddedN].Weight;
+                        const float dz = (float)VoxelsBase[CenterIdx + 1].Weight - (float)VoxelsBase[CenterIdx - 1].Weight;
+
+                        const float LenSq = dx * dx + dy * dy + dz * dz;
+                        float NX = 0.0f, NY = 0.0f, NZ = 1.0f;
+                        if (LenSq >= 1e-6f)
+                        {
+                            const float InvLen = 1.0f / sqrtf(LenSq);
+                            NX = dx * InvLen;
+                            NY = dy * InvLen;
+                            NZ = dz * InvLen;
+                        }
+
+                        const int32 pix = xi + PaddedOffset;
+                        const int32 piy = yi + PaddedOffset;
+                        const float GroundZ = SurfaceGridData[pix * PaddedN + piy];
+
+                        GlobalIdx = CurVertCount++;
+
+                        // 直接标量赋值，绝不构造临时结构体
+                        PosData[GlobalIdx].X = WPX; PosData[GlobalIdx].Y = WPY; PosData[GlobalIdx].Z = WPZ;
+                        NormData[GlobalIdx].X = NX; NormData[GlobalIdx].Y = NY; NormData[GlobalIdx].Z = NZ;
+                        UVData[GlobalIdx].X = WPX * InvUV; UVData[GlobalIdx].Y = WPY * InvUV;
+                        HeightData[GlobalIdx] = GroundZ - WPZ;
+
+                        Cached = GlobalIdx;
+                    }
+
+                    VertexIndices[VCount++] = GlobalIdx;
+                }
+
+                const int32 TCount = CD.GetTriangleCount();
+                for (int32 t = 0; t < TCount; ++t)
+                {
+                    const int32 I0 = CD.vertexIndex[t * 3 + 0];
+                    const int32 I1 = CD.vertexIndex[t * 3 + 1];
+                    const int32 I2 = CD.vertexIndex[t * 3 + 2];
+                    if (I0 >= VCount || I1 >= VCount || I2 >= VCount) continue;
+
+                    IndicesData[CurIndexCount++] = (uint32)VertexIndices[I0];
+                    IndicesData[CurIndexCount++] = (uint32)VertexIndices[I2];
+                    IndicesData[CurIndexCount++] = (uint32)VertexIndices[I1];
+                }
+            }
+        }
+    }
+
+    // ============ 6. 修剪多余空间 ============
+    InOut.Positions.SetNum(CurVertCount, EAllowShrinking::No);
+    InOut.Normals.SetNum(CurVertCount, EAllowShrinking::No);
+    InOut.UVs.SetNum(CurVertCount, EAllowShrinking::No);
+    InOut.SurfaceHeights.SetNum(CurVertCount, EAllowShrinking::No);
+    InOut.Indices.SetNum(CurIndexCount, EAllowShrinking::No);
+}

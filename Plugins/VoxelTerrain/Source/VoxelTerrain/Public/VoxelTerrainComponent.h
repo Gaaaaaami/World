@@ -7,6 +7,7 @@
 #include "VoxelChunkData.h"
 #include "VoxelTypes.h"
 #include "Engine/VolumeTexture.h" 
+#include "Containers/CircularQueue.h"
 #include "VoxelTerrainComponent.generated.h"
 
 class UMaterialInterface;
@@ -129,9 +130,6 @@ private:
         TSharedPtr<FVoxelChunkData> VoxelData,
         int32 Version);
 
-    // ⭐ 编辑：主线程同步生成 + 推渲染 + 更新碰撞
-    void RebuildTouchedChunks(const TSet<FChunkKey>& TouchedChunks);
-
     // 自然加载：后台异步生成
     void SpawnChunkAsyncTask(const FChunkKey& Key, int32 CurrentVersion);
 
@@ -182,7 +180,7 @@ public:
     void RequestEdit(const FVector& WorldPos, float Radius, bool bIsAdd);
 
 private:
-    TSet<FVoxelEditTask> PendingEditTasks;
+    TCircularQueue<FVoxelEditTask> PendingEditTasks{ 1024 };
     void EditTaskTick();
 
 private: // 植被系统
