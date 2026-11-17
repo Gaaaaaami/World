@@ -190,9 +190,9 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
                         const float GroundZ = SurfaceGridData[pix * PaddedN + piy];
 
                         // ⭐ 优化 2：只算 Z，不构建 3D 向量
-                        const float Depth = GroundZ - (WorldP.Z + ChunkWorldOrigin.Z);
+                        // const float Depth = GroundZ - (WorldP.Z + ChunkWorldOrigin.Z);
 
-                        Out.SurfaceHeights.Add(Depth);
+                        Out.SurfaceHeights.Add(GroundZ);
                         Out.Positions.Add(WorldP);
                         Out.Normals.Add(Normal);
                         Out.UVs.Add(FVector2f::ZeroVector);
@@ -523,7 +523,7 @@ void FTransvoxelMesher::GenerateRegularPartial(
                         PosData[GlobalIdx].X = WPX; PosData[GlobalIdx].Y = WPY; PosData[GlobalIdx].Z = WPZ;
                         NormData[GlobalIdx].X = NX; NormData[GlobalIdx].Y = NY; NormData[GlobalIdx].Z = NZ;
                         UVData[GlobalIdx].X = WPX * InvUV; UVData[GlobalIdx].Y = WPY * InvUV;
-                        HeightData[GlobalIdx] = GroundZ - WPZ;
+                        HeightData[GlobalIdx] = GroundZ ;
 
                         Cached = GlobalIdx;
                     }

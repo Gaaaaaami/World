@@ -263,7 +263,7 @@ void FVoxelGenerator::GenerateChunk(
             // ⭐ 核心优化：(X, Y) 的 2D 噪声只算一次（原版每 voxel 一次）
             const float SurfaceNoise = TexFbm2D(FVector2D(WX, WY));
             const float SurfaceZ = Settings.BaseWorldZ + SurfaceNoise * Settings.HillHeight;
-            OutChunk.SurfaceAt(ix, iy) = SurfaceZ;  
+            OutChunk.SurfaceAt(ix, iy) = SurfaceZ - VoxelConfig::VoxelSize;
 
             for (int32 iz = 0; iz < N; ++iz)
             {
