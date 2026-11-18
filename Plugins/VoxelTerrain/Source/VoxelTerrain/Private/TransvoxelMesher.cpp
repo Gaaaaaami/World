@@ -46,17 +46,17 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
     Out.Positions.Reserve(4096);
     Out.Normals.Reserve(4096);
     Out.UVs.Reserve(4096);
-    Out.SurfaceHeights.Reserve(4096);
+    //Out.SurfaceHeights.Reserve(4096);
     Out.Indices.Reserve(8192);
-
+    Out.Colors.Reserve(4096);
     const int32 ChunkN = VoxelConfig::ChunkSize;     // 32
     const int32 EdgeN = VoxelConfig::ChunkStride;   // 33（EdgeCache 用）
     const int32 PaddedN = VoxelConfig::PaddedStride;  // 35（VoxelsBase 用）
     const int32 PaddedNN = PaddedN * PaddedN;          // 1225
-    const int32 S = 1 << LOD;
-    const float WorldStep = VoxelSize * S;
+    //const int32 S = 1 << LOD;
+    const float WorldStep = VoxelSize ;
 
-    const float* SurfaceGridData = Chunk.SurfaceGrid.GetData();
+    //const float* SurfaceGridData = Chunk.SurfaceGrid.GetData();
 
     // ⭐ EdgeCache 静态复用（thread_local，只 malloc 一次）
     //    边起点坐标范围 0..ChunkN-1，所以用 EdgeN = 33 足够
@@ -187,15 +187,16 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
                         GlobalIdx = Out.Positions.Num();
                         const int32 pix = FMath::RoundToInt(LocalP.X) + VoxelConfig::PaddedOffset;
                         const int32 piy = FMath::RoundToInt(LocalP.Y) + VoxelConfig::PaddedOffset;
-                        const float GroundZ = SurfaceGridData[pix * PaddedN + piy];
+                        // const float GroundZ = SurfaceGridData[pix * PaddedN + piy];
 
                         // ⭐ 优化 2：只算 Z，不构建 3D 向量
                         // const float Depth = GroundZ - (WorldP.Z + ChunkWorldOrigin.Z);
 
-                        Out.SurfaceHeights.Add(GroundZ);
+                        // Out.SurfaceHeights.Add(GroundZ);
                         Out.Positions.Add(WorldP);
                         Out.Normals.Add(Normal);
                         Out.UVs.Add(FVector2f::ZeroVector);
+                        Out.Colors.Add(FColor(255,0,255));
 
                         Cached = GlobalIdx;
                     }
@@ -315,22 +316,25 @@ void FTransvoxelMesher::GenerateRegularPartial(
         TArray<FVector3f> NewPositions;
         TArray<FVector3f> NewNormals;
         TArray<FVector2f> NewUVs;
-        TArray<float>     NewSurfaceHeights;
+        TArray<FColor> NewColors;
+        //TArray<float>     NewSurfaceHeights;
 
         NewPositions.SetNumUninitialized(OldNumVerts);
         NewNormals.SetNumUninitialized(OldNumVerts);
         NewUVs.SetNumUninitialized(OldNumVerts);
-        NewSurfaceHeights.SetNumUninitialized(OldNumVerts);
+        NewColors.SetNumUninitialized(OldNumVerts);
+        //NewSurfaceHeights.SetNumUninitialized(OldNumVerts);
 
         FVector3f* NewPosData = NewPositions.GetData();
         FVector3f* NewNormData = NewNormals.GetData();
         FVector2f* NewUVData = NewUVs.GetData();
-        float* NewHeightData = NewSurfaceHeights.GetData();
+        FColor* NewColorsData = NewColors.GetData();
+        //float* NewHeightData = NewSurfaceHeights.GetData();
 
         const FVector3f* OldNormals = InOut.Normals.GetData();
         const FVector2f* OldUVs = InOut.UVs.GetData();
-        const float* OldHeights = InOut.SurfaceHeights.GetData();
-
+        //const float* OldHeights = InOut.SurfaceHeights.GetData();
+        const FColor* OldColors = InOut.Colors.GetData();
         int32 NewVertCount = 0;
         for (int32 i = 0; i < OldNumVerts; ++i)
         {
@@ -339,15 +343,16 @@ void FTransvoxelMesher::GenerateRegularPartial(
             NewPosData[NewVertCount] = OldPositions[i];
             NewNormData[NewVertCount] = OldNormals[i];
             NewUVData[NewVertCount] = OldUVs[i];
-            NewHeightData[NewVertCount] = OldHeights[i];
+            //NewHeightData[NewVertCount] = OldHeights[i];
+            NewColorsData[NewVertCount] = OldColors[i];
             ++NewVertCount;
         }
 
         NewPositions.SetNum(NewVertCount, EAllowShrinking::No);
         NewNormals.SetNum(NewVertCount, EAllowShrinking::No);
         NewUVs.SetNum(NewVertCount, EAllowShrinking::No);
-        NewSurfaceHeights.SetNum(NewVertCount, EAllowShrinking::No);
-
+        //NewSurfaceHeights.SetNum(NewVertCount, EAllowShrinking::No);
+        NewColors.SetNum(NewVertCount, EAllowShrinking::No);
         for (int32 i = 0; i < KeptCount; ++i)
         {
             KeptData[i] = (uint32)OldToNewData[KeptData[i]];
@@ -357,8 +362,9 @@ void FTransvoxelMesher::GenerateRegularPartial(
         InOut.Positions = MoveTemp(NewPositions);
         InOut.Normals = MoveTemp(NewNormals);
         InOut.UVs = MoveTemp(NewUVs);
-        InOut.SurfaceHeights = MoveTemp(NewSurfaceHeights);
+        // InOut.SurfaceHeights = MoveTemp(NewSurfaceHeights);
         InOut.Indices = MoveTemp(KeptIndices);
+        InOut.Colors = MoveTemp(NewColors);
     }
 
     // ============ 3. 局部 EdgeCache ============
@@ -382,20 +388,23 @@ void FTransvoxelMesher::GenerateRegularPartial(
     InOut.Positions.SetNumUninitialized(OldVerts + EstVerts, EAllowShrinking::No);
     InOut.Normals.SetNumUninitialized(OldVerts + EstVerts, EAllowShrinking::No);
     InOut.UVs.SetNumUninitialized(OldVerts + EstVerts, EAllowShrinking::No);
-    InOut.SurfaceHeights.SetNumUninitialized(OldVerts + EstVerts, EAllowShrinking::No);
+    InOut.Colors.SetNumUninitialized(OldVerts + EstVerts, EAllowShrinking::No);
+    //InOut.SurfaceHeights.SetNumUninitialized(OldVerts + EstVerts, EAllowShrinking::No);
     InOut.Indices.SetNumUninitialized(OldIndicesCount + EstIndices, EAllowShrinking::No);
-
     FVector3f* PosData = InOut.Positions.GetData();
     FVector3f* NormData = InOut.Normals.GetData();
     FVector2f* UVData = InOut.UVs.GetData();
-    float* HeightData = InOut.SurfaceHeights.GetData();
+    //float* HeightData = InOut.SurfaceHeights.GetData();
     uint32* IndicesData = InOut.Indices.GetData();
+
+    FColor* ColorsData = InOut.Colors.GetData();
+
+
 
     int32 CurVertCount = OldVerts;
     int32 CurIndexCount = OldIndicesCount;
-
     const FVoxel* VoxelsBase = Chunk.Voxels.GetData();
-    const float* SurfaceGridData = Chunk.SurfaceGrid.GetData();
+    //const float* SurfaceGridData = Chunk.SurfaceGrid.GetData();
 
     // 静态数组替代 FIntVector 构造
     static const int32 CornerX[8] = { 0,1,0,1,0,1,0,1 };
@@ -515,7 +524,7 @@ void FTransvoxelMesher::GenerateRegularPartial(
 
                         const int32 pix = xi + PaddedOffset;
                         const int32 piy = yi + PaddedOffset;
-                        const float GroundZ = SurfaceGridData[pix * PaddedN + piy];
+                        //const float GroundZ = SurfaceGridData[pix * PaddedN + piy];
 
                         GlobalIdx = CurVertCount++;
 
@@ -523,8 +532,9 @@ void FTransvoxelMesher::GenerateRegularPartial(
                         PosData[GlobalIdx].X = WPX; PosData[GlobalIdx].Y = WPY; PosData[GlobalIdx].Z = WPZ;
                         NormData[GlobalIdx].X = NX; NormData[GlobalIdx].Y = NY; NormData[GlobalIdx].Z = NZ;
                         UVData[GlobalIdx].X = WPX * InvUV; UVData[GlobalIdx].Y = WPY * InvUV;
-                        HeightData[GlobalIdx] = GroundZ ;
-
+                        //HeightData[GlobalIdx] = GroundZ ;
+                        ColorsData[GlobalIdx] = FColor(255, 0, 0);
+                        
                         Cached = GlobalIdx;
                     }
 
@@ -551,6 +561,8 @@ void FTransvoxelMesher::GenerateRegularPartial(
     InOut.Positions.SetNum(CurVertCount, EAllowShrinking::No);
     InOut.Normals.SetNum(CurVertCount, EAllowShrinking::No);
     InOut.UVs.SetNum(CurVertCount, EAllowShrinking::No);
-    InOut.SurfaceHeights.SetNum(CurVertCount, EAllowShrinking::No);
+    InOut.Colors.SetNum(CurVertCount, EAllowShrinking::No);
+
+    //InOut.SurfaceHeights.SetNum(CurVertCount, EAllowShrinking::No);
     InOut.Indices.SetNum(CurIndexCount, EAllowShrinking::No);
 }
