@@ -15,22 +15,29 @@ namespace
     // ============================ 顶点颜色（可选，未使用）============================
     FColor ComputeColor(const FVector3f& WorldPos, const FVector3f& Normal)
     {
-        constexpr float BiomeFreq = 0.001f;
-        constexpr float BlendHalf = 0.5f;
-
-        const FVector2D P2D((double)WorldPos.X, (double)WorldPos.Y);
-        const float N = FMath::PerlinNoise2D(P2D * BiomeFreq);
-        const float t = FMath::Clamp((N + BlendHalf) / (BlendHalf * 2.f), 0.f, 1.f);
-        const float S = t * t * (3.f - 2.f * t);
+        constexpr float BiomeFreq = 0.0001f;
+        constexpr float SoilGrassBoundary = 1900.f;
+        constexpr float RockSoilBoundary = 1250.f;
 
         const FColor Forest(0, 200, 0);
         const FColor Desert(220, 180, 80);
-        return FColor(
-            (uint8)FMath::Lerp((float)Forest.R, (float)Desert.R, S),
-            (uint8)FMath::Lerp((float)Forest.G, (float)Desert.G, S),
-            (uint8)FMath::Lerp((float)Forest.B, (float)Desert.B, S),
-            255);
+        const FColor Soil(125, 95, 60);
+        const FColor Rock(115, 115, 125);
+
+        const FVector2D P2D((double)WorldPos.X, (double)WorldPos.Y);
+        const float N = FMath::PerlinNoise2D(P2D * BiomeFreq);
+
+        const float z = WorldPos.Z;
+
+        if (z >= SoilGrassBoundary)
+        {
+            // 地表：森林 / 沙地 硬二选一
+            return (N > 0.f) ? Forest : Desert;
+        }
+        if (z >= RockSoilBoundary) return Soil;
+        return Rock;
     }
+
 }
 
 // ============================ GenerateRegular ============================
@@ -196,7 +203,7 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
                         Out.Positions.Add(WorldP);
                         Out.Normals.Add(Normal);
                         Out.UVs.Add(FVector2f::ZeroVector);
-                        Out.Colors.Add(FColor(255,0,255));
+                        Out.Colors.Add(ComputeColor(WorldP + ChunkWorldOrigin, Normal));
 
                         Cached = GlobalIdx;
                     }
@@ -533,7 +540,7 @@ void FTransvoxelMesher::GenerateRegularPartial(
                         NormData[GlobalIdx].X = NX; NormData[GlobalIdx].Y = NY; NormData[GlobalIdx].Z = NZ;
                         UVData[GlobalIdx].X = WPX * InvUV; UVData[GlobalIdx].Y = WPY * InvUV;
                         //HeightData[GlobalIdx] = GroundZ ;
-                        ColorsData[GlobalIdx] = FColor(255, 0, 0);
+                        ColorsData[GlobalIdx] = ComputeColor(PosData[GlobalIdx] + ChunkWorldOrigin, NormData[GlobalIdx]); // FColor(255, 0, 0);
                         
                         Cached = GlobalIdx;
                     }
