@@ -18,13 +18,13 @@ protected:
     virtual void Tick(float DeltaTime) override;
 
     UPROPERTY(EditAnywhere, Category = "Voxel Interaction")
-    float MaxTraceDistance = 5000.f;
+    float MaxTraceDistance = 1000.f;
 
     UPROPERTY(EditAnywhere, Category = "Voxel Interaction")
-    float EditRadius = 400.f;
+    float EditRadius = 150.f;
 
     UPROPERTY(EditAnywhere, Category = "Voxel Interaction")
-    float EditCooldown = 0.2f;
+    float EditCooldown = 0.1f;
 
 private:
     void HandleMouseClick(bool bIsAdd);

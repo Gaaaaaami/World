@@ -149,7 +149,6 @@ private:
 
     FTSTicker::FDelegateHandle TickHandle;
     FTSTicker::FDelegateHandle CollisionTickHandle;
-    FTSTicker::FDelegateHandle EditTickHandle;
 
     // ==================== 碰撞系统 ====================
 public:
@@ -175,13 +174,7 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Voxel|Noise3D")
     TArray<FVoxelNoiseLayer3DInfo> NoiseLayers3D;
-public:
-    UFUNCTION(BlueprintCallable, Category = "Voxel")
-    void RequestEdit(const FVector& WorldPos, float Radius, bool bIsAdd);
 
-private:
-    TCircularQueue<FVoxelEditTask> PendingEditTasks{ 1024 };
-    void EditTaskTick();
 
 private: // 植被系统
     void InitBiomeTexture();

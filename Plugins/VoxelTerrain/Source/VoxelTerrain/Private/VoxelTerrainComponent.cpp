@@ -105,13 +105,6 @@ void UVoxelTerrainComponent::BeginPlay()
                 return true;
             }), 0.33f);
 
-    EditTickHandle = FTSTicker::GetCoreTicker().AddTicker(
-        FTickerDelegate::CreateWeakLambda(this, [this](float)
-            {
-                EditTaskTick();
-                return true;
-            }), 0.22f);
-
 }
 
 void UVoxelTerrainComponent::EndPlay(const EEndPlayReason::Type Reason)
@@ -125,10 +118,6 @@ void UVoxelTerrainComponent::EndPlay(const EEndPlayReason::Type Reason)
     CollisionTickHandle.Reset();
 
     ClearAllCollisions();
-
-    if (EditTickHandle.IsValid())
-        FTSTicker::GetCoreTicker().RemoveTicker(EditTickHandle);
-    EditTickHandle.Reset();
 
     Super::EndPlay(Reason);
 }
@@ -1087,30 +1076,6 @@ void UVoxelTerrainComponent::ClearAllCollisions()
         }
     }
     CollisionComponentPool.Empty();
-}
-void UVoxelTerrainComponent::RequestEdit(const FVector& WorldPos, float Radius, bool bIsAdd)
-{
-    //PendingEditTasks.Add(FVoxelEditTask{ WorldPos, Radius, bIsAdd });
-    if (!PendingEditTasks.Enqueue(FVoxelEditTask{ WorldPos, Radius, bIsAdd }))
-    {
-        // 队列已满，可以记录日志或直接忽略这次编辑
-    }
-
-}
-
-void UVoxelTerrainComponent::EditTaskTick()
-{
-    constexpr int32 MaxEditsPerFrame = 1; // 每帧处理上限
-
-    FVoxelEditTask Task;
-    int32 Count = 0;
-    // 循环出队，直到达到每帧上限或队列为空
-    while (Count < MaxEditsPerFrame && PendingEditTasks.Dequeue(Task))
-    {
-        ApplyEdit(Task.WorldPos, Task.Radius, Task.bIsAdd);
-        ++Count;
-    }
-
 }
 
 // ============================================================

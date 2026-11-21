@@ -66,10 +66,7 @@ void AVoxelInteractionActor::HandleMouseClick(bool bIsAdd)
                 const float OffsetDist = FMath::Max(EditRadius * 0.5f, 50.f);
                 FVector EditLocation = Hit.Location + CamRot.Vector() * OffsetDist;
 
-                VoxelComp->RequestEdit(EditLocation, EditRadius, bIsAdd);  
-                //DrawDebugLine(GetWorld(), CamLoc, Hit.Location, FColor::Green, false, 1.0f, 0, 2.0f);
-                //DrawDebugSphere(GetWorld(), EditLocation, EditRadius, 12,
-                //    bIsAdd ? FColor::Green : FColor::Red, false, 1.0f);
+                VoxelComp->ApplyEdit(EditLocation, EditRadius, bIsAdd);
             }
         }
     }

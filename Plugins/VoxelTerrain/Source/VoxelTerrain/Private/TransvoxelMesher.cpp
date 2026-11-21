@@ -13,11 +13,69 @@ namespace
     };
 
     // ============================ 顶点颜色（可选，未使用）============================
+
     FColor ComputeColor(const FVector3f& WorldPos, const FVector3f& Normal)
     {
         constexpr float BiomeFreq = 0.0001f;
-        constexpr float SoilGrassBoundary = 1900.f;
-        constexpr float RockSoilBoundary = 1250.f;
+
+        // ---- 分界（按你的实际地形高度再微调）----
+        constexpr float SoilGrassBoundary = 2000.f;  // 草/土 分界，往下拉了 500
+        constexpr float RockSoilBoundary = 800.f;   // 土/岩 分界
+
+        // ---- 窄过渡带 ----
+        constexpr float HeightBlendHalf = 60.f;      // 高度过渡总宽 120cm
+        constexpr float BiomeBlendHalf = 0.05f;     // 横向噪声阈值带
+
+        const FColor Forest(0, 200, 0);
+        const FColor Desert(220, 180, 80);
+        const FColor Soil(125, 95, 60);
+        const FColor Rock(115, 115, 125);
+
+        const FVector2D P2D((double)WorldPos.X, (double)WorldPos.Y);
+        const float N = FMath::PerlinNoise2D(P2D * BiomeFreq);
+        const float z = WorldPos.Z;
+
+        // ---- 横向：森林 <-> 沙地（窄过渡）----
+        const float sBiome = FMath::SmoothStep(-BiomeBlendHalf, BiomeBlendHalf, N);
+        const FVector3f surfaceCol = FMath::Lerp(
+            FVector3f(Forest.R, Forest.G, Forest.B),
+            FVector3f(Desert.R, Desert.G, Desert.B),
+            sBiome);
+
+        // ---- 纵向：岩石 -> 土 -> 地表（窄过渡）----
+        const float wSoil = FMath::SmoothStep(RockSoilBoundary - HeightBlendHalf,
+            RockSoilBoundary + HeightBlendHalf, z);
+        const float wGrass = FMath::SmoothStep(SoilGrassBoundary - HeightBlendHalf,
+            SoilGrassBoundary + HeightBlendHalf, z);
+
+        FVector3f C(Rock.R, Rock.G, Rock.B);
+        C = FMath::Lerp(C, FVector3f(Soil.R, Soil.G, Soil.B), wSoil);
+        C = FMath::Lerp(C, surfaceCol, wGrass);
+
+        return FColor(
+            (uint8)FMath::Clamp(FMath::RoundToInt(C.X), 0, 255),
+            (uint8)FMath::Clamp(FMath::RoundToInt(C.Y), 0, 255),
+            (uint8)FMath::Clamp(FMath::RoundToInt(C.Z), 0, 255),
+            255);
+    }
+
+
+    // 注意：增加了一个 SurfaceHeight 参数（当前XY的地表最高点）
+    FColor ComputeColor(const FVector3f& WorldPos, const FVector3f& Normal, float SurfaceHeight)
+    {
+        constexpr float BiomeFreq = 0.0001f;
+
+        // 1. 计算相对深度（地表为0，往下深度变大）
+        float Depth = SurfaceHeight - WorldPos.Z;
+
+        // 防止凸起物（比如石头）产生负深度，钳制在 0 以上
+        Depth = FMath::Max(0.f, Depth);
+
+        // 2. 设定基于“深度”的阈值（单位：cm）
+        // 比如：0~200cm 是草，200~500cm 是土，>500cm 是岩石
+        constexpr float GrassDepth = 10.f;  // 草和土的分界深度
+        constexpr float SoilDepth = 500.f;  // 土和岩石的分界深度
+        constexpr float BlendHalf = 30.f;   // 窄过渡带
 
         const FColor Forest(0, 200, 0);
         const FColor Desert(220, 180, 80);
@@ -27,15 +85,25 @@ namespace
         const FVector2D P2D((double)WorldPos.X, (double)WorldPos.Y);
         const float N = FMath::PerlinNoise2D(P2D * BiomeFreq);
 
-        const float z = WorldPos.Z;
+        // 横向森林/沙地
+        const float sBiome = FMath::SmoothStep(-0.05f, 0.05f, N);
+        const FVector3f surfaceCol = FMath::Lerp(
+            FVector3f(Forest.R, Forest.G, Forest.B),
+            FVector3f(Desert.R, Desert.G, Desert.B), sBiome);
 
-        if (z >= SoilGrassBoundary)
-        {
-            // 地表：森林 / 沙地 硬二选一
-            return (N > 0.f) ? Forest : Desert;
-        }
-        if (z >= RockSoilBoundary) return Soil;
-        return Rock;
+        // 3. 按“深度”计算权重（注意：Depth 越小越靠近地表，权重越小）
+        const float wSoil = FMath::SmoothStep(SoilDepth - BlendHalf, SoilDepth + BlendHalf, Depth);
+        const float wGrass = FMath::SmoothStep(GrassDepth - BlendHalf, GrassDepth + BlendHalf, Depth);
+
+        FVector3f C(surfaceCol.X, surfaceCol.Y, surfaceCol.Z); // 默认地表色
+        C = FMath::Lerp(C, FVector3f(Soil.R, Soil.G, Soil.B), wGrass); // 往下变土
+        C = FMath::Lerp(C, FVector3f(Rock.R, Rock.G, Rock.B), wSoil);  // 再往下变岩石
+
+        return FColor(
+            (uint8)FMath::Clamp(FMath::RoundToInt(C.X), 0, 255),
+            (uint8)FMath::Clamp(FMath::RoundToInt(C.Y), 0, 255),
+            (uint8)FMath::Clamp(FMath::RoundToInt(C.Z), 0, 255),
+            255);
     }
 
 }
@@ -63,7 +131,7 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
     //const int32 S = 1 << LOD;
     const float WorldStep = VoxelSize ;
 
-    //const float* SurfaceGridData = Chunk.SurfaceGrid.GetData();
+    const float* SurfaceGridData = Chunk.SurfaceGrid.GetData();
 
     // ⭐ EdgeCache 静态复用（thread_local，只 malloc 一次）
     //    边起点坐标范围 0..ChunkN-1，所以用 EdgeN = 33 足够
@@ -194,7 +262,7 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
                         GlobalIdx = Out.Positions.Num();
                         const int32 pix = FMath::RoundToInt(LocalP.X) + VoxelConfig::PaddedOffset;
                         const int32 piy = FMath::RoundToInt(LocalP.Y) + VoxelConfig::PaddedOffset;
-                        // const float GroundZ = SurfaceGridData[pix * PaddedN + piy];
+                        const float GroundZ = SurfaceGridData[pix * PaddedN + piy];
 
                         // ⭐ 优化 2：只算 Z，不构建 3D 向量
                         // const float Depth = GroundZ - (WorldP.Z + ChunkWorldOrigin.Z);
@@ -203,7 +271,7 @@ void FTransvoxelMesher::GenerateRegular(const FVoxelChunkData& Chunk,
                         Out.Positions.Add(WorldP);
                         Out.Normals.Add(Normal);
                         Out.UVs.Add(FVector2f::ZeroVector);
-                        Out.Colors.Add(ComputeColor(WorldP + ChunkWorldOrigin, Normal));
+                        Out.Colors.Add(ComputeColor(WorldP + ChunkWorldOrigin, Normal, GroundZ));
 
                         Cached = GlobalIdx;
                     }
@@ -411,7 +479,7 @@ void FTransvoxelMesher::GenerateRegularPartial(
     int32 CurVertCount = OldVerts;
     int32 CurIndexCount = OldIndicesCount;
     const FVoxel* VoxelsBase = Chunk.Voxels.GetData();
-    //const float* SurfaceGridData = Chunk.SurfaceGrid.GetData();
+    const float* SurfaceGridData = Chunk.SurfaceGrid.GetData();
 
     // 静态数组替代 FIntVector 构造
     static const int32 CornerX[8] = { 0,1,0,1,0,1,0,1 };
@@ -531,8 +599,8 @@ void FTransvoxelMesher::GenerateRegularPartial(
 
                         const int32 pix = xi + PaddedOffset;
                         const int32 piy = yi + PaddedOffset;
-                        //const float GroundZ = SurfaceGridData[pix * PaddedN + piy];
-
+                        const float GroundZ = SurfaceGridData[pix * PaddedN + piy];
+                        
                         GlobalIdx = CurVertCount++;
 
                         // 直接标量赋值，绝不构造临时结构体
@@ -540,7 +608,7 @@ void FTransvoxelMesher::GenerateRegularPartial(
                         NormData[GlobalIdx].X = NX; NormData[GlobalIdx].Y = NY; NormData[GlobalIdx].Z = NZ;
                         UVData[GlobalIdx].X = WPX * InvUV; UVData[GlobalIdx].Y = WPY * InvUV;
                         //HeightData[GlobalIdx] = GroundZ ;
-                        ColorsData[GlobalIdx] = ComputeColor(PosData[GlobalIdx] + ChunkWorldOrigin, NormData[GlobalIdx]); // FColor(255, 0, 0);
+                        ColorsData[GlobalIdx] = ComputeColor(PosData[GlobalIdx], NormData[GlobalIdx], GroundZ); // FColor(255, 0, 0);
                         
                         Cached = GlobalIdx;
                     }
