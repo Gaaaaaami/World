@@ -13,11 +13,11 @@ struct FVoxel
 
 namespace VoxelConfig
 {
-    static constexpr int32 ChunkSize = 64;
+    static constexpr int32 ChunkSize = 512;
     static constexpr int32 ChunkStride = ChunkSize + 1;         // 33：chunk 内部采样点
     static constexpr int32 PaddedStride = ChunkStride + 2;       // 35：加 ±1 的 halo
     static constexpr int32 PaddedOffset = 1;                      // padded 数组的索引偏移
-    static constexpr float VoxelSize = 30.f;
+    static constexpr float VoxelSize = 32.f;
 }
 
 struct FChunkKey

@@ -88,6 +88,8 @@ void UVoxelTerrainComponent::BeginPlay()
     PendingPushToSceneProxy.Reserve(64);
     ChunkCollisionProxies.Reserve(64);
 
+
+#if 0
     // StreamTick：自然加载/卸载（异步）
     TickHandle = FTSTicker::GetCoreTicker().AddTicker(
         FTickerDelegate::CreateWeakLambda(this, [this](float)
@@ -95,15 +97,28 @@ void UVoxelTerrainComponent::BeginPlay()
                 StreamTick();
                 return true;
             }), 0.16f);
-
     // CollisionTick：自然场景的碰撞回收 + 创建
-    // 编辑触发的碰撞更新已在 RebuildTouchedChunks 里同步处理，不走这里
+// 编辑触发的碰撞更新已在 RebuildTouchedChunks 里同步处理，不走这里
     CollisionTickHandle = FTSTicker::GetCoreTicker().AddTicker(
         FTickerDelegate::CreateWeakLambda(this, [this](float)
             {
                 ProcessCollisionQueue();
                 return true;
             }), 0.33f);
+#else
+
+    this->TestSpawnSingleChunkCollision(FIntVector(0, 0, 0));   // 测试：原点固定生成一个
+    CollisionTickHandle = FTSTicker::GetCoreTicker().AddTicker(
+        FTickerDelegate::CreateWeakLambda(this, [this](float)
+            {
+                ProcessCollisionQueue();
+                return true;
+            }), 0.33f);
+#endif
+
+
+
+
 
 }
 
@@ -1346,4 +1361,16 @@ void UVoxelTerrainComponent::ReturnHISM(UHierarchicalInstancedStaticMeshComponen
     HISM->SetVisibility(false);
     HISM->SetStaticMesh(nullptr);
     HISMPool.Add(HISM); // 放回池子
+}
+
+bool UVoxelTerrainComponent::TestSpawnSingleChunkCollision(const FIntVector& ChunkCoord)
+{
+
+    FChunkKey key;
+    key.X = ChunkCoord.X;
+    key.Y = ChunkCoord.Y;
+    key.Z = ChunkCoord.Z;
+
+    this->SpawnChunkAsyncTask(key, 0);
+    return true;
 }

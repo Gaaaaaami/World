@@ -206,4 +206,7 @@ private:
     void PrewarmHISMPool(int32 PoolSize);
     UHierarchicalInstancedStaticMeshComponent* AcquireHISM(UStaticMesh* Mesh);
     void ReturnHISM(UHierarchicalInstancedStaticMeshComponent* HISM);
+public:
+    UFUNCTION(BlueprintCallable, Category = "Voxel|Test")
+    bool TestSpawnSingleChunkCollision(const FIntVector& ChunkCoord);
 };
