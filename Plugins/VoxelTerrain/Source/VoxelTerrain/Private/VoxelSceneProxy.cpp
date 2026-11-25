@@ -13,8 +13,8 @@ FVoxelSceneProxy::FVoxelSceneProxy(const UVoxelTerrainComponent* InComponent,
 {
     bWillEverBeLit = true;
     bCastDynamicShadow = true;
+    bCastShadowAsTwoSided = true;
     bCastStaticShadow = false;
-
     UMaterialInterface* UseMat = InMaterial;
     if (!UseMat)
         UseMat = UMaterial::GetDefaultMaterial(MD_Surface);
@@ -202,11 +202,18 @@ void FVoxelSceneProxy::GetDynamicMeshElements(
             const FSceneView* View = Views[ViewIndex];
             if (!View) continue;
 
-            // ⭐ 每 chunk 视锥剔除，稳态帧的 batch 数量大幅下降
-            if (!View->ViewFrustum.IntersectBox(
-                R.Bounds.GetCenter(), R.Bounds.GetExtent()))
+            const FConvexVolume* ShadowCull = View->GetDynamicMeshElementsShadowCullFrustum();
+            if (ShadowCull)
             {
-                continue;
+                // 阴影链路：剔除体已经是光源视角下的正确范围
+                if (!ShadowCull->IntersectBox(R.Bounds.GetCenter(), R.Bounds.GetExtent()))
+                    continue;
+            }
+            else
+            {
+                // 主视图链路：你原来的相机视锥剔除
+                if (!View->ViewFrustum.IntersectBox(R.Bounds.GetCenter(), R.Bounds.GetExtent()))
+                    continue;
             }
 
             FMeshBatch& Mesh = Collector.AllocateMesh();

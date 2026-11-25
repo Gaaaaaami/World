@@ -545,7 +545,7 @@ void UVoxelTerrainComponent::OnChunkGenerated(
         PendingPushToSceneProxy.Add(Key);
     }
 
-    DispatchVegetationTask(Key, Mesh);  // 渲染植物线程
+    // DispatchVegetationTask(Key, Mesh);  // 渲染植物线程
 
 }
 
