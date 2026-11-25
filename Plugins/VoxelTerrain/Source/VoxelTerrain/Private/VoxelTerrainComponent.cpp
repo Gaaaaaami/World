@@ -125,6 +125,10 @@ void UVoxelTerrainComponent::EndPlay(const EEndPlayReason::Type Reason)
 // ============================================================
 // 噪声贴图加载
 // ============================================================
+
+
+#if 0
+// 编辑器版本，正式打包会报错
 void UVoxelTerrainComponent::LoadNoiseTextureData()
 {
 #if VOXEL_USE_NOISE_TEXTURE
@@ -224,6 +228,274 @@ void UVoxelTerrainComponent::LoadNoiseTextureData()
     FVoxelGenerator::GlobalNoiseLayers3D = NewLayers3D;
 #endif
 }
+#else
+void UVoxelTerrainComponent::LoadNoiseTextureData()
+{
+#if VOXEL_USE_NOISE_TEXTURE
+    // sRGB 逆变换（仅当纹理被标记为 sRGB 时才应用，保证两条路径结果一致）
+    auto SRGBToLinear = [](float C)
+        {
+            return (C <= 0.04045f) ? (C / 12.92f) : FMath::Pow((C + 0.055f) / 1.055f, 2.4f);
+        };
+
+    // ==================== 2D 噪声层 ====================
+    TSharedPtr<TArray<FVoxelGenerator::FNoiseLayerData>> NewLayers2D = MakeShared<TArray<FVoxelGenerator::FNoiseLayerData>>();
+    NewLayers2D->Reserve(NoiseLayers.Num());
+
+    for (const FVoxelNoiseLayerInfo& LayerInfo : NoiseLayers)
+    {
+        if (!LayerInfo.Texture) continue;
+
+        TArray<float> F;
+        int32 SX = 0;
+        int32 SY = 0;
+
+#if WITH_EDITORONLY_DATA
+        // ---------------- 编辑器路径：保持原有逻辑 ----------------
+        FImage SourceImage;
+        if (!LayerInfo.Texture->Source.GetMipImage(SourceImage, 0)) continue;
+
+        SX = SourceImage.SizeX;
+        SY = SourceImage.SizeY;
+        if (SX != SY || SX < 4) continue;
+
+        const int32 NumPixels = SX * SY;
+        F.SetNumUninitialized(NumPixels);
+        const uint8* P = (const uint8*)SourceImage.RawData.GetData();
+
+        bool bAlreadyLinear = false;
+        if (SourceImage.Format == ERawImageFormat::G8)
+        {
+            for (int32 i = 0; i < NumPixels; ++i) F[i] = P[i] / 255.f;
+        }
+        else if (SourceImage.Format == ERawImageFormat::BGRA8)
+        {
+            for (int32 i = 0; i < NumPixels; ++i) F[i] = P[i * 4 + 2] / 255.f;
+        }
+        else
+        {
+            FImage RGBAImage;
+            SourceImage.CopyTo(RGBAImage, ERawImageFormat::BGRA8, EGammaSpace::Linear);
+            const uint8* RGBA_P = (const uint8*)RGBAImage.RawData.GetData();
+            for (int32 i = 0; i < NumPixels; ++i) F[i] = RGBA_P[i * 4 + 2] / 255.f;
+            bAlreadyLinear = true; // CopyTo 已做线性化，避免重复转换
+        }
+
+        if (!bAlreadyLinear && LayerInfo.Texture->SRGB)
+        {
+            for (int32 i = 0; i < NumPixels; ++i) F[i] = SRGBToLinear(F[i]);
+        }
+#else
+        // ---------------- 打包路径：通过 PlatformData 读取 ----------------
+        FTexturePlatformData* PlatformData = LayerInfo.Texture->GetPlatformData();
+        if (!PlatformData || PlatformData->Mips.Num() == 0) continue;
+
+        FTexture2DMipMap& Mip = PlatformData->Mips[0];
+        SX = Mip.SizeX;
+        SY = Mip.SizeY;
+        if (SX != SY || SX < 4) continue;
+
+        const EPixelFormat PixelFormat = PlatformData->PixelFormat;
+        int32 BytesPerPixel = 0;
+        if (PixelFormat == PF_G8)
+        {
+            BytesPerPixel = 1;
+        }
+        else if (PixelFormat == PF_B8G8R8A8 || PixelFormat == PF_R8G8B8A8)
+        {
+            BytesPerPixel = 4;
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning,
+                TEXT("Noise texture %s has unsupported pixel format for CPU read in packaged build."),
+                *LayerInfo.Texture->GetName());
+            continue;
+        }
+
+        Mip.BulkData.ForceBulkDataResident();
+
+        const int32 NumPixels = SX * SY;
+        const int64 ExpectedSize = (int64)NumPixels * BytesPerPixel;
+        if (Mip.BulkData.GetBulkDataSize() != ExpectedSize)
+        {
+            UE_LOG(LogTemp, Error,
+                TEXT("Noise texture %s BulkData size mismatch: expected %lld, got %lld"),
+                *LayerInfo.Texture->GetName(), ExpectedSize, Mip.BulkData.GetBulkDataSize());
+            continue;
+        }
+
+        F.SetNumUninitialized(NumPixels);
+
+        void* RawData = Mip.BulkData.Lock(LOCK_READ_ONLY);
+        if (!RawData) continue;
+
+        const uint8* P = (const uint8*)RawData;
+        if (PixelFormat == PF_G8)
+        {
+            for (int32 i = 0; i < NumPixels; ++i) F[i] = P[i] / 255.f;
+        }
+        else if (PixelFormat == PF_B8G8R8A8)
+        {
+            for (int32 i = 0; i < NumPixels; ++i) F[i] = P[i * 4 + 2] / 255.f;
+        }
+        else // PF_R8G8B8A8
+        {
+            for (int32 i = 0; i < NumPixels; ++i) F[i] = P[i * 4 + 0] / 255.f;
+        }
+
+        Mip.BulkData.Unlock();
+
+        if (LayerInfo.Texture->SRGB)
+        {
+            for (int32 i = 0; i < NumPixels; ++i) F[i] = SRGBToLinear(F[i]);
+        }
+#endif
+
+        FVoxelGenerator::FNoiseLayerData NewLayer;
+        NewLayer.Data = MakeShared<TArray<float>>(MoveTemp(F));
+        NewLayer.Size = SX;
+        NewLayer.Frequency = LayerInfo.Frequency;
+        NewLayer.Amplitude = LayerInfo.Amplitude;
+        NewLayer.Offset = LayerInfo.Offset;
+        NewLayers2D->Add(NewLayer);
+    }
+
+    FVoxelGenerator::GlobalNoiseLayers = NewLayers2D;
+
+    // ==================== 3D 噪声层 ====================
+    TSharedPtr<TArray<FVoxelGenerator::FNoiseLayer3DData>> NewLayers3D = MakeShared<TArray<FVoxelGenerator::FNoiseLayer3DData>>();
+    NewLayers3D->Reserve(NoiseLayers3D.Num());
+
+    for (const FVoxelNoiseLayer3DInfo& LayerInfo : NoiseLayers3D)
+    {
+        if (!LayerInfo.Texture) continue;
+
+        TArray<float> F;
+        int32 SX = 0;
+        int32 SY = 0;
+        int32 SZ = 0;
+
+#if WITH_EDITORONLY_DATA
+        // ---------------- 编辑器路径：保持原有逻辑 ----------------
+        FImage SourceImage;
+        if (!LayerInfo.Texture->Source.GetMipImage(SourceImage, 0)) continue;
+
+        SX = SourceImage.SizeX;
+        SY = SourceImage.SizeY;
+        SZ = LayerInfo.Texture->Source.GetVolumeSizeZ();
+        if (SX != SY || SX != SZ || SX < 4) continue;
+
+        const int32 NumPixels = SX * SY * SZ;
+        F.SetNumUninitialized(NumPixels);
+        const uint8* P = (const uint8*)SourceImage.RawData.GetData();
+
+        bool bAlreadyLinear = false;
+        if (SourceImage.Format == ERawImageFormat::G8)
+        {
+            for (int32 i = 0; i < NumPixels; ++i) F[i] = P[i] / 255.f;
+        }
+        else if (SourceImage.Format == ERawImageFormat::BGRA8)
+        {
+            for (int32 i = 0; i < NumPixels; ++i) F[i] = P[i * 4 + 2] / 255.f;
+        }
+        else
+        {
+            FImage RGBAImage;
+            SourceImage.CopyTo(RGBAImage, ERawImageFormat::BGRA8, EGammaSpace::Linear);
+            const uint8* RGBA_P = (const uint8*)RGBAImage.RawData.GetData();
+            for (int32 i = 0; i < NumPixels; ++i) F[i] = RGBA_P[i * 4 + 2] / 255.f;
+            bAlreadyLinear = true;
+        }
+
+        if (!bAlreadyLinear && LayerInfo.Texture->SRGB)
+        {
+            for (int32 i = 0; i < NumPixels; ++i) F[i] = SRGBToLinear(F[i]);
+        }
+#else
+        // ---------------- 打包路径：通过 PlatformData 读取 ----------------
+        FTexturePlatformData* PlatformData = LayerInfo.Texture->GetPlatformData();
+        if (!PlatformData || PlatformData->Mips.Num() == 0) continue;
+
+        FTexture2DMipMap& Mip = PlatformData->Mips[0];
+        SX = Mip.SizeX;
+        SY = Mip.SizeY;
+        SZ = Mip.SizeZ;
+        if (SX != SY || SX != SZ || SX < 4) continue;
+
+        const EPixelFormat PixelFormat = PlatformData->PixelFormat;
+        int32 BytesPerPixel = 0;
+        if (PixelFormat == PF_G8)
+        {
+            BytesPerPixel = 1;
+        }
+        else if (PixelFormat == PF_B8G8R8A8 || PixelFormat == PF_R8G8B8A8)
+        {
+            BytesPerPixel = 4;
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning,
+                TEXT("Noise volume texture %s has unsupported pixel format for CPU read in packaged build."),
+                *LayerInfo.Texture->GetName());
+            continue;
+        }
+
+        Mip.BulkData.ForceBulkDataResident();
+
+        const int32 NumPixels = SX * SY * SZ;
+        const int64 ExpectedSize = (int64)NumPixels * BytesPerPixel;
+        if (Mip.BulkData.GetBulkDataSize() != ExpectedSize)
+        {
+            UE_LOG(LogTemp, Error,
+                TEXT("Noise volume texture %s BulkData size mismatch: expected %lld, got %lld"),
+                *LayerInfo.Texture->GetName(), ExpectedSize, Mip.BulkData.GetBulkDataSize());
+            continue;
+        }
+
+        F.SetNumUninitialized(NumPixels);
+
+        void* RawData = Mip.BulkData.Lock(LOCK_READ_ONLY);
+        if (!RawData) continue;
+
+        const uint8* P = (const uint8*)RawData;
+        if (PixelFormat == PF_G8)
+        {
+            for (int32 i = 0; i < NumPixels; ++i) F[i] = P[i] / 255.f;
+        }
+        else if (PixelFormat == PF_B8G8R8A8)
+        {
+            for (int32 i = 0; i < NumPixels; ++i) F[i] = P[i * 4 + 2] / 255.f;
+        }
+        else // PF_R8G8B8A8
+        {
+            for (int32 i = 0; i < NumPixels; ++i) F[i] = P[i * 4 + 0] / 255.f;
+        }
+
+        Mip.BulkData.Unlock();
+
+        if (LayerInfo.Texture->SRGB)
+        {
+            for (int32 i = 0; i < NumPixels; ++i) F[i] = SRGBToLinear(F[i]);
+        }
+#endif
+
+        FVoxelGenerator::FNoiseLayer3DData NewLayer;
+        NewLayer.Data = MakeShared<TArray<float>>(MoveTemp(F));
+        NewLayer.Size = SX;
+        NewLayer.Frequency = LayerInfo.Frequency;
+        NewLayer.Amplitude = LayerInfo.Amplitude;
+        NewLayer.Offset = LayerInfo.Offset;
+        NewLayers3D->Add(NewLayer);
+    }
+
+    FVoxelGenerator::GlobalNoiseLayers3D = NewLayers3D;
+#endif
+}
+#endif
+
+
+
 
 // ============================================================
 // Proxy / Bounds / Materials
@@ -1081,6 +1353,8 @@ void UVoxelTerrainComponent::ClearAllCollisions()
 // ============================================================
 // 表面植被系统
 // ============================================================
+#if 0
+// 编辑器代码，打包会报错
 void UVoxelTerrainComponent::InitBiomeTexture()
 {
     CachedBiomeData.Reset();
@@ -1123,7 +1397,173 @@ void UVoxelTerrainComponent::InitBiomeTexture()
         UE_LOG(LogTemp, Error, TEXT("UVoxelTerrainComponent: Failed to read BiomeTexture pixels."));
     }
 }
+#else
 
+void UVoxelTerrainComponent::InitBiomeTexture()
+{
+    CachedBiomeData.Reset();
+
+    if (!BiomeTexture)
+    {
+        UE_LOG(
+            LogTemp,
+            Warning,
+            TEXT("UVoxelTerrainComponent: BiomeTexture is null.")
+        );
+
+        return;
+    }
+
+    // 获取 Cook 后的平台纹理数据
+    FTexturePlatformData* PlatformData =
+        BiomeTexture->GetPlatformData();
+
+    if (!PlatformData || PlatformData->Mips.Num() == 0)
+    {
+        UE_LOG(
+            LogTemp,
+            Error,
+            TEXT("UVoxelTerrainComponent: BiomeTexture PlatformData is invalid.")
+        );
+
+        return;
+    }
+
+    // 获取最高分辨率 Mip
+    FTexture2DMipMap& Mip = PlatformData->Mips[0];
+
+    const int32 SizeX = Mip.SizeX;
+    const int32 SizeY = Mip.SizeY;
+
+    // 保留原来的正方形纹理使用方式
+    if (SizeX < 1 || SizeX != SizeY)
+    {
+        UE_LOG(
+            LogTemp,
+            Error,
+            TEXT("UVoxelTerrainComponent: Invalid BiomeTexture Size: %d x %d"),
+            SizeX,
+            SizeY
+        );
+
+        return;
+    }
+
+    const int64 NumPixels64 = (int64)SizeX * SizeY;
+
+    if (NumPixels64 <= 0 || NumPixels64 > MAX_int32)
+    {
+        UE_LOG(
+            LogTemp,
+            Error,
+            TEXT("UVoxelTerrainComponent: Invalid BiomeTexture pixel count.")
+        );
+
+        return;
+    }
+
+    const int32 NumPixels = (int32)NumPixels64;
+
+    // 根据 Cook 后的实际纹理格式确定读取方式
+    int32 BytesPerPixel = 0;
+    int32 ChannelOffset = 0;
+
+    switch (PlatformData->PixelFormat)
+    {
+    case PF_G8:
+    {
+        // 灰度格式
+        BytesPerPixel = 1;
+        ChannelOffset = 0;
+        break;
+    }
+
+    case PF_B8G8R8A8:
+    {
+        // BGRA8，R 通道位于第 3 个字节
+        BytesPerPixel = 4;
+        ChannelOffset = 2;
+        break;
+    }
+
+    case PF_R8G8B8A8:
+    {
+        // RGBA8，R 通道位于第 1 个字节
+        BytesPerPixel = 4;
+        ChannelOffset = 0;
+        break;
+    }
+
+    default:
+    {
+        UE_LOG(
+            LogTemp,
+            Error,
+            TEXT("UVoxelTerrainComponent: Unsupported BiomeTexture PixelFormat: %d"),
+            (int32)PlatformData->PixelFormat
+        );
+
+        return;
+    }
+    }
+
+    // 检查 BulkData 大小
+    const int64 RequiredSize =
+        NumPixels64 * BytesPerPixel;
+
+    const int64 ActualSize =
+        Mip.BulkData.GetBulkDataSize();
+
+    if (ActualSize < RequiredSize)
+    {
+        UE_LOG(
+            LogTemp,
+            Error,
+            TEXT("UVoxelTerrainComponent: BiomeTexture BulkData Size Invalid. Required: %lld, Actual: %lld"),
+            RequiredSize,
+            ActualSize
+        );
+
+        return;
+    }
+
+    // 锁定纹理数据
+    const uint8* P = static_cast<const uint8*>(
+        Mip.BulkData.LockReadOnly()
+        );
+
+    if (!P)
+    {
+        UE_LOG(
+            LogTemp,
+            Error,
+            TEXT("UVoxelTerrainComponent: Failed to lock BiomeTexture BulkData.")
+        );
+
+        return;
+    }
+
+    // 读取 R 通道并归一化
+    CachedBiomeData.SetNumUninitialized(NumPixels);
+
+    for (int32 i = 0; i < NumPixels; ++i)
+    {
+        CachedBiomeData[i] =
+            P[i * BytesPerPixel + ChannelOffset] / 255.0f;
+    }
+
+    // 解锁纹理数据
+    Mip.BulkData.Unlock();
+
+    UE_LOG(
+        LogTemp,
+        Log,
+        TEXT("UVoxelTerrainComponent: BiomeTexture initialized. Size = %d"),
+        SizeX
+    );
+}
+
+#endif
 
 
 void UVoxelTerrainComponent::DispatchVegetationTask(FChunkKey Key, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> Mesh)
