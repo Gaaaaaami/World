@@ -98,7 +98,7 @@ public:
     int32 LOD0RadiusChunksZ = 2;
 
     UPROPERTY(EditAnywhere, Category = "Voxel")
-    float UnloadDelay = 5.0f;
+    float UnloadDelay = 2.0f;
 
     UPROPERTY(EditAnywhere, Category = "Voxel")
     bool bGenerateCollision = true;
@@ -139,13 +139,10 @@ private:
     TMap<FChunkKey, double> ChunkLastActiveTime;
     //TMap<FChunkKey, FVoxelModificationMap> ChunkModifications;
     TMap<FChunkKey, int32> ChunkVersions;
-
     TSet<FChunkKey> RequestedChunks;
-
     TArray<FChunkKey> PendingPushToSceneProxy;
-
     FBox LocalBounds = FBox(ForceInit);
-    bool bBoundsDirty = false;
+    //bool bBoundsDirty = false;
 
     FTSTicker::FDelegateHandle TickHandle;
     FTSTicker::FDelegateHandle CollisionTickHandle;

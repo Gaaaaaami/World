@@ -704,7 +704,7 @@ void UVoxelTerrainComponent::StreamTick()
     for (auto& Pair : ChunkMeshes)
     {
         const FChunkKey& Key = Pair.Key;
-        if (Key.LOD != 0) continue;
+        
 
         const FVector ChunkCenter(
             (Key.X + 0.5f) * BaseChunkSize,
@@ -717,11 +717,17 @@ void UVoxelTerrainComponent::StreamTick()
             AbsDelta.X < UnloadRadiusXY &&
             AbsDelta.Y < UnloadRadiusXY &&
             AbsDelta.Z < UnloadRadiusZ;
-        if (bKeep) continue;
-
+        if (bKeep) {
+            LocalBounds += Pair.Value->Bounds;
+            continue;
+        }
         if (const double* LastTime = ChunkLastActiveTime.Find(Key))
         {
-            if (Now - *LastTime < UnloadDelay) continue;
+            if (Now - *LastTime < UnloadDelay)
+            {
+                LocalBounds += Pair.Value->Bounds;
+                continue;
+            }
         }
 
         ToUnload.Add(Key);
@@ -749,23 +755,24 @@ void UVoxelTerrainComponent::StreamTick()
         }
     }
 
-    if (ToUnload.Num() > 0)
-    {
-        LocalBounds = FBox(ForceInit);
-        for (const auto& Pair : ChunkMeshes)
-        {
-            if (Pair.Value.IsValid() && Pair.Value->Bounds.IsValid)
-                LocalBounds += Pair.Value->Bounds;
-        }
-        bBoundsDirty = true;
-    }
+    //if (ToUnload.Num() > 0)
+    //{
+    //    LocalBounds = FBox(ForceInit);
+    //    for (const auto& Pair : ChunkMeshes)
+    //    {
+    //        if (Pair.Value.IsValid() && Pair.Value->Bounds.IsValid)
+    //            LocalBounds += Pair.Value->Bounds;
+    //    }
+    //    bBoundsDirty = true;
+    //}
 
-    if (bBoundsDirty)
-    {
-        bBoundsDirty = false;
-        UpdateBounds();
-        MarkRenderTransformDirty();
-    }
+    //if (bBoundsDirty)
+    //{
+    //    bBoundsDirty = false;
+    //    UpdateBounds();
+    //    MarkRenderTransformDirty();
+    //}
+
 }
 
 // ============================================================
@@ -801,7 +808,7 @@ void UVoxelTerrainComponent::OnChunkGenerated(
         else
             LocalBounds = Mesh->Bounds;
     }
-    bBoundsDirty = true;
+    //bBoundsDirty = true;
 
     FVoxelSceneProxy* Proxy = static_cast<FVoxelSceneProxy*>(SceneProxy);
     if (Proxy)
@@ -1124,7 +1131,7 @@ void UVoxelTerrainComponent::ApplyEdit(const FVector& WorldPos, float Radius, bo
             if (LocalBounds.IsValid) LocalBounds += MeshData.Bounds;
             else                     LocalBounds = MeshData.Bounds;
         }
-        bBoundsDirty = true;
+        //bBoundsDirty = true;
 
         // ---- 推渲染：深拷贝 ----
         if (FVoxelSceneProxy* Proxy = static_cast<FVoxelSceneProxy*>(SceneProxy))
