@@ -2,11 +2,42 @@
 #include "CoreMinimal.h"
 #include "VoxelChunkData.h"
 #include "VoxelTypes.h"
+#include "VoxelGenerator.generated.h"
 #ifndef VOXEL_USE_NOISE_TEXTURE
 #define VOXEL_USE_NOISE_TEXTURE 1   // 1 = 开启贴图，0 = 退回原版
 #endif
-class VOXELTERRAIN_API FVoxelGenerator
+
+
+USTRUCT(BlueprintType)
+
+struct VOXELTERRAIN_API  FVoxelGeneratorSettings
 {
+    GENERATED_BODY()
+    UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Voxel")
+    float BaseWorldZ = 1600.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Voxel")
+    float HillHeight = 2000.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Voxel")
+    float NoiseFreq = 0.00035f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Voxel")
+    int32 Octaves = 5;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Voxel")
+    float Lacunarity = 2.0f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Voxel")
+    float Persistence = 0.5f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Voxel")
+    int32 Seed = 1337;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Voxel")
+    float CaveStrength = 600.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Voxel")
+    float CaveThreshold = 0.15f;
+};
+
+UCLASS()
+class VOXELTERRAIN_API UVoxelGenerator:public UObject
+{
+    GENERATED_BODY()
+
 public:
     struct FNoiseLayerData
     {
@@ -28,34 +59,22 @@ public:
     static TSharedPtr<TArray<FNoiseLayerData>> GlobalNoiseLayers;
     static TSharedPtr<TArray<FNoiseLayer3DData>> GlobalNoiseLayers3D;
 
-    struct FSettings
-    {
-        float BaseWorldZ = 1600.f;
-        float HillHeight = 2000.f;
-        float NoiseFreq = 0.00035f;
-        int32 Octaves = 5;
-        float Lacunarity = 2.0f;
-        float Persistence = 0.5f;
-        int32 Seed = 1337;
 
-        float CaveStrength = 600.f;
-        float CaveThreshold = 0.15f;
-    };
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Voxel")
+    FVoxelGeneratorSettings Settings;
 
-    FSettings Settings;
+    void GenerateChunk(int32 ChunkX,
+                       int32 ChunkY, 
+                       int32 ChunkZ, 
+                       int32 LOD,
+                       FVoxelChunkData& OutChunk) const;
+public:
+    
+    virtual float SampleDensityWithSurface(const FVector& WorldPos, float SurfaceZ) const;
 
-    void GenerateChunk(int32 ChunkX, int32 ChunkY, int32 ChunkZ, int32 LOD,
-        FVoxelChunkData& OutChunk) const;
 
-    // ⭐ 外部接口不变（ApplyEdit 用）
-    float SampleDensity(const FVector& WorldPos) const;
-
-private:
-    // ⭐ 新增：把 SurfaceZ 拆出来，让 GenerateChunk 可以按 (X, Y) 列缓存 2D 噪声
-    float SampleDensityWithSurface(const FVector& WorldPos, float SurfaceZ) const;
-
-    float Fbm(const FVector& P) const;
-    float Fbm2D(const FVector2D& P) const;
-    float TexFbm2D(const FVector2D& WorldXY) const;
-    float TexFbm3D(const FVector& WorldXYZ) const;
+    virtual float Fbm(const FVector& P) const;
+    virtual float Fbm2D(const FVector2D& P) const;
+    virtual float TexFbm2D(const FVector2D& WorldXY) const;
+    virtual float TexFbm3D(const FVector& WorldXYZ) const;
 };

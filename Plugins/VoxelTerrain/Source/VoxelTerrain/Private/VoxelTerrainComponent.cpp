@@ -68,8 +68,10 @@ UVoxelTerrainComponent::UVoxelTerrainComponent()
 void UVoxelTerrainComponent::BeginPlay()
 {
     Super::BeginPlay();
-
-
+    if (!VoxelGenerator && VoxelGeneratorClass)
+    {
+        VoxelGenerator = NewObject<UVoxelGenerator>(this, VoxelGeneratorClass);
+    }
     if (TerrainMaterial)
     {
         TerrainMaterial->EnsureIsComplete();
@@ -85,7 +87,7 @@ void UVoxelTerrainComponent::BeginPlay()
     //ChunkModifications.Reserve(1024);
     ChunkVersions.Reserve(1024);
     RequestedChunks.Reserve(1024);
-    PendingPushToSceneProxy.Reserve(64);
+    //PendingPushToSceneProxy.Reserve(64);
     ChunkCollisionProxies.Reserve(64);
 
     // StreamTick：自然加载/卸载（异步）
@@ -132,7 +134,7 @@ void UVoxelTerrainComponent::EndPlay(const EEndPlayReason::Type Reason)
 void UVoxelTerrainComponent::LoadNoiseTextureData()
 {
 #if VOXEL_USE_NOISE_TEXTURE
-    TSharedPtr<TArray<FVoxelGenerator::FNoiseLayerData>> NewLayers2D = MakeShared<TArray<FVoxelGenerator::FNoiseLayerData>>();
+    TSharedPtr<TArray<UVoxelGenerator::FNoiseLayerData>> NewLayers2D = MakeShared<TArray<UVoxelGenerator::FNoiseLayerData>>();
     NewLayers2D->Reserve(NoiseLayers.Num());
 
     for (const FVoxelNoiseLayerInfo& LayerInfo : NoiseLayers)
@@ -167,7 +169,7 @@ void UVoxelTerrainComponent::LoadNoiseTextureData()
                 for (int32 i = 0; i < NumPixels; ++i) F[i] = RGBA_P[i * 4 + 2] / 255.f;
             }
 
-            FVoxelGenerator::FNoiseLayerData NewLayer;
+            UVoxelGenerator::FNoiseLayerData NewLayer;
             NewLayer.Data = MakeShared<TArray<float>>(MoveTemp(F));
             NewLayer.Size = SX;
             NewLayer.Frequency = LayerInfo.Frequency;
@@ -177,9 +179,9 @@ void UVoxelTerrainComponent::LoadNoiseTextureData()
         }
     }
 
-    FVoxelGenerator::GlobalNoiseLayers = NewLayers2D;
+    UVoxelGenerator::GlobalNoiseLayers = NewLayers2D;
 
-    TSharedPtr<TArray<FVoxelGenerator::FNoiseLayer3DData>> NewLayers3D = MakeShared<TArray<FVoxelGenerator::FNoiseLayer3DData>>();
+    TSharedPtr<TArray<UVoxelGenerator::FNoiseLayer3DData>> NewLayers3D = MakeShared<TArray<UVoxelGenerator::FNoiseLayer3DData>>();
     NewLayers3D->Reserve(NoiseLayers3D.Num());
 
     for (const FVoxelNoiseLayer3DInfo& LayerInfo : NoiseLayers3D)
@@ -215,7 +217,7 @@ void UVoxelTerrainComponent::LoadNoiseTextureData()
                 for (int32 i = 0; i < NumPixels; ++i) F[i] = RGBA_P[i * 4 + 2] / 255.f;
             }
 
-            FVoxelGenerator::FNoiseLayer3DData NewLayer;
+            UVoxelGenerator::FNoiseLayer3DData NewLayer;
             NewLayer.Data = MakeShared<TArray<float>>(MoveTemp(F));
             NewLayer.Size = SX;
             NewLayer.Frequency = LayerInfo.Frequency;
@@ -225,7 +227,7 @@ void UVoxelTerrainComponent::LoadNoiseTextureData()
         }
     }
 
-    FVoxelGenerator::GlobalNoiseLayers3D = NewLayers3D;
+    UVoxelGenerator::GlobalNoiseLayers3D = NewLayers3D;
 #endif
 }
 #else
@@ -239,7 +241,7 @@ void UVoxelTerrainComponent::LoadNoiseTextureData()
         };
 
     // ==================== 2D 噪声层 ====================
-    TSharedPtr<TArray<FVoxelGenerator::FNoiseLayerData>> NewLayers2D = MakeShared<TArray<FVoxelGenerator::FNoiseLayerData>>();
+    TSharedPtr<TArray<UVoxelGenerator::FNoiseLayerData>> NewLayers2D = MakeShared<TArray<UVoxelGenerator::FNoiseLayerData>>();
     NewLayers2D->Reserve(NoiseLayers.Num());
 
     for (const FVoxelNoiseLayerInfo& LayerInfo : NoiseLayers)
@@ -352,7 +354,7 @@ void UVoxelTerrainComponent::LoadNoiseTextureData()
         }
 #endif
 
-        FVoxelGenerator::FNoiseLayerData NewLayer;
+        UVoxelGenerator::FNoiseLayerData NewLayer;
         NewLayer.Data = MakeShared<TArray<float>>(MoveTemp(F));
         NewLayer.Size = SX;
         NewLayer.Frequency = LayerInfo.Frequency;
@@ -361,10 +363,10 @@ void UVoxelTerrainComponent::LoadNoiseTextureData()
         NewLayers2D->Add(NewLayer);
     }
 
-    FVoxelGenerator::GlobalNoiseLayers = NewLayers2D;
+    UVoxelGenerator::GlobalNoiseLayers = NewLayers2D;
 
     // ==================== 3D 噪声层 ====================
-    TSharedPtr<TArray<FVoxelGenerator::FNoiseLayer3DData>> NewLayers3D = MakeShared<TArray<FVoxelGenerator::FNoiseLayer3DData>>();
+    TSharedPtr<TArray<UVoxelGenerator::FNoiseLayer3DData>> NewLayers3D = MakeShared<TArray<UVoxelGenerator::FNoiseLayer3DData>>();
     NewLayers3D->Reserve(NoiseLayers3D.Num());
 
     for (const FVoxelNoiseLayer3DInfo& LayerInfo : NoiseLayers3D)
@@ -480,7 +482,7 @@ void UVoxelTerrainComponent::LoadNoiseTextureData()
         }
 #endif
 
-        FVoxelGenerator::FNoiseLayer3DData NewLayer;
+        UVoxelGenerator::FNoiseLayer3DData NewLayer;
         NewLayer.Data = MakeShared<TArray<float>>(MoveTemp(F));
         NewLayer.Size = SX;
         NewLayer.Frequency = LayerInfo.Frequency;
@@ -489,7 +491,7 @@ void UVoxelTerrainComponent::LoadNoiseTextureData()
         NewLayers3D->Add(NewLayer);
     }
 
-    FVoxelGenerator::GlobalNoiseLayers3D = NewLayers3D;
+    UVoxelGenerator::GlobalNoiseLayers3D = NewLayers3D;
 #endif
 }
 #endif
@@ -565,16 +567,17 @@ void UVoxelTerrainComponent::SpawnChunkAsyncTask(const FChunkKey& Key, int32 Cur
     //}
 
     TWeakObjectPtr<UVoxelTerrainComponent> WeakThis(this);
-
+    TWeakObjectPtr<UVoxelGenerator> WeakVoxelGenerator(this->VoxelGenerator);
     Async(EAsyncExecution::ThreadPool,
-        [WeakThis, Key, CurrentVersion /*, ModsSnapshot = MoveTemp(ModsSnapshot)*/]()
+        [WeakThis, WeakVoxelGenerator, Key, CurrentVersion/*, ModsSnapshot = MoveTemp(ModsSnapshot)*/]()
         {
-            FVoxelGenerator Gen;
+            if (!WeakVoxelGenerator.IsValid() || !WeakThis.IsValid())
+                return;
+
             FVoxelChunkData ChunkData;
-            Gen.GenerateChunk(Key.X, Key.Y, Key.Z, Key.LOD, /*ChunkData.Voxels.GetData()*/ ChunkData);
+            WeakVoxelGenerator->GenerateChunk(Key.X, Key.Y, Key.Z, Key.LOD, /*ChunkData.Voxels.GetData()*/ ChunkData);
 
             auto MeshData = MakeShared<FVoxelMeshData, ESPMode::ThreadSafe>();
-
             const float S = (float)(1 << Key.LOD);
             const float LODChunkWorldSize = VoxelConfig::ChunkSize * VoxelConfig::VoxelSize * S;
             const FVector3f Offset(
@@ -614,7 +617,7 @@ void UVoxelTerrainComponent::SpawnChunkAsyncTask(const FChunkKey& Key, int32 Cur
 // ============================================================
 // StreamTick（自然加载/卸载，异步，走 tick 没问题）
 // ============================================================
-void UVoxelTerrainComponent::StreamTick()
+void UVoxelTerrainComponent::StreamTick_Implementation()
 {
     UWorld* World = GetWorld();
     if (!World) return;
@@ -628,7 +631,7 @@ void UVoxelTerrainComponent::StreamTick()
     const FVector CamLoc = Pawn->GetActorLocation();
     const double Now = FPlatformTime::Seconds();
 
-    FlushPendingPushToSceneProxy();
+    //FlushPendingPushToSceneProxy();
 
     // ============ 加载候选收集 ============
     struct FLoadCandidate
@@ -739,7 +742,7 @@ void UVoxelTerrainComponent::StreamTick()
         ChunkVoxelData.Remove(Key);   // ⭐ 清理体素缓存
         ChunkLastActiveTime.Remove(Key);
         RequestedChunks.Remove(Key);
-        PendingPushToSceneProxy.Remove(Key);
+        //PendingPushToSceneProxy.Remove(Key);
         ChunkVersions.Remove(Key);
 
         RemoveCollisionForChunk(Key);
@@ -819,36 +822,36 @@ void UVoxelTerrainComponent::OnChunkGenerated(
                 Proxy->AddChunk_RenderThread(RHICmdList, Key, Mesh);
             });
     }
-    else
+  /*  else
     {
         PendingPushToSceneProxy.Add(Key);
-    }
+    }*/
 
     // DispatchVegetationTask(Key, Mesh);  // 渲染植物线程
 
 }
 
-void UVoxelTerrainComponent::FlushPendingPushToSceneProxy()
-{
-    if (PendingPushToSceneProxy.Num() == 0) return;
-
-    FVoxelSceneProxy* Proxy = static_cast<FVoxelSceneProxy*>(SceneProxy);
-    if (!Proxy) return;
-
-    for (const FChunkKey& Key : PendingPushToSceneProxy)
-    {
-        if (auto* MeshPtr = ChunkMeshes.Find(Key))
-        {
-            TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> Mesh = *MeshPtr;
-            ENQUEUE_RENDER_COMMAND(AddVoxelChunk)(
-                [Proxy, Key, Mesh](FRHICommandListImmediate& RHICmdList)
-                {
-                    Proxy->AddChunk_RenderThread(RHICmdList, Key, Mesh);
-                });
-        }
-    }
-    PendingPushToSceneProxy.Empty();
-}
+//void UVoxelTerrainComponent::FlushPendingPushToSceneProxy()
+//{
+//    if (PendingPushToSceneProxy.Num() == 0) return;
+//
+//    FVoxelSceneProxy* Proxy = static_cast<FVoxelSceneProxy*>(SceneProxy);
+//    if (!Proxy) return;
+//
+//    for (const FChunkKey& Key : PendingPushToSceneProxy)
+//    {
+//        if (auto* MeshPtr = ChunkMeshes.Find(Key))
+//        {
+//            TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> Mesh = *MeshPtr;
+//            ENQUEUE_RENDER_COMMAND(AddVoxelChunk)(
+//                [Proxy, Key, Mesh](FRHICommandListImmediate& RHICmdList)
+//                {
+//                    Proxy->AddChunk_RenderThread(RHICmdList, Key, Mesh);
+//                });
+//        }
+//    }
+//    PendingPushToSceneProxy.Empty();
+//}
 
 
 // ============================================================
@@ -1143,10 +1146,10 @@ void UVoxelTerrainComponent::ApplyEdit(const FVector& WorldPos, float Radius, bo
                     Proxy->AddChunk_RenderThread(RHICmdList, Key, MeshForRender);
                 });
         }
-        else
+   /*     else
         {
             PendingPushToSceneProxy.Add(Key);
-        }
+        }*/
 
         // ---- PMC 碰撞 ----
         if (UProceduralMeshComponent* PMC = ChunkCollisionProxies.FindRef(Key).Get())
@@ -1794,3 +1797,4 @@ void UVoxelTerrainComponent::ReturnHISM(UHierarchicalInstancedStaticMeshComponen
     HISM->SetStaticMesh(nullptr);
     HISMPool.Add(HISM); // 放回池子
 }
+

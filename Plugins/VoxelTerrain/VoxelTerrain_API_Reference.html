@@ -1,0 +1,2556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VoxelTerrain · API Reference</title>
+<meta name="description" content="VoxelTerrain UE module API reference — bilingual (EN/中文), searchable.">
+<style>
+:root{
+  --bg:#0d1117; --bg-soft:#131a24; --panel:#161d29; --panel-2:#1b2432;
+  --border:#232e3f; --border-soft:#1c2534;
+  --fg:#e6edf6; --fg-dim:#9fb0c4; --fg-mute:#6f8299;
+  --accent:#5b9dff; --accent-2:#7ee7c7; --accent-soft:rgba(91,157,255,.13);
+  --warn:#f0b429; --code:#a5d6ff; --code-bg:#111823;
+  --mono:'JetBrains Mono','SFMono-Regular',Menlo,Consolas,'Liberation Mono',monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',Roboto,Helvetica,Arial,sans-serif;
+  --sidebar:298px; --radius:10px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:78px}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.75;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+::selection{background:rgba(91,157,255,.3)}
+
+.topbar{position:sticky;top:0;z-index:50;height:60px;display:flex;align-items:center;gap:14px;
+  padding:0 20px;background:rgba(13,17,23,.88);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.3px;white-space:nowrap}
+.brand .logo{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  display:grid;place-items:center;color:#0b1220;font-size:13px;font-weight:800;box-shadow:0 0 18px rgba(91,157,255,.35)}
+.brand small{font-weight:500;color:var(--fg-mute);font-size:12px;border-left:1px solid var(--border);padding-left:10px}
+.search-wrap{position:relative;flex:1;max-width:560px;margin-left:auto}
+.search-wrap input{width:100%;height:38px;padding:0 78px 0 34px;border-radius:9px;border:1px solid var(--border);
+  background:var(--panel);color:var(--fg);font-family:var(--sans);font-size:14px;outline:none;transition:.18s}
+.search-wrap input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);background:var(--panel-2)}
+.search-wrap input::-webkit-search-cancel-button{filter:invert(.5)}
+.search-wrap .ico{position:absolute;left:11px;top:10px;color:var(--fg-mute);font-size:14px;pointer-events:none}
+.search-wrap kbd{position:absolute;right:9px;top:9px;font-family:var(--mono);font-size:11px;color:var(--fg-mute);
+  border:1px solid var(--border);border-radius:5px;padding:2px 6px;background:var(--bg-soft)}
+.lang{display:flex;background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:3px;gap:2px;flex:0 0 auto}
+.lang button{border:0;background:transparent;color:var(--fg-dim);font-family:var(--sans);font-size:13px;font-weight:600;
+  padding:6px 14px;border-radius:7px;cursor:pointer;transition:.16s}
+.lang button:hover{color:var(--fg)}
+.lang button.on{background:var(--accent);color:#08101f;box-shadow:0 2px 10px rgba(91,157,255,.35)}
+
+.layout{display:flex;align-items:flex-start}
+.sidebar{width:var(--sidebar);flex:0 0 var(--sidebar);position:sticky;top:60px;height:calc(100vh - 60px);
+  overflow-y:auto;padding:22px 12px 60px 18px;border-right:1px solid var(--border-soft);
+  background:linear-gradient(180deg,var(--bg-soft),var(--bg));scrollbar-width:thin}
+.sidebar::-webkit-scrollbar{width:8px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:6px}
+.sidebar h4{margin:0 0 10px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#93a8c1;font-weight:700}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:5px 10px;border-radius:7px;color:#eaf1fa;font-size:13.5px;line-height:1.5;
+  border-left:2px solid transparent;transition:.14s}
+.sidebar li a:hover{background:var(--panel);color:var(--fg);text-decoration:none}
+.sidebar li a.active{background:var(--accent-soft);color:#bfe0ff;border-left-color:var(--accent);font-weight:600}
+.sidebar li.lvl-1 a{margin-top:14px;color:var(--fg);font-weight:700;font-size:12.5px;letter-spacing:.07em;text-transform:uppercase}
+.sidebar li.lvl-2 a{padding-left:18px}
+.sidebar li.lvl-3 a{padding-left:30px;font-size:13px;color:#c6d5e6}
+.sidebar li.lvl-4 a{padding-left:42px;font-size:12.5px;color:#b8c8db}
+.content{flex:1;min-width:0;padding:34px 46px 120px;max-width:1020px;margin:0 auto}
+.pane{display:none}
+.pane.on{display:block}
+
+.content h1{font-size:28px;line-height:1.3;margin:62px 0 18px;padding-bottom:14px;border-bottom:1px solid var(--border);
+  letter-spacing:-.3px}
+.content h1:first-child{margin-top:0}
+.content h1::before{content:"";display:block;width:42px;height:3px;border-radius:3px;
+  background:linear-gradient(90deg,var(--accent),var(--accent-2));margin-bottom:16px}
+.content h2{font-size:21px;margin:44px 0 14px;padding-left:12px;border-left:3px solid var(--accent)}
+.content h3{font-size:17px;margin:30px 0 10px;color:#cfe3ff}
+.content h3::before{content:"▸ ";color:var(--accent-2);font-size:13px}
+.content h4{font-size:15px;margin:24px 0 8px;color:var(--fg-dim)}
+.content p{margin:12px 0;color:#d7e2ef}
+.content strong{color:#fff;font-weight:650}
+.content em{color:var(--accent-2);font-style:normal;font-weight:600}
+.content ul,.content ol{padding-left:22px;margin:12px 0;color:#d7e2ef}
+.content li{margin:6px 0}
+.content li::marker{color:var(--fg-mute)}
+.content hr{border:0;border-top:1px dashed var(--border);margin:36px 0}
+.content blockquote{margin:18px 0;padding:12px 18px;border-left:3px solid var(--accent-2);
+  background:linear-gradient(90deg,rgba(126,231,199,.08),transparent);border-radius:0 8px 8px 0;color:var(--fg-dim)}
+.content blockquote p{margin:4px 0}
+.content code{font-family:var(--mono);font-size:.87em;background:var(--code-bg);color:var(--code);
+  border:1px solid var(--border-soft);border-radius:5px;padding:1.5px 5px;word-break:break-word}
+.content pre{background:var(--code-bg);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px 18px;overflow-x:auto;margin:18px 0;line-height:1.65}
+.content pre code{background:none;border:0;padding:0;color:#c9ddf5;font-size:13px;word-break:normal}
+.content pre::-webkit-scrollbar{height:9px}
+.content pre::-webkit-scrollbar-thumb{background:var(--border);border-radius:6px}
+
+.tw{overflow-x:auto;margin:18px 0;border:1px solid var(--border);border-radius:var(--radius);background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:440px}
+thead th{background:var(--panel-2);text-align:left;padding:11px 14px;font-weight:700;color:#cfe3ff;
+  font-size:12px;letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody td{padding:10px 14px;border-bottom:1px solid var(--border-soft);color:#cfdae8;vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:nth-child(even){background:rgba(255,255,255,.014)}
+tbody tr:hover{background:var(--accent-soft)}
+
+#results{position:absolute;top:44px;left:0;right:0;z-index:60;background:var(--panel-2);border:1px solid var(--border);
+  border-radius:var(--radius);box-shadow:0 24px 60px rgba(0,0,0,.55);max-height:64vh;overflow-y:auto;display:none;padding:6px}
+#results.on{display:block}
+.res-head{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-mute);padding:8px 12px 6px;font-weight:700}
+.res{padding:9px 12px;border-radius:8px;cursor:pointer;border-left:2px solid transparent;display:block}
+.res:hover,.res.sel{background:var(--accent-soft);border-left-color:var(--accent);text-decoration:none}
+.res .t{font-size:13.5px;color:#dce8f6;font-weight:600;margin-bottom:3px}
+.res .t .pair{color:var(--fg-mute);font-weight:400;font-size:12.5px}
+.res .s{font-size:12px;color:var(--fg-mute);line-height:1.55}
+.res .s em{color:var(--accent-2);font-style:normal;font-weight:700;background:rgba(126,231,199,.12);border-radius:3px;padding:0 2px}
+.res .path{font-family:var(--mono);font-size:10.5px;color:#54708f;margin-top:4px}
+.no-res{padding:18px 12px;color:var(--fg-mute);font-size:13px;text-align:center;line-height:1.8}
+mark.hit{background:rgba(240,180,41,.22);color:var(--warn);border-radius:3px;padding:0 2px}
+
+.mtoggle{display:none;border:1px solid var(--border);background:var(--panel);color:var(--fg-dim);
+  border-radius:8px;padding:7px 11px;font-size:13px;cursor:pointer;font-family:var(--sans);white-space:nowrap}
+.scrim{display:none;position:fixed;inset:60px 0 0;background:rgba(0,0,0,.5);z-index:35}
+.scrim.on{display:block}
+.foot{max-width:1020px;margin:0 auto;padding:24px 46px 60px;color:var(--fg-mute);font-size:12.5px;
+  border-top:1px solid var(--border-soft);line-height:1.9}
+@media(max-width:980px){
+  .content{padding:26px 18px 90px}
+  .foot{padding:22px 18px 60px}
+  .brand small{display:none}
+  .sidebar{position:fixed;left:0;top:60px;bottom:0;height:auto;z-index:40;transform:translateX(-100%);
+    transition:.24s;box-shadow:24px 0 60px rgba(0,0,0,.5);background:#0d141f}
+  .sidebar.open{transform:none}
+  .mtoggle{display:block}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <button id="mtoggle" class="mtoggle">☰ Menu</button>
+  <div class="brand"><span class="logo">V</span><span>VoxelTerrain</span><small>API Reference · UE Module</small></div>
+  <div class="search-wrap">
+    <span class="ico">🔍</span>
+    <input id="q" type="search" autocomplete="off" spellcheck="false"
+           placeholder="Search API…  /  搜索类型、方法、属性" aria-label="Search">
+    <kbd>/</kbd>
+    <div id="results"></div>
+  </div>
+  <div class="lang">
+    <button data-lang="en">English</button>
+    <button data-lang="zh">中文</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Table of contents">
+    <h4>On this page · 目录</h4>
+    <ul><li class="lvl-1"><a href="#s1" data-target="s1">API Reference</a></li>
+<li class="lvl-2"><a href="#s2" data-target="s2">Design Conventions</a></li>
+<li class="lvl-3"><a href="#s3" data-target="s3">Coordinate spaces</a></li>
+<li class="lvl-3"><a href="#s4" data-target="s4">Weight convention</a></li>
+<li class="lvl-3"><a href="#s5" data-target="s5">Threading contract</a></li>
+<li class="lvl-1"><a href="#s6" data-target="s6">Getting Started</a></li>
+<li class="lvl-2"><a href="#s7" data-target="s7">1. Module dependency</a></li>
+<li class="lvl-2"><a href="#s8" data-target="s8">2. Drop a component on an Actor</a></li>
+<li class="lvl-2"><a href="#s9" data-target="s9">3. Minimal terrain with noise textures</a></li>
+<li class="lvl-2"><a href="#s10" data-target="s10">4. Choose streaming radii</a></li>
+<li class="lvl-2"><a href="#s11" data-target="s11">5. Dig and fill</a></li>
+<li class="lvl-2"><a href="#s12" data-target="s12">6. Recommended starting values</a></li>
+<li class="lvl-1"><a href="#s13" data-target="s13">Data Types</a></li>
+<li class="lvl-2"><a href="#s14" data-target="s14">FVoxel</a></li>
+<li class="lvl-2"><a href="#s15" data-target="s15">VoxelConfig</a></li>
+<li class="lvl-2"><a href="#s16" data-target="s16">FChunkKey</a></li>
+<li class="lvl-2"><a href="#s17" data-target="s17">FVegetationInstanceData</a></li>
+<li class="lvl-2"><a href="#s18" data-target="s18">FVoxelChunkData</a></li>
+<li class="lvl-2"><a href="#s19" data-target="s19">FVoxelMeshData</a></li>
+<li class="lvl-1"><a href="#s20" data-target="s20">Noise Generation</a></li>
+<li class="lvl-2"><a href="#s21" data-target="s21">FVoxelGeneratorSettings</a></li>
+<li class="lvl-2"><a href="#s22" data-target="s22">UVoxelGenerator</a></li>
+<li class="lvl-3"><a href="#s23" data-target="s23">Nested types</a></li>
+<li class="lvl-3"><a href="#s24" data-target="s24">Static members</a></li>
+<li class="lvl-3"><a href="#s25" data-target="s25">Instance API</a></li>
+<li class="lvl-3"><a href="#s26" data-target="s26">VOXEL_USE_NOISE_TEXTURE</a></li>
+<li class="lvl-1"><a href="#s27" data-target="s27">Meshing</a></li>
+<li class="lvl-2"><a href="#s28" data-target="s28">FTransvoxelMesher</a></li>
+<li class="lvl-3"><a href="#s29" data-target="s29">GenerateRegular</a></li>
+<li class="lvl-3"><a href="#s30" data-target="s30">GenerateRegularPartial</a></li>
+<li class="lvl-1"><a href="#s31" data-target="s31">Terrain Component</a></li>
+<li class="lvl-2"><a href="#s32" data-target="s32">FVoxelNoiseLayerInfo</a></li>
+<li class="lvl-2"><a href="#s33" data-target="s33">FVoxelNoiseLayer3DInfo</a></li>
+<li class="lvl-2"><a href="#s34" data-target="s34">FVoxelVegetationConfig</a></li>
+<li class="lvl-2"><a href="#s35" data-target="s35">UVoxelTerrainComponent</a></li>
+<li class="lvl-3"><a href="#s36" data-target="s36">Configuration properties</a></li>
+<li class="lvl-3"><a href="#s37" data-target="s37">Runtime state (game thread only)</a></li>
+<li class="lvl-3"><a href="#s38" data-target="s38">Blueprint-callable / overridable</a></li>
+<li class="lvl-3"><a href="#s39" data-target="s39">Component overrides</a></li>
+<li class="lvl-3"><a href="#s40" data-target="s40">Coordinate helper</a></li>
+<li class="lvl-3"><a href="#s41" data-target="s41">Async pipeline</a></li>
+<li class="lvl-3"><a href="#s42" data-target="s42">Collision pool</a></li>
+<li class="lvl-3"><a href="#s43" data-target="s43">Noise texture loading</a></li>
+<li class="lvl-3"><a href="#s44" data-target="s44">Vegetation (all private)</a></li>
+<li class="lvl-1"><a href="#s45" data-target="s45">Scene Proxy</a></li>
+<li class="lvl-2"><a href="#s46" data-target="s46">FVoxelSceneProxy</a></li>
+<li class="lvl-3"><a href="#s47" data-target="s47">FChunkRender</a></li>
+<li class="lvl-3"><a href="#s48" data-target="s48">Public API</a></li>
+<li class="lvl-1"><a href="#s49" data-target="s49">Interaction Actor</a></li>
+<li class="lvl-3"><a href="#s50" data-target="s50">AVoxelInteractionActor</a></li>
+<li class="lvl-1"><a href="#s51" data-target="s51">Module</a></li>
+<li class="lvl-2"><a href="#s52" data-target="s52">FVoxelTerrainModule</a></li>
+<li class="lvl-1"><a href="#s53" data-target="s53">Usage Recipes</a></li>
+<li class="lvl-2"><a href="#s54" data-target="s54">From a weapon hit</a></li>
+<li class="lvl-2"><a href="#s55" data-target="s55">Custom density function</a></li>
+<li class="lvl-2"><a href="#s56" data-target="s56">Reading the mesh on CPU</a></li>
+<li class="lvl-2"><a href="#s57" data-target="s57">Disabling collision</a></li></ul>
+  </nav>
+  <div class="scrim"></div>
+  <main class="content">
+    <div class="pane" id="pane-en"><h1 id="s1">API Reference</h1>
+<p>This reference covers every public type exposed by the <strong>VoxelTerrain</strong> module: the data structs that flow through the pipeline, the CPU noise generator, the Transvoxel mesher, the streaming terrain component, the custom scene proxy, the demo interaction actor and the module bootstrap.</p>
+<blockquote>
+<p><strong>Reading guide.</strong> Types are listed from low-level data upwards. If you only want to get terrain on screen, read <a href="#getting-started">Getting Started</a> first, then <code>UVoxelTerrainComponent</code>.</p>
+</blockquote>
+<h2 id="s2">Design Conventions</h2>
+<p>The whole module is built on three conventions. Understanding them makes every signature below predictable.</p>
+<h3 id="s3">Coordinate spaces</h3>
+<table>
+<thead>
+<tr>
+<th>Space</th>
+<th>Unit</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chunk coordinate</td>
+<td>chunk</td>
+<td><code>FChunkKey.X/Y/Z</code>, integer chunk index. Multiply by <code>ChunkSize * VoxelSize</code> (6400 cm at LOD0) to get world units.</td>
+</tr>
+<tr>
+<td>Voxel (local) coordinate</td>
+<td>voxel</td>
+<td>Integer sample index inside a chunk. Valid range is <code>-1 … ChunkSize+1</code> because of the halo.</td>
+</tr>
+<tr>
+<td>Local mesh space</td>
+<td>cm</td>
+<td>Vertex positions produced by the mesher, relative to the chunk origin.</td>
+</tr>
+<tr>
+<td>World space</td>
+<td>cm</td>
+<td>Local mesh space plus the chunk world origin. <strong>This is what the GPU receives.</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="s4">Weight convention</h3>
+<p>Density is stored as <code>FVoxelWeight</code> (<code>int8</code>) in the range <code>[-128, 127]</code>. A voxel is <strong>solid when its weight is negative</strong> (<code>FVoxel::IsSolid()</code>). The mesher interpolates the zero crossing on every edge, so the sign — not the magnitude — decides the surface. Magnitude only controls where along the edge the vertex lands.</p>
+<h3 id="s5">Threading contract</h3>
+<table>
+<thead>
+<tr>
+<th>Member family</th>
+<th>Owning thread</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Every <code>TMap</code> / <code>TSet</code> on the component (<code>ChunkMeshes</code>, <code>ChunkVoxelData</code>, <code>ChunkVersions</code>, <code>RequestedChunks</code>, …)</td>
+<td>Game thread</td>
+<td>Never touch from a worker task.</td>
+</tr>
+<tr>
+<td><code>UVoxelTerrainComponent::StreamTick</code>, <code>OnChunkGenerated</code>, <code>ApplyEdit</code>, <code>ProcessCollisionQueue</code></td>
+<td>Game thread</td>
+<td>Driven by core tickers or Blueprint.</td>
+</tr>
+<tr>
+<td><code>UVoxelGenerator::GenerateChunk</code>, <code>FTransvoxelMesher::GenerateRegular</code></td>
+<td>Any worker thread</td>
+<td>Pure functions, no UObject mutation.</td>
+</tr>
+<tr>
+<td><code>FVoxelSceneProxy::AddChunk_RenderThread</code> / <code>RemoveChunk_RenderThread</code></td>
+<td>Render thread</td>
+<td>Must be reached through <code>ENQUEUE_RENDER_COMMAND</code>.</td>
+</tr>
+<tr>
+<td><code>UVoxelGenerator::GlobalNoiseLayers</code> / <code>GlobalNoiseLayers3D</code></td>
+<td>Written once in <code>BeginPlay</code>, read-only afterwards</td>
+<td>Safe to read concurrently.</td>
+</tr>
+</tbody>
+</table>
+<p>Background tasks capture <strong><code>TWeakObjectPtr</code> only</strong>, so an in-flight task silently becomes a no-op if the component or the generator is destroyed first. Results are marshalled back with <code>AsyncTask(ENamedThreads::GameThread, ...)</code>.</p>
+<hr />
+<h1 id="s6">Getting Started</h1>
+<h2 id="s7">1. Module dependency</h2>
+<p>Add the module to your game project's <code>*.Build.cs</code>. Every public header is exported with <code>VOXELTERRAIN_API</code>, so no further include path tweaks are needed.</p>
+<pre><code class="language-csharp">PublicDependencyModuleNames.AddRange(new string[]
+{
+    &quot;VoxelTerrain&quot;,
+    &quot;ProceduralMeshComponent&quot;,   // collision pool
+});
+</code></pre>
+<p><code>TransvoxelMesher.cpp</code> includes <code>Transvoxel.h</code>, which is a <strong>header-only table file</strong> (the Lengyel Transvoxel lookup tables). The module startup touches <code>sizeof(regularCellClass)</code> purely to force the tables to be linked in — no runtime cost beyond that.</p>
+<h2 id="s8">2. Drop a component on an Actor</h2>
+<pre><code class="language-cpp">// In any AActor subclass, or simply add it in the Blueprint editor.
+UVoxelTerrainComponent* Terrain = CreateDefaultSubobject&lt;UVoxelTerrainComponent&gt;(TEXT(&quot;Terrain&quot;));
+Terrain-&gt;SetMobility(EComponentMobility::Movable);
+</code></pre>
+<p>Then in the Details panel assign <strong><code>Terrain Material</code></strong>. Any opaque surface-domain material works; the mesh supplies position, normal, tangent, one UV channel and vertex colour. If you leave it empty the engine default surface material is used.</p>
+<h2 id="s9">3. Minimal terrain with noise textures</h2>
+<ol>
+<li>Create two <strong>square, power-of-two, uncompressed</strong> textures (<code>G8</code>, <code>BGRA8</code> or <code>RGBA8</code>), at least 4×4. Disable mip maps and set them <strong>not</strong> to be texture-streamed — the CPU reads mip 0 on <code>BeginPlay</code>.</li>
+<li>Add them to <code>Noise Layers</code> (2D) and/or <code>Noise Layers 3D</code> (cubic <code>UVolumeTexture</code>).</li>
+<li>Tune <code>Frequency</code> / <code>Amplitude</code>. The 2D layers shape the surface height; the 3D layers carve caves.</li>
+</ol>
+<pre><code class="language-cpp">// C++ equivalent
+FVoxelNoiseLayerInfo Layer;
+Layer.Texture   = LoadObject&lt;UTexture2D&gt;(nullptr, TEXT(&quot;/Game/Noise/T_Continental&quot;));
+Layer.Frequency = 1.0f;
+Layer.Amplitude = 1.0f;
+Layer.Offset    = FVector2D(0.f, 0.f);
+Terrain-&gt;NoiseLayers.Add(Layer);
+</code></pre>
+<h2 id="s10">4. Choose streaming radii</h2>
+<p><code>LOD0 Radius XY (Chunks)</code> and <code>LOD0 Radius Z (Chunks)</code> are <strong>chunk counts, not metres</strong>. At LOD0 one chunk spans 6400 cm, so the defaults (8, 8, 2) cover roughly ±512 m horizontally and ±128 m vertically — 17×17×5 = 1445 chunks. Raise them only after you have measured <code>FTransvoxelMesher::GenerateRegular</code>, because generation cost grows with the cube of the radius.</p>
+<h2 id="s11">5. Dig and fill</h2>
+<pre><code class="language-cpp">// BlueprintCallable — safe to call from a line trace result.
+Terrain-&gt;ApplyEdit(Hit.Location, 150.f, /*bIsAdd=*/false); // carve
+Terrain-&gt;ApplyEdit(Hit.Location, 150.f, /*bIsAdd=*/true);  // raise
+</code></pre>
+<p>Or place an <code>AVoxelInteractionActor</code> in the level: <strong>left mouse carves, right mouse fills</strong>, driven by a cooldown and a visibility-channel line trace.</p>
+<h2 id="s12">6. Recommended starting values</h2>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Value</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LOD0 Radius XY (Chunks)</code></td>
+<td>4–8</td>
+<td>17³ → 1445 chunks is already a lot of CPU mesh data.</td>
+</tr>
+<tr>
+<td><code>LOD0 Radius Z (Chunks)</code></td>
+<td>1–2</td>
+<td>Terrain is usually a thin slab.</td>
+</tr>
+<tr>
+<td><code>Unload Delay</code></td>
+<td>2.0 s</td>
+<td>Prevents thrashing when the player walks back and forth across a boundary.</td>
+</tr>
+<tr>
+<td><code>Collision Radius</code></td>
+<td>(1,1,1)</td>
+<td>27 <code>UProceduralMeshComponent</code>s. Each one cooks a collision mesh — this is the single most expensive part of streaming.</td>
+</tr>
+<tr>
+<td><code>bGenerate Collision</code></td>
+<td><code>false</code> while prototyping</td>
+<td>Removes the whole collision pool from the profile.</td>
+</tr>
+<tr>
+<td><code>Edit Cooldown</code> (interaction actor)</td>
+<td>0.1 s</td>
+<td><code>ApplyEdit</code> is synchronous.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="s13">Data Types</h1>
+<h2 id="s14"><code>FVoxel</code></h2>
+<p>One sample of the scalar density field. Defined in <code>VoxelTypes.h</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Weight</code></td>
+<td><code>FVoxelWeight</code> (<code>int8</code>)</td>
+<td>Signed density. Negative = solid, positive = air, zero = exactly on the isosurface.</td>
+</tr>
+<tr>
+<td><code>Material</code></td>
+<td><code>uint8</code></td>
+<td>Reserved surface material id. Currently written but <strong>not read</strong> by the mesher.</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-cpp">FORCEINLINE bool IsSolid() const;   // Weight &lt; 0
+</code></pre>
+<h2 id="s15"><code>VoxelConfig</code></h2>
+<p>Compile-time constants. <strong>Changing <code>ChunkSize</code> or <code>VoxelSize</code> invalidates saved data and the halo maths — treat them as fixed.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Constant</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ChunkSize</code></td>
+<td><code>64</code></td>
+<td>Cells per chunk per axis.</td>
+</tr>
+<tr>
+<td><code>ChunkStride</code></td>
+<td><code>65</code></td>
+<td><code>ChunkSize + 1</code> — sample points per axis inside a chunk.</td>
+</tr>
+<tr>
+<td><code>PaddedStride</code></td>
+<td><code>67</code></td>
+<td><code>ChunkStride + 2</code> — includes the ±1 halo.</td>
+</tr>
+<tr>
+<td><code>PaddedOffset</code></td>
+<td><code>1</code></td>
+<td>Index shift so that local coordinate <code>-1</code> maps to slot <code>0</code>.</td>
+</tr>
+<tr>
+<td><code>VoxelSize</code></td>
+<td><code>100.f</code></td>
+<td>World size of one voxel, in cm.</td>
+</tr>
+</tbody>
+</table>
+<p>Derived numbers worth memorising: one LOD0 chunk is <strong>6400 cm</strong> across; the padded voxel grid holds <strong>67³ = 300 763</strong> samples; the surface grid holds <strong>67² = 4489</strong> columns.</p>
+<h2 id="s16"><code>FChunkKey</code></h2>
+<p>Identity of a chunk. Four <code>int32</code> fields: <code>X</code>, <code>Y</code>, <code>Z</code>, <code>LOD</code>. Provides <code>operator==</code> and a free <code>GetTypeHash</code>, so it can be used directly as a <code>TMap</code> / <code>TSet</code> key.</p>
+<pre><code class="language-cpp">FChunkKey Key(3, -1, 0, 0);   // LOD defaults to 0
+</code></pre>
+<p><strong>LOD scaling rule:</strong> a chunk at LOD <code>N</code> covers <code>1 &lt;&lt; N</code> LOD0 chunks per axis, and its world size is <code>ChunkSize * VoxelSize * (1 &lt;&lt; N)</code>. Only LOD 0 is currently generated by the streaming loop; the LOD fields and the shift maths are already in place (<code>SpawnChunkAsyncTask</code> computes <code>LODChunkWorldSize</code> correctly), but <code>StreamTick</code> never requests <code>LOD &gt; 0</code>.</p>
+<p><code>FVoxelEditTask</code> (<code>WorldPos</code>, <code>Radius</code>, <code>bIsAdd</code>) and <code>FVoxelModificationMap</code> (<code>TMap&lt;FIntVector, FVoxelWeight&gt;</code>) are declared in the same header. Both are <strong>currently unused</strong> — the modification-map pipeline is commented out, and <code>ApplyEdit</code> writes straight into the cached voxel data.</p>
+<h2 id="s17"><code>FVegetationInstanceData</code></h2>
+<p>Plain output record of the scatter pass.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Location</code></td>
+<td><code>FVector</code></td>
+<td>World-space spawn position.</td>
+</tr>
+<tr>
+<td><code>Rotation</code></td>
+<td><code>FRotator</code></td>
+<td>Random yaw, zero pitch/roll.</td>
+</tr>
+<tr>
+<td><code>Scale</code></td>
+<td><code>FVector</code></td>
+<td>Uniform scale, per instance.</td>
+</tr>
+<tr>
+<td><code>PlantId</code></td>
+<td><code>int32</code></td>
+<td>Index into <code>VegetationConfigs</code>.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="s18"><code>FVoxelChunkData</code></h2>
+<p>CPU-side storage for one chunk: the padded density cube plus a per-column surface height.</p>
+<table>
+<thead>
+<tr>
+<th>Field / Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TArray&lt;FVoxel&gt; Voxels</code></td>
+<td><code>PaddedStride³</code> samples, zero-initialised by the constructor.</td>
+</tr>
+<tr>
+<td><code>TArray&lt;float&gt; SurfaceGrid</code></td>
+<td><code>PaddedStride²</code> heights, one per <code>(ix, iy)</code> column. <strong>Not</strong> initialised by the constructor — every reader must overwrite it (the generator does).</td>
+</tr>
+<tr>
+<td><code>int32 Index(x, y, z)</code></td>
+<td>Flat index. Equivalent to <code>((x+1)*N + (y+1))*N + (z+1)</code>.</td>
+</tr>
+<tr>
+<td><code>FVoxel&amp; At(x, y, z)</code></td>
+<td>Mutable access. Valid range <code>-1 … ChunkSize+1</code>.</td>
+</tr>
+<tr>
+<td><code>const FVoxel&amp; At(x, y, z)</code></td>
+<td>Const overload.</td>
+</tr>
+<tr>
+<td><code>float&amp; SurfaceAt(ix, iy)</code></td>
+<td>Mutable surface height. The index maths uses <code>ix * PaddedStride + iy</code>.</td>
+</tr>
+<tr>
+<td><code>float SurfaceAt(ix, iy)</code></td>
+<td>Const overload.</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-cpp">FVoxelChunkData Chunk;
+Chunk.At(0, 0, 0).Weight = -127;     // solid
+Chunk.SurfaceAt(4, 9) = 1234.5f;
+</code></pre>
+<p><code>SurfaceAt(ix, iy)</code> is <strong>not</strong> bounds-checked and <code>ix</code> is multiplied by <code>PaddedStride</code>, not by <code>PaddedStride²</code> — pass padded-local indices (<code>0 … 66</code>), never chunk-local ones.</p>
+<hr />
+<h2 id="s19"><code>FVoxelMeshData</code></h2>
+<p>The interchange struct between the mesher, the game thread and the render thread.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Positions</code></td>
+<td><code>TArray&lt;FVector3f&gt;</code></td>
+<td><strong>Local-space</strong> vertex positions (chunk origin subtracted).</td>
+</tr>
+<tr>
+<td><code>Normals</code></td>
+<td><code>TArray&lt;FVector3f&gt;</code></td>
+<td>Central-difference gradient of the density field.</td>
+</tr>
+<tr>
+<td><code>UVs</code></td>
+<td><code>TArray&lt;FVector2f&gt;</code></td>
+<td>Planar <code>XY / 400.f</code>, filled by the component <strong>after</strong> meshing.</td>
+</tr>
+<tr>
+<td><code>Colors</code></td>
+<td><code>TArray&lt;FColor&gt;</code></td>
+<td>Biome/height vertex colour, see <code>ComputeColor</code>.</td>
+</tr>
+<tr>
+<td><code>Indices</code></td>
+<td><code>TArray&lt;uint32&gt;</code></td>
+<td>Triangle list, always 32-bit.</td>
+</tr>
+<tr>
+<td><code>Bounds</code></td>
+<td><code>FBox</code></td>
+<td>World-space bounds, precomputed off-thread so the main thread only merges.</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>void Reset()</code></td>
+<td>Empties every array (<code>Reset</code>, capacity kept) and re-inits <code>Bounds</code>.</td>
+</tr>
+<tr>
+<td><code>int32 NumTriangles() const</code></td>
+<td><code>Indices.Num() / 3</code>.</td>
+</tr>
+</tbody>
+</table>
+<p><code>SurfaceHeights</code> still exists as a commented-out field, together with the UV1 channel that used to carry it. The vertex factory is therefore bound to <strong>one</strong> UV channel.</p>
+<p><strong>Copy cost:</strong> <code>ApplyEdit</code> pushes a <em>deep copy</em> (<code>MakeShared&lt;FVoxelMeshData&gt;(MeshData)</code>) to the render thread, because the game-thread copy stays editable.</p>
+<hr />
+<h1 id="s20">Noise Generation</h1>
+<h2 id="s21"><code>FVoxelGeneratorSettings</code></h2>
+<p><code>USTRUCT(BlueprintType)</code>, all fields <code>EditAnywhere, BlueprintReadWrite</code>, category <code>Voxel</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Default</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BaseWorldZ</code></td>
+<td><code>float</code></td>
+<td><code>1600.f</code></td>
+<td>World Z of the zero-noise surface.</td>
+</tr>
+<tr>
+<td><code>HillHeight</code></td>
+<td><code>float</code></td>
+<td><code>2000.f</code></td>
+<td>Amplitude of the 2D surface displacement.</td>
+</tr>
+<tr>
+<td><code>NoiseFreq</code></td>
+<td><code>float</code></td>
+<td><code>0.00035f</code></td>
+<td>Base spatial frequency, in cm⁻¹. Drives both terrain and caves.</td>
+</tr>
+<tr>
+<td><code>Octaves</code></td>
+<td><code>int32</code></td>
+<td><code>5</code></td>
+<td>FBM octaves.</td>
+</tr>
+<tr>
+<td><code>Lacunarity</code></td>
+<td><code>float</code></td>
+<td><code>2.0f</code></td>
+<td>Frequency multiplier per octave.</td>
+</tr>
+<tr>
+<td><code>Persistence</code></td>
+<td><code>float</code></td>
+<td><code>0.5f</code></td>
+<td>Amplitude multiplier per octave.</td>
+</tr>
+<tr>
+<td><code>Seed</code></td>
+<td><code>int32</code></td>
+<td><code>1337</code></td>
+<td>Offsets the perlin sample position.</td>
+</tr>
+<tr>
+<td><code>CaveStrength</code></td>
+<td><code>float</code></td>
+<td><code>600.f</code></td>
+<td><strong>Declared but not read</strong> by the current density function.</td>
+</tr>
+<tr>
+<td><code>CaveThreshold</code></td>
+<td><code>float</code></td>
+<td><code>0.15f</code></td>
+<td>Centre of the cave mask smoothstep window.</td>
+</tr>
+</tbody>
+</table>
+<p>Surface height for a column is <code>BaseWorldZ + TexFbm2D(XY) * HillHeight</code>.</p>
+<h2 id="s22"><code>UVoxelGenerator</code></h2>
+<p><code>UCLASS</code>, the pluggable density provider. Swap implementations by assigning <code>VoxelGeneratorClass</code> on the component.</p>
+<h3 id="s23">Nested types</h3>
+<p><strong><code>FNoiseLayerData</code></strong> — one baked 2D layer: <code>TSharedPtr&lt;TArray&lt;float&gt;&gt; Data</code>, <code>int32 Size</code>, <code>float Frequency</code>, <code>float Amplitude</code>, <code>FVector2D Offset</code>.</p>
+<p><strong><code>FNoiseLayer3DData</code></strong> — one baked 3D layer: same fields but <code>FVector Offset</code>.</p>
+<h3 id="s24">Static members</h3>
+<table>
+<thead>
+<tr>
+<th>Member</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>static TSharedPtr&lt;TArray&lt;FNoiseLayerData&gt;&gt; GlobalNoiseLayers</code></td>
+<td>Published once by <code>UVoxelTerrainComponent::LoadNoiseTextureData()</code>. Read concurrently by worker threads — <strong>replace, never mutate</strong>.</td>
+</tr>
+<tr>
+<td><code>static TSharedPtr&lt;TArray&lt;FNoiseLayer3DData&gt;&gt; GlobalNoiseLayers3D</code></td>
+<td>Same for volume layers.</td>
+</tr>
+</tbody>
+</table>
+<p>Both are null until <code>BeginPlay</code>, so calling the generator before that silently falls back to analytic Perlin.</p>
+<h3 id="s25">Instance API</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>void GenerateChunk(int32 ChunkX, int32 ChunkY, int32 ChunkZ, int32 LOD, FVoxelChunkData&amp; OutChunk) const</code></td>
+<td>Fills the whole padded grid, including the halo, and writes every column's surface height. <strong>Pure</strong> — safe on any thread. Cost is dominated by one <code>TexFbm2D</code> per column plus one density sample per voxel.</td>
+</tr>
+<tr>
+<td><code>virtual float SampleDensityWithSurface(const FVector&amp; WorldPos, float SurfaceZ) const</code></td>
+<td>Signed density in cm. Above the surface it returns <code>SurfaceZ - WorldPos.Z</code>, then carves caves with <code>SmoothMax</code> over two 3D texture lookups and converts noise distance to world units via <code>1 / (NoiseFreq * 0.7)</code>.</td>
+</tr>
+<tr>
+<td><code>virtual float Fbm(const FVector&amp; P) const</code></td>
+<td>Normalised 3D Perlin FBM, seed-offset.</td>
+</tr>
+<tr>
+<td><code>virtual float Fbm2D(const FVector2D&amp; P) const</code></td>
+<td>Normalised 2D Perlin FBM, seed-offset.</td>
+</tr>
+<tr>
+<td><code>virtual float TexFbm2D(const FVector2D&amp; WorldXY) const</code></td>
+<td>Amplitude-weighted blend of <code>GlobalNoiseLayers</code>; falls back to <code>Fbm2D(WorldXY * NoiseFreq)</code> when no layers are loaded.</td>
+</tr>
+<tr>
+<td><code>virtual float TexFbm3D(const FVector&amp; WorldXYZ) const</code></td>
+<td>Same for <code>GlobalNoiseLayers3D</code>; falls back to <code>Fbm</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>Every method is <code>virtual</code>, so subclassing <code>UVoxelGenerator</code> and overriding <code>SampleDensityWithSurface</code> is the supported way to change world shape without touching the mesher.</p>
+<h3 id="s26"><code>VOXEL_USE_NOISE_TEXTURE</code></h3>
+<p>Defined to <code>1</code> at the top of <code>VoxelGenerator.h</code>. Set it to <code>0</code> (or add a project-level definition) to compile the texture path out entirely and run on analytic Perlin only.</p>
+<hr />
+<h1 id="s27">Meshing</h1>
+<h2 id="s28"><code>FTransvoxelMesher</code></h2>
+<p>Stateless utility, <code>VOXELTERRAIN_API</code>. Both entry points are <code>static</code>.</p>
+<h3 id="s29"><code>GenerateRegular</code></h3>
+<pre><code class="language-cpp">static void GenerateRegular(const FVoxelChunkData&amp; Chunk,
+                            float VoxelSize,
+                            int32 LOD,
+                            const FVector3f&amp; ChunkWorldOrigin,
+                            FVoxelMeshData&amp; Out);
+</code></pre>
+<p>Runs the modified Marching Cubes (regular-cell part of the Transvoxel algorithm) over all <code>64³</code> cells of one chunk.</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Direction</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Chunk</code></td>
+<td>in</td>
+<td>Must be fully generated, halo included.</td>
+</tr>
+<tr>
+<td><code>VoxelSize</code></td>
+<td>in</td>
+<td>Pass <code>VoxelConfig::VoxelSize</code> (100). <strong>Not</strong> multiplied by <code>1 &lt;&lt; LOD</code> — LOD scaling is applied to the world origin only.</td>
+</tr>
+<tr>
+<td><code>LOD</code></td>
+<td>in</td>
+<td>Currently only affects <code>WorldStep</code> bookkeeping; vertex spacing stays <code>VoxelSize</code>.</td>
+</tr>
+<tr>
+<td><code>ChunkWorldOrigin</code></td>
+<td>in</td>
+<td>Added to every local position.</td>
+</tr>
+<tr>
+<td><code>Out</code></td>
+<td>in/out</td>
+<td><code>Reset()</code> at entry, then filled.</td>
+</tr>
+</tbody>
+</table>
+<p>Behaviour details worth knowing:</p>
+<ul>
+<li>A <code>thread_local</code> edge cache (size <code>65³ × 3</code>) deduplicates vertices across the six shared cell faces, so adjacent cells weld seamlessly. It is memset to <code>-1</code> per call and grown on demand — <strong>one allocation per worker thread, ever</strong>.</li>
+<li>Case bits follow the Transvoxel corner order: bit <code>0</code> = <code>(0,0,0)</code>, bit <code>1</code> = <code>(1,0,0)</code>, … bit <code>7</code> = <code>(1,1,1)</code>. Weight <code>W = 0</code> counts as <strong>not solid</strong>.</li>
+<li>Normals come from central differences on the raw <code>int8</code> weights, so they are blocky near flat regions and fall back to <code>(0,0,1)</code> when the gradient vanishes.</li>
+<li>Output triangles are wound <code>I0, I2, I1</code> to match UE's front-face convention.</li>
+<li><code>Out.Bounds</code> is <strong>not</strong> written here; the component computes it after applying the world offset.</li>
+</ul>
+<h3 id="s30"><code>GenerateRegularPartial</code></h3>
+<pre><code class="language-cpp">static void GenerateRegularPartial(const FVoxelChunkData&amp; Chunk,
+                                   float VoxelSize,
+                                   const FVector3f&amp; ChunkWorldOrigin,
+                                   const FIntVector&amp; CellMin,
+                                   const FIntVector&amp; CellMax,
+                                   FVoxelMeshData&amp; InOut);
+</code></pre>
+<p>Incremental rebuild used by terrain editing. Instead of re-meshing, it <strong>filters the existing mesh in place</strong>:</p>
+<ol>
+<li>Every triangle whose floor-space minimum cell falls inside <code>[CellMin, CellMax]</code> is dropped.</li>
+<li>Surviving vertices are compacted, remapped through an old-to-new index table, and all arrays are shrunk.</li>
+<li><code>Colors</code>, <code>Normals</code>, <code>UVs</code> and <code>Positions</code> are preserved for surviving vertices.</li>
+</ol>
+<p><code>CellMin</code> / <code>CellMax</code> are <strong>chunk-local cell coordinates</strong>, inclusive, and must stay within <code>0 … ChunkSize-1</code>. <code>InOut</code> is modified; if it has no indices the function resets it and returns. Because triangles are discarded by their own cell only, calling this with a box that does not exactly match the dirty region will leave seams — always derive the box from the same SDF bounds the component uses.</p>
+<p><code>InOut.Bounds</code> is stale afterwards; the caller must recompute it (<code>ApplyEdit</code> does).</p>
+<hr />
+<h1 id="s31">Terrain Component</h1>
+<h2 id="s32"><code>FVoxelNoiseLayerInfo</code></h2>
+<p><code>USTRUCT(BlueprintType)</code>, category <code>Noise</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Texture</code></td>
+<td><code>UTexture2D*</code></td>
+<td><code>nullptr</code></td>
+<td>Square, ≥ 4×4. <code>G8</code>, <code>BGRA8</code>, <code>RGBA8</code> supported.</td>
+</tr>
+<tr>
+<td><code>Frequency</code></td>
+<td><code>float</code></td>
+<td><code>1.0f</code></td>
+<td>Repeat count over the noise domain.</td>
+</tr>
+<tr>
+<td><code>Amplitude</code></td>
+<td><code>float</code></td>
+<td><code>1.0f</code></td>
+<td>Weight in the normalised blend.</td>
+</tr>
+<tr>
+<td><code>Offset</code></td>
+<td><code>FVector2D</code></td>
+<td><code>Zero</code></td>
+<td>UV offset, used to de-correlate layers.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="s33"><code>FVoxelNoiseLayer3DInfo</code></h2>
+<p>Same shape, category <code>Noise3D</code>. <code>Texture</code> is a cubic <code>UVolumeTexture</code> (≥ 4³), <code>Offset</code> is an <code>FVector</code>.</p>
+<h2 id="s34"><code>FVoxelVegetationConfig</code></h2>
+<p><code>USTRUCT(BlueprintType)</code>, category <code>Vegetation</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MinID</code> / <code>MaxID</code></td>
+<td><code>float</code></td>
+<td><code>0.f</code> / <code>130.f</code></td>
+<td>Biome ID window this species accepts. Several configs may share a window to mix species.</td>
+</tr>
+<tr>
+<td><code>Mesh</code></td>
+<td><code>UStaticMesh*</code></td>
+<td><code>nullptr</code></td>
+<td>Spawned per accepted instance.</td>
+</tr>
+<tr>
+<td><code>Density</code></td>
+<td><code>float</code></td>
+<td><code>0.05f</code></td>
+<td>Probability that a candidate vertex actually spawns.</td>
+</tr>
+<tr>
+<td><code>PlaceRadius</code></td>
+<td><code>float</code></td>
+<td><code>100.f</code></td>
+<td>Overlap rejection radius (spatial-hash grid, 200-unit cells).</td>
+</tr>
+<tr>
+<td><code>MinScale</code> / <code>MaxScale</code></td>
+<td><code>float</code></td>
+<td><code>0.8f</code> / <code>1.2f</code></td>
+<td>Per-instance uniform scale range.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="s35"><code>UVoxelTerrainComponent</code></h2>
+<p><code>UCLASS(ClassGroup = Voxel, Blueprintable, BlueprintSpawnableComponent)</code>, derives from <code>UPrimitiveComponent</code>.</p>
+<h3 id="s36">Configuration properties</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Category</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TerrainMaterial</code></td>
+<td><code>Voxel</code></td>
+<td><code>nullptr</code></td>
+<td>Material used for every chunk. Falls back to <code>UMaterial::GetDefaultMaterial(MD_Surface)</code>.</td>
+</tr>
+<tr>
+<td><code>Voxel\|LOD</code></td>
+<td><code>8</code></td>
+<td>Load radius along X/Y, in LOD0 chunks (square footprint).</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Voxel\|LOD</code></td>
+<td><code>2</code></td>
+<td>Load radius along Z, in LOD0 chunks.</td>
+<td></td>
+</tr>
+<tr>
+<td><code>UnloadDelay</code></td>
+<td><code>Voxel</code></td>
+<td><code>2.0f</code></td>
+<td>Seconds a chunk must stay outside the unload radius before eviction.</td>
+</tr>
+<tr>
+<td><code>bGenerateCollision</code></td>
+<td><code>Voxel</code></td>
+<td><code>true</code></td>
+<td>Master switch for the collision pool. Turning it off releases everything on the next collision tick.</td>
+</tr>
+<tr>
+<td><code>Voxel\|Collision</code></td>
+<td><code>(1,1,1)</code></td>
+<td>Half-extent in chunks of the collidable box around the pawn.</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Voxel\|Noise</code></td>
+<td>–</td>
+<td>2D layers, sampled once in <code>BeginPlay</code>.</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Voxel\|Noise3D</code></td>
+<td>–</td>
+<td>3D layers.</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Voxel\|Vegetation</code></td>
+<td><code>nullptr</code></td>
+<td>R channel encodes the biome ID.</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Voxel\|Vegetation</code></td>
+<td>–</td>
+<td>Rules; an empty array disables vegetation.</td>
+<td></td>
+</tr>
+<tr>
+<td><code>VoxelGeneratorClass</code></td>
+<td><code>Voxel</code></td>
+<td>–</td>
+<td><code>TSubclassOf&lt;UVoxelGenerator&gt;</code>. Assign to swap generation strategies.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="s37">Runtime state (game thread only)</h3>
+<table>
+<thead>
+<tr>
+<th>Member</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TMap&lt;FChunkKey, TSharedPtr&lt;FVoxelMeshData, ESPMode::ThreadSafe&gt;&gt; ChunkMeshes</code></td>
+<td>Resident, meshed chunks.</td>
+</tr>
+<tr>
+<td><code>TMap&lt;FChunkKey, TSharedPtr&lt;FVoxelChunkData&gt;&gt; ChunkVoxelData</code></td>
+<td>Density cache, kept so <code>ApplyEdit</code> can read and rewrite raw weights.</td>
+</tr>
+<tr>
+<td><code>TMap&lt;FChunkKey, double&gt; ChunkLastActiveTime</code></td>
+<td><code>FPlatformTime::Seconds()</code> of last load/edit; drives <code>UnloadDelay</code>.</td>
+</tr>
+<tr>
+<td><code>TMap&lt;FChunkKey, int32&gt; ChunkVersions</code></td>
+<td>Bumped on every edit so stale async results are rejected.</td>
+</tr>
+<tr>
+<td><code>TSet&lt;FChunkKey&gt; RequestedChunks</code></td>
+<td>In-flight guard for <code>StreamTick</code>.</td>
+</tr>
+<tr>
+<td><code>FBox LocalBounds</code></td>
+<td>Union of resident chunk bounds; returned by <code>CalcBounds</code>.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="s38">Blueprint-callable / overridable</h3>
+<p><strong><code>void ApplyEdit(const FVector&amp; WorldPos, float Radius, bool bIsAdd)</code></strong> — <code>BlueprintCallable, Category = "Voxel"</code>.</p>
+<p>Stamps a spherical brush into the cached density of every overlapping chunk, plus a one-voxel halo in all 26 neighbours, then <strong>synchronously</strong> re-meshes the touched chunks, pushes them to the scene proxy and refreshes their collision section. <code>bIsAdd == true</code> adds material, <code>false</code> carves.</p>
+<p>Contract notes:</p>
+<ul>
+<li>Game-thread only, and <strong>blocking</strong>: the whole touched set is rebuilt before the call returns. Keep the radius modest.</li>
+<li>Chunks that are not resident are skipped silently — editing outside the streaming radius is a no-op.</li>
+<li>Every touched chunk's version is incremented first, so an async result that lands during the rebuild is discarded.</li>
+<li>The mesh deep-copies into the render command, so the CPU copy stays mutable.</li>
+</ul>
+<p><strong><code>void StreamTick()</code></strong> — <code>BlueprintNativeEvent, Category = "Voxel&amp;#124;Streaming"</code>. Override in Blueprint and call <code>Parent: StreamTick</code> to keep the default behaviour.</p>
+<p>Streaming heartbeat, driven by a ~0.16 s core ticker rather than per-frame tick. Each call:</p>
+<ol>
+<li>Enumerates the <code>(2·XY+1) × (2·Z+1)</code> chunk box around the local pawn; already-resident chunks just have their activity timestamp refreshed.</li>
+<li>Sorts the remaining candidates by squared distance and dispatches up to <code>MaxRequestsPerTick</code> async tasks — <strong>8</strong> by default, <strong>16</strong> above 20 m/s, <strong>24</strong> above ~31.6 m/s.</li>
+<li>Evicts chunks outside <code>Radius + 1</code> whose idle time exceeds <code>UnloadDelay</code>, dropping mesh, voxel cache, timestamps, version, collision proxy and render-thread resource, then rebuilds <code>LocalBounds</code> from the survivors.</li>
+</ol>
+<p>Note that <code>LocalBounds</code> is <strong>rebuilt from scratch every tick</strong> from the surviving chunks, so it never suffers from bounds drift after eviction.</p>
+<h3 id="s39">Component overrides</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>virtual FPrimitiveSceneProxy* CreateSceneProxy() override</code></td>
+<td>Returns <code>new FVoxelSceneProxy(this, TerrainMaterial)</code>.</td>
+</tr>
+<tr>
+<td><code>virtual FBoxSphereBounds CalcBounds(const FTransform&amp; LocalToWorld) const override</code></td>
+<td>Returns <code>LocalBounds</code>. If no chunk is resident yet it returns a ±100 000 cm box so the component is never culled before the first chunk arrives.</td>
+</tr>
+<tr>
+<td><code>virtual void GetUsedMaterials(TArray&lt;UMaterialInterface*&gt;&amp; Out, bool bGetDebugMaterials = false) const override</code></td>
+<td>Adds <code>TerrainMaterial</code>, or the default surface material.</td>
+</tr>
+<tr>
+<td><code>virtual void BeginPlay() override</code></td>
+<td>Creates the generator from <code>VoxelGeneratorClass</code>, ensures the material is complete, calls <code>InitBiomeTexture()</code> and <code>LoadNoiseTextureData()</code>, prewarms <strong>256</strong> collision components and <strong>256</strong> HISM components, reserves 1024 slots in every map, and installs the two core tickers.</td>
+</tr>
+<tr>
+<td><code>virtual void EndPlay(const EEndPlayReason::Type) override</code></td>
+<td>Removes both tickers and calls <code>ClearAllCollisions()</code>.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="s40">Coordinate helper</h3>
+<pre><code class="language-cpp">FIntVector WorldToBaseChunk(const FVector&amp; WorldPos) const;
+</code></pre>
+<p>Floor-divides by <code>ChunkSize * VoxelSize</code> (6400 at LOD0), so negative coordinates map correctly. This is the only place chunk size is turned into world size — always route through it.</p>
+<h3 id="s41">Async pipeline</h3>
+<p><strong><code>void SpawnChunkAsyncTask(const FChunkKey&amp; Key, int32 CurrentVersion)</code></strong></p>
+<p>Dispatches one chunk to <code>EAsyncExecution::ThreadPool</code>. The worker:</p>
+<ol>
+<li>Calls <code>GenerateChunk</code> into a stack <code>FVoxelChunkData</code>.</li>
+<li>Runs <code>FTransvoxelMesher::GenerateRegular</code> into a new <code>FVoxelMeshData</code>.</li>
+<li>Offsets every position by the chunk world origin, computes planar UVs with <code>UVScale = 400.f</code>, and accumulates world <code>Bounds</code>.</li>
+<li>Moves the voxel data into a shared pointer and hops back to the game thread via <code>AsyncTask</code>.</li>
+</ol>
+<p>Captures are weak (<code>TWeakObjectPtr&lt;UVoxelTerrainComponent&gt;</code> and <code>TWeakObjectPtr&lt;UVoxelGenerator&gt;</code>); a destroyed component makes the task a no-op at both checkpoints.</p>
+<p><strong><code>void OnChunkGenerated(FChunkKey Key, TSharedPtr&lt;FVoxelMeshData, ESPMode::ThreadSafe&gt; Mesh, TSharedPtr&lt;FVoxelChunkData&gt; VoxelData, int32 Version)</code></strong></p>
+<p>Game-thread completion handler.</p>
+<ol>
+<li>Clears <code>RequestedChunks</code>.</li>
+<li><strong>Drops the payload if <code>Version != ChunkVersions.FindRef(Key)</code></strong> — an edit happened while the task was in flight, and the synchronous rebuild wins.</li>
+<li>Stores mesh and voxel cache, stamps <code>ChunkLastActiveTime</code>, merges <code>Bounds</code> into <code>LocalBounds</code>.</li>
+<li>Enqueues <code>AddChunk_RenderThread</code> on the render thread.</li>
+</ol>
+<p>This method is public, so you can call it yourself to inject a procedurally built chunk — as long as you respect the version check.</p>
+<h3 id="s42">Collision pool</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>void PrewarmCollisionPool(int32 PoolSize)</code></td>
+<td>Creates <code>PoolSize</code> hidden <code>UProceduralMeshComponent</code>s (<code>RF_Transient</code>, async cooking on, complex-as-simple, <code>ECC_WorldStatic</code>, block all, no overlap events) and registers them with collision disabled.</td>
+</tr>
+<tr>
+<td><code>UProceduralMeshComponent* AcquireCollisionComponent()</code></td>
+<td>Pops one, enables <code>QueryAndPhysics</code>. Returns <code>nullptr</code> when the pool is empty.</td>
+</tr>
+<tr>
+<td><code>void ReturnCollisionComponent(UProceduralMeshComponent* PMC)</code></td>
+<td>Disables collision, clears sections, pushes it back.</td>
+</tr>
+<tr>
+<td><code>void ProcessCollisionQueue()</code></td>
+<td>~0.33 s ticker. Releases proxies outside <code>CollisionRadius</code>, then creates proxies for every resident chunk inside it. Editing never goes through here.</td>
+</tr>
+<tr>
+<td><code>void RemoveCollisionForChunk(const FChunkKey&amp; Key)</code></td>
+<td>Returns one chunk's proxy to the pool.</td>
+</tr>
+<tr>
+<td><code>void ClearAllCollisions()</code></td>
+<td>Destroys every active proxy and every pooled component. Called from <code>EndPlay</code>.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="s43">Noise texture loading</h3>
+<p><strong><code>void LoadNoiseTextureData()</code></strong></p>
+<p>Reads every <code>NoiseLayers</code> / <code>NoiseLayers3D</code> texture into linear float arrays and publishes them to the generator's global layer arrays.</p>
+<ul>
+<li><strong>Editor path</strong> (<code>WITH_EDITORONLY_DATA</code>): reads <code>Texture-&gt;Source.GetMipImage</code>.</li>
+<li><strong>Packaged path</strong>: reads cooked platform mip 0 — <code>PF_G8</code>, <code>PF_B8G8R8A8</code>, <code>PF_R8G8B8A8</code> only. Anything else is logged and skipped.</li>
+<li>sRGB textures are linearised so both paths agree.</li>
+</ul>
+<p>Textures must be square (cubic for 3D) and at least 4×4, and the bulk data must be CPU-readable — <strong>disable texture streaming and compression</strong> on them. Changing the arrays at runtime has no effect until the component restarts.</p>
+<h3 id="s44">Vegetation (all private)</h3>
+<p>All vegetation members are <code>private</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>void InitBiomeTexture()</code></td>
+<td>Reads <code>BiomeTexture</code> into <code>CachedBiomeData</code> as normalised R-channel floats. Packaged path only.</td>
+</tr>
+<tr>
+<td><code>void DispatchVegetationTask(FChunkKey Key, TSharedPtr&lt;FVoxelMeshData, ESPMode::ThreadSafe&gt; Mesh)</code></td>
+<td>No-op unless the texture, cache and config list are all non-empty. Runs the scatter on the thread pool. <strong>The game-thread callback that would push instances into the HISM is currently empty, so nothing is spawned yet.</strong></td>
+</tr>
+<tr>
+<td><code>TArray&lt;FVegetationInstanceData&gt; CalculateVegetationForChunk(const FVoxelMeshData&amp; Mesh, const FChunkKey&amp; Key, const TArray&lt;float&gt;&amp; LocalData, int32 LocalSize, float WorldSize, const TArray&lt;FVoxelVegetationConfig&gt;&amp; Configs) const</code></td>
+<td>Pure, side-effect-free. Filters vertices to upward-facing ones, bilinearly samples the biome map, tests each matching config against <code>Density</code> with a keyed hash, sorts candidates by <code>PlaceRadius</code> and rejects overlaps through a 200-unit spatial hash, then assigns scale and yaw. <code>PlantId</code> is the config index.</td>
+</tr>
+</tbody>
+</table>
+<p>HISM pool: <code>PrewarmHISMPool</code>, <code>AcquireHISM</code> (falls back to creating a new component when the pool is empty, so it never fails), <code>ReturnHISM</code>. Both pool arrays are <code>UPROPERTY()</code> so the components are not garbage-collected.</p>
+<hr />
+<h1 id="s45">Scene Proxy</h1>
+<h2 id="s46"><code>FVoxelSceneProxy</code></h2>
+<p><code>FPrimitiveSceneProxy</code> subclass, one per component. There is exactly <strong>one vertex factory / index buffer / vertex buffer set per chunk</strong>, so a chunk can be added or removed without touching the others.</p>
+<h3 id="s47"><code>FChunkRender</code></h3>
+<table>
+<thead>
+<tr>
+<th>Member</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FPositionVertexBuffer PositionVB</code></td>
+<td>Positions.</td>
+</tr>
+<tr>
+<td><code>FStaticMeshVertexBuffer StaticVB</code></td>
+<td>Tangents + UV0.</td>
+</tr>
+<tr>
+<td><code>FColorVertexBuffer ColorVB</code></td>
+<td>Vertex colours.</td>
+</tr>
+<tr>
+<td><code>FRawStaticIndexBuffer IB</code></td>
+<td>32-bit indices.</td>
+</tr>
+<tr>
+<td><code>FLocalVertexFactory VertexFactory</code></td>
+<td>Constructed with the scene feature level and the debug name <code>"FVoxelChunkVF"</code>.</td>
+</tr>
+<tr>
+<td><code>FBox Bounds</code></td>
+<td>World-space, used for frustum and shadow culling.</td>
+</tr>
+<tr>
+<td><code>bool bReady</code></td>
+<td>Guards partially built chunks.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="s48">Public API</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Thread</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FVoxelSceneProxy(const UVoxelTerrainComponent* InComponent, UMaterialInterface* InMaterial)</code></td>
+<td>Game</td>
+<td>Sets <code>bWillEverBeLit</code>, <code>bCastDynamicShadow</code>, <code>bCastShadowAsTwoSided</code>; disables static shadowing. Falls back to the default surface material.</td>
+</tr>
+<tr>
+<td><code>virtual ~FVoxelSceneProxy()</code></td>
+<td>Render</td>
+<td>Resources are released in <code>DestroyRenderThreadResources</code>.</td>
+</tr>
+<tr>
+<td><code>virtual SIZE_T GetTypeHash() const</code></td>
+<td>Any</td>
+<td>Stable per-class hash (address of a function-local static).</td>
+</tr>
+<tr>
+<td><code>virtual void CreateRenderThreadResources(FRHICommandListBase&amp;)</code></td>
+<td>Render</td>
+<td>Intentionally empty — resources are per chunk.</td>
+</tr>
+<tr>
+<td><code>virtual void DestroyRenderThreadResources()</code></td>
+<td>Render</td>
+<td>Releases and empties every chunk.</td>
+</tr>
+<tr>
+<td><strong><code>void AddChunk_RenderThread(FRHICommandListBase&amp; RHICmdList, const FChunkKey&amp; Key, TSharedPtr&lt;FVoxelMeshData, ESPMode::ThreadSafe&gt; Mesh)</code></strong></td>
+<td><strong>Render only</strong></td>
+<td>Builds GPU buffers for one chunk. Releases and replaces an existing key first. An empty mesh (or zero indices) <strong>removes</strong> the chunk instead of allocating. Tangents are derived as <code>Cross(Z, N)</code> with an <code>(1,0,0)</code> fallback for degenerate normals. Invalid bounds widen to <code>HALF_WORLD_MAX</code> so the chunk is never wrongly culled.</td>
+</tr>
+<tr>
+<td><strong><code>void RemoveChunk_RenderThread(FRHICommandListBase&amp; RHICmdList, const FChunkKey&amp; Key)</code></strong></td>
+<td><strong>Render only</strong></td>
+<td>Releases one chunk's resources.</td>
+</tr>
+<tr>
+<td><code>virtual void GetDynamicMeshElements(...)</code></td>
+<td>Render</td>
+<td>Issues one <code>FMeshBatch</code> per chunk per visible view. Uses <code>GetDynamicMeshElementsShadowCullFrustum()</code> when present so shadow passes cull correctly, otherwise the view frustum. Reverse culling follows the component's determinant; depth group <code>SDPG_World</code>.</td>
+</tr>
+<tr>
+<td><code>virtual FPrimitiveViewRelevance GetViewRelevance(const FSceneView*) const</code></td>
+<td>Render</td>
+<td>Dynamic, opaque, draw + shadow relevant. <strong>Not</strong> static-relevant — lighting is fully dynamic.</td>
+</tr>
+<tr>
+<td><code>virtual uint32 GetMemoryFootprint() const</code></td>
+<td>Any</td>
+<td>Sums buffer sizes (static vertex buffer counted at 32 bytes/vertex).</td>
+</tr>
+</tbody>
+</table>
+<p><code>ChunkRenders</code> is a plain <code>TMap</code> touched only on the render thread — deliberately not thread-safe.</p>
+<pre><code class="language-cpp">if (FVoxelSceneProxy* Proxy = static_cast&lt;FVoxelSceneProxy*&gt;(SceneProxy))
+{
+    TSharedPtr&lt;FVoxelMeshData, ESPMode::ThreadSafe&gt; MeshCopy = Mesh;
+    ENQUEUE_RENDER_COMMAND(AddVoxelChunk)(
+        [Proxy, Key, MeshCopy](FRHICommandListImmediate&amp; RHICmdList)
+        {
+            Proxy-&gt;AddChunk_RenderThread(RHICmdList, Key, MeshCopy);
+        });
+}
+</code></pre>
+<hr />
+<h1 id="s49">Interaction Actor</h1>
+<h3 id="s50"><code>AVoxelInteractionActor</code></h3>
+<p><code>UCLASS</code>, a ready-to-use demo driver. Place one in the level and click.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Category</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MaxTraceDistance</code></td>
+<td><code>Voxel Interaction</code></td>
+<td><code>1000.f</code></td>
+<td>Camera line-trace length.</td>
+</tr>
+<tr>
+<td><code>EditRadius</code></td>
+<td><code>Voxel Interaction</code></td>
+<td><code>150.f</code></td>
+<td>Brush radius in cm.</td>
+</tr>
+<tr>
+<td><code>EditCooldown</code></td>
+<td><code>Voxel Interaction</code></td>
+<td><code>0.1f</code></td>
+<td>Minimum seconds between edits, per mouse button.</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>virtual void BeginPlay() override</code></td>
+<td>Caches <code>UGameplayStatics::GetPlayerController(this, 0)</code>.</td>
+</tr>
+<tr>
+<td><code>virtual void Tick(float DeltaTime) override</code></td>
+<td>Polls the left/right mouse buttons and calls <code>HandleMouseClick</code> when the cooldown has elapsed.</td>
+</tr>
+<tr>
+<td><code>void HandleMouseClick(bool bIsAdd)</code></td>
+<td><code>private</code>. Traces from the player viewpoint on <code>ECC_Visibility</code>, ignoring the pawn, finds a <code>UVoxelTerrainComponent</code> on the hit actor, and calls <code>ApplyEdit</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>The edit location is pushed <strong>along the view direction</strong> by <code>max(EditRadius * 0.5, 50)</code> cm from the hit point. That offset is what lets a small brush punch through the surface it just hit instead of doing nothing.</p>
+<p>To drive editing from your own input code, skip this actor entirely and call <code>ApplyEdit</code> — that is the only entry point that matters.</p>
+<hr />
+<h1 id="s51">Module</h1>
+<h2 id="s52"><code>FVoxelTerrainModule</code></h2>
+<p><code>IModuleInterface</code> implementation, registered with <code>IMPLEMENT_MODULE(FVoxelTerrainModule, VoxelTerrain)</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>virtual void StartupModule() override</code></td>
+<td>References <code>sizeof(regularCellClass)</code> so the Transvoxel table TU is pulled into the link.</td>
+</tr>
+<tr>
+<td><code>virtual void ShutdownModule() override</code></td>
+<td>Nothing to release.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="s53">Usage Recipes</h1>
+<h2 id="s54">From a weapon hit</h2>
+<pre><code class="language-cpp">// On the server / in a single-player BlueprintCallable
+FHitResult Hit;
+if (TraceWeapon(Hit))
+{
+    if (UVoxelTerrainComponent* Terrain =
+            Hit.GetActor()-&gt;FindComponentByClass&lt;UVoxelTerrainComponent&gt;())
+    {
+        // carve a crater, then let the collision tick catch up
+        Terrain-&gt;ApplyEdit(Hit.Location, 200.f, false);
+    }
+}
+</code></pre>
+<p><code>ApplyEdit</code> is synchronous, so spamming it every frame will stall the game thread. Rate-limit it the way <code>AVoxelInteractionActor</code> does.</p>
+<h2 id="s55">Custom density function</h2>
+<pre><code class="language-cpp">UCLASS()
+class UMyGenerator : public UVoxelGenerator
+{
+    GENERATED_BODY()
+public:
+    virtual float SampleDensityWithSurface(const FVector&amp; P, float SurfaceZ) const override
+    {
+        // negative = solid
+        return FMath::Sin(P.X * 0.001f) * 300.f + (SurfaceZ - P.Z) * 0.5f;
+    }
+};
+</code></pre>
+<p>Then set <code>Voxel Generator Class = UMyGenerator</code> on the component. <code>BeginPlay</code> will <code>NewObject</code> it for you.</p>
+<h2 id="s56">Reading the mesh on CPU</h2>
+<pre><code class="language-cpp">if (const TSharedPtr&lt;FVoxelMeshData, ESPMode::ThreadSafe&gt;* M =
+        Terrain-&gt;ChunkMeshes.Find(Key))
+{
+    const FVoxelMeshData&amp; Data = **M;
+    const int32 Tris = Data.NumTriangles();
+    const FBox&amp; Box  = Data.Bounds;   // already world-space
+}
+</code></pre>
+<p>Positions are <strong>local to the chunk origin</strong>; add <code>FVector(Key.X, Key.Y, Key.Z) * 6400.f</code> to get world space.</p>
+<h2 id="s57">Disabling collision</h2>
+<p>Set <code>bGenerateCollision = false</code> before <code>BeginPlay</code>, or toggle it at runtime — the next <code>ProcessCollisionQueue</code> tick (≤0.33 s) returns every pooled component.</p></div>
+    <div class="pane" id="pane-zh"><h1 id="s1">API Reference</h1>
+<p>本参考覆盖 <strong>VoxelTerrain</strong> 模块全部公开类型：贯穿管线的数据结构体、CPU 噪声生成器、Transvoxel 网格化器、流式地形组件、自定义场景代理、演示用交互 Actor，以及模块入口。</p>
+<blockquote>
+<p><strong>阅读顺序</strong>：类型从底层数据向上排列。若只想在场景里看到地形，先读<a href="#getting-started">快速开始</a>，再看 <code>UVoxelTerrainComponent</code>。</p>
+</blockquote>
+<h2 id="s2">设计约定</h2>
+<p>三条约定理解之后，下面每个签名都可预测。</p>
+<h3 id="s3">坐标空间</h3>
+<table>
+<thead>
+<tr>
+<th>空间</th>
+<th>单位</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chunk 坐标</td>
+<td>chunk</td>
+<td><code>FChunkKey.X/Y/Z</code> 整型索引；乘以 <code>ChunkSize * VoxelSize</code>（LOD0 为 6400 cm）得到世界单位</td>
+</tr>
+<tr>
+<td>体素（局部）坐标</td>
+<td>体素</td>
+<td>chunk 内采样下标，因 halo 存在，有效范围 <code>-1 … ChunkSize+1</code></td>
+</tr>
+<tr>
+<td>局部网格空间</td>
+<td>cm</td>
+<td>网格化器输出、相对 chunk 原点的顶点位置</td>
+</tr>
+<tr>
+<td>世界空间</td>
+<td>cm</td>
+<td>局部位置 + chunk 世界原点，<strong>GPU 实际收到的就是它</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="s4">权重约定</h3>
+<p>密度存为 <code>FVoxelWeight</code>（<code>int8</code>），范围 <code>[-128, 127]</code>，<strong>负数为实体</strong>（<code>FVoxel::IsSolid()</code>）。网格化器在每条边的零值处插值，因此决定表面的是符号；数值大小只影响顶点在边上的位置。</p>
+<h3 id="s5">线程契约</h3>
+<table>
+<thead>
+<tr>
+<th>成员</th>
+<th>归属线程</th>
+<th>规则</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>组件上的 <code>TMap</code>/<code>TSet</code>（<code>ChunkMeshes</code>、<code>ChunkVoxelData</code>、<code>ChunkVersions</code>、<code>RequestedChunks</code> …）</td>
+<td>游戏线程</td>
+<td>后台任务不得访问</td>
+</tr>
+<tr>
+<td><code>StreamTick</code>、<code>OnChunkGenerated</code>、<code>ApplyEdit</code>、<code>ProcessCollisionQueue</code></td>
+<td>游戏线程</td>
+<td>由核心 Ticker 或蓝图驱动</td>
+</tr>
+<tr>
+<td><code>UVoxelGenerator::GenerateChunk</code>、<code>FTransvoxelMesher::GenerateRegular</code></td>
+<td>任意工作线程</td>
+<td>纯函数，不改动 UObject</td>
+</tr>
+<tr>
+<td><code>AddChunk_RenderThread</code> / <code>RemoveChunk_RenderThread</code></td>
+<td>渲染线程</td>
+<td>必须经 <code>ENQUEUE_RENDER_COMMAND</code> 到达</td>
+</tr>
+<tr>
+<td><code>GlobalNoiseLayers</code> / <code>GlobalNoiseLayers3D</code></td>
+<td><code>BeginPlay</code> 写一次，之后只读</td>
+<td>可并发读</td>
+</tr>
+</tbody>
+</table>
+<p>后台任务只捕获 <code>TWeakObjectPtr</code>，组件或生成器先销毁时任务自动变为空操作；结果通过 <code>AsyncTask(ENamedThreads::GameThread, ...)</code> 送回。</p>
+<hr />
+<h1 id="s6">快速开始</h1>
+<h2 id="s7">1. 添加模块依赖</h2>
+<pre><code class="language-csharp">PublicDependencyModuleNames.AddRange(new string[]
+{
+    &quot;VoxelTerrain&quot;,
+    &quot;ProceduralMeshComponent&quot;,   // 碰撞对象池
+});
+</code></pre>
+<p><code>Transvoxel.h</code> 是纯头文件查找表（Lengyel Transvoxel 表）；模块启动读一次 <code>sizeof(regularCellClass)</code> 只为把表链入，无额外运行时开销。</p>
+<h2 id="s8">2. 把组件挂到 Actor 上</h2>
+<pre><code class="language-cpp">UVoxelTerrainComponent* Terrain = CreateDefaultSubobject&lt;UVoxelTerrainComponent&gt;(TEXT(&quot;Terrain&quot;));
+Terrain-&gt;SetMobility(EComponentMobility::Movable);
+</code></pre>
+<p>在细节面板指定 <strong>Terrain Material</strong>（任意不透明表面材质；为空则用引擎默认材质）。网格提供位置、法线、切线、一组 UV 和顶点色。</p>
+<h2 id="s9">3. 用噪声贴图生成地形</h2>
+<ol>
+<li>准备 <strong>正方形、边长 2 的幂、不压缩</strong> 的贴图（<code>G8</code>/<code>BGRA8</code>/<code>RGBA8</code>，≥4×4），关闭 mipmap 与流送——<code>BeginPlay</code> 在 CPU 上读 mip 0。</li>
+<li>加入 <code>Noise Layers</code>（2D）和/或 <code>Noise Layers 3D</code>（立方 <code>UVolumeTexture</code>）。</li>
+<li>调 <code>Frequency</code> / <code>Amplitude</code>：2D 层决定地表高度，3D 层挖洞穴。</li>
+</ol>
+<pre><code class="language-cpp">FVoxelNoiseLayerInfo Layer;
+Layer.Texture   = LoadObject&lt;UTexture2D&gt;(nullptr, TEXT(&quot;/Game/Noise/T_Continental&quot;));
+Layer.Frequency = 1.0f;
+Layer.Amplitude = 1.0f;
+Layer.Offset    = FVector2D(0.f, 0.f);
+Terrain-&gt;NoiseLayers.Add(Layer);
+</code></pre>
+<h2 id="s10">4. 选定流式半径</h2>
+<p><code>LOD0 Radius XY/Z (Chunks)</code> 单位是 <strong>chunk，不是米</strong>。LOD0 一个 chunk 为 6400 cm，默认 (8, 8, 2) 即水平约 ±512 m、垂直约 ±128 m，共 17×17×5 = 1445 个 chunk。生成开销随半径立方增长，调大前先测 <code>GenerateRegular</code> 耗时。</p>
+<h2 id="s11">5. 挖与填</h2>
+<pre><code class="language-cpp">Terrain-&gt;ApplyEdit(Hit.Location, 150.f, false); // 挖
+Terrain-&gt;ApplyEdit(Hit.Location, 150.f, true);  // 填
+</code></pre>
+<p>或在关卡放一个 <code>AVoxelInteractionActor</code>：<strong>左键挖、右键填</strong>。</p>
+<h2 id="s12">6. 推荐起步参数</h2>
+<table>
+<thead>
+<tr>
+<th>设置</th>
+<th>值</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LOD0 Radius XY (Chunks)</code></td>
+<td>4–8</td>
+<td>1445 个 chunk 已是很大的 CPU 网格量</td>
+</tr>
+<tr>
+<td><code>LOD0 Radius Z (Chunks)</code></td>
+<td>1–2</td>
+<td>地形通常是薄层</td>
+</tr>
+<tr>
+<td><code>Unload Delay</code></td>
+<td>2.0 s</td>
+<td>防止边界来回走时反复加载/卸载</td>
+</tr>
+<tr>
+<td><code>Collision Radius</code></td>
+<td>(1,1,1)</td>
+<td>27 个 PMC，每个都要 cook 碰撞，是流式最贵的一环</td>
+</tr>
+<tr>
+<td><code>bGenerate Collision</code></td>
+<td>原型阶段关掉</td>
+<td>直接从性能剖析里移除碰撞池</td>
+</tr>
+<tr>
+<td><code>Edit Cooldown</code></td>
+<td>0.1 s</td>
+<td><code>ApplyEdit</code> 是同步调用</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="s13">数据类型</h1>
+<h2 id="s14"><code>FVoxel</code></h2>
+<p>密度场的一个采样点（<code>VoxelTypes.h</code>）。</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Weight</code></td>
+<td><code>FVoxelWeight</code>(<code>int8</code>)</td>
+<td>有符号密度：负=实体，正=空气，零=等值面</td>
+</tr>
+<tr>
+<td><code>Material</code></td>
+<td><code>uint8</code></td>
+<td>预留材质 ID，目前<strong>只写不读</strong></td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-cpp">FORCEINLINE bool IsSolid() const;   // Weight &lt; 0
+</code></pre>
+<h2 id="s15"><code>VoxelConfig</code></h2>
+<p>编译期常量，<strong>视为不可变</strong>（改动会让存档与 halo 计算失效）。</p>
+<table>
+<thead>
+<tr>
+<th>常量</th>
+<th>值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ChunkSize</code></td>
+<td><code>64</code></td>
+<td>每 chunk 每轴的 cell 数</td>
+</tr>
+<tr>
+<td><code>ChunkStride</code></td>
+<td><code>65</code></td>
+<td><code>ChunkSize + 1</code>，chunk 内每轴采样点数</td>
+</tr>
+<tr>
+<td><code>PaddedStride</code></td>
+<td><code>67</code></td>
+<td><code>ChunkStride + 2</code>，含 ±1 halo</td>
+</tr>
+<tr>
+<td><code>PaddedOffset</code></td>
+<td><code>1</code></td>
+<td>索引偏移，局部坐标 <code>-1</code> 映射到槽 0</td>
+</tr>
+<tr>
+<td><code>VoxelSize</code></td>
+<td><code>100.f</code></td>
+<td>单个体素的世界尺寸（cm）</td>
+</tr>
+</tbody>
+</table>
+<p>派生值：LOD0 chunk 边长 <strong>6400 cm</strong>；带 halo 体素数 <strong>67³ = 300 763</strong>；地表高度网格 <strong>67² = 4489</strong>。</p>
+<h2 id="s16"><code>FChunkKey</code></h2>
+<p>chunk 标识：<code>int32 X, Y, Z, LOD</code>，提供 <code>operator==</code> 与 <code>GetTypeHash</code>，可直接作 <code>TMap</code>/<code>TSet</code> 键。</p>
+<pre><code class="language-cpp">FChunkKey Key(3, -1, 0, 0);   // LOD 默认 0
+</code></pre>
+<p>LOD N 的 chunk 每轴覆盖 <code>1 &lt;&lt; N</code> 个 LOD0 chunk，世界尺寸为 <code>ChunkSize * VoxelSize * (1 &lt;&lt; N)</code>。当前 <code>StreamTick</code> 只请求 LOD 0，但 LOD 位移计算已就位。</p>
+<p><code>FVoxelEditTask</code> 与 <code>FVoxelModificationMap</code>（<code>TMap&lt;FIntVector, FVoxelWeight&gt;</code>）<strong>目前未使用</strong>——修改记录管线已注释掉。</p>
+<h2 id="s17"><code>FVegetationInstanceData</code></h2>
+<p>植被散布的输出记录：<code>FVector Location</code>（世界坐标）、<code>FRotator Rotation</code>（随机 yaw）、<code>FVector Scale</code>（均匀缩放）、<code>int32 PlantId</code>（<code>VegetationConfigs</code> 下标）。</p>
+<hr />
+<h2 id="s18"><code>FVoxelChunkData</code></h2>
+<p>一个 chunk 的 CPU 存储：带 halo 的密度立方 + 每列地表高度。</p>
+<table>
+<thead>
+<tr>
+<th>成员</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TArray&lt;FVoxel&gt; Voxels</code></td>
+<td><code>PaddedStride³</code> 个采样，构造时清零</td>
+</tr>
+<tr>
+<td><code>TArray&lt;float&gt; SurfaceGrid</code></td>
+<td><code>PaddedStride²</code> 个高度，构造时<strong>不</strong>初始化，读取前必须由生成器写入</td>
+</tr>
+<tr>
+<td><code>int32 Index(x, y, z)</code></td>
+<td>一维下标：<code>((x+1)*N + (y+1))*N + (z+1)</code></td>
+</tr>
+<tr>
+<td><code>FVoxel&amp; At(x, y, z)</code> / const 版</td>
+<td>访问体素，有效范围 <code>-1 … ChunkSize+1</code></td>
+</tr>
+<tr>
+<td><code>float&amp; SurfaceAt(ix, iy)</code> / const 版</td>
+<td>访问地表高度，下标为 <code>ix * PaddedStride + iy</code></td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-cpp">FVoxelChunkData Chunk;
+Chunk.At(0, 0, 0).Weight = -127;     // 实体
+Chunk.SurfaceAt(4, 9) = 1234.5f;
+</code></pre>
+<p><code>SurfaceAt</code> <strong>不做越界检查</strong>，请传带 halo 的下标（<code>0 … 66</code>）。</p>
+<hr />
+<h2 id="s19"><code>FVoxelMeshData</code></h2>
+<p>网格化器、游戏线程、渲染线程之间的交换结构。</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Positions</code></td>
+<td><code>TArray&lt;FVector3f&gt;</code></td>
+<td><strong>局部空间</strong>位置（已减 chunk 原点）</td>
+</tr>
+<tr>
+<td><code>Normals</code></td>
+<td><code>TArray&lt;FVector3f&gt;</code></td>
+<td>密度中心差分梯度</td>
+</tr>
+<tr>
+<td><code>UVs</code></td>
+<td><code>TArray&lt;FVector2f&gt;</code></td>
+<td>平面 <code>XY / 400.f</code>，由组件在网格化后填充</td>
+</tr>
+<tr>
+<td><code>Colors</code></td>
+<td><code>TArray&lt;FColor&gt;</code></td>
+<td>按群系与深度着色的顶点色</td>
+</tr>
+<tr>
+<td><code>Indices</code></td>
+<td><code>TArray&lt;uint32&gt;</code></td>
+<td>三角形列表，固定 32 位</td>
+</tr>
+<tr>
+<td><code>Bounds</code></td>
+<td><code>FBox</code></td>
+<td>世界空间包围盒，后台预计算</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>void Reset()</code></td>
+<td>清空所有数组（保留容量）并重置 <code>Bounds</code></td>
+</tr>
+<tr>
+<td><code>int32 NumTriangles() const</code></td>
+<td><code>Indices.Num() / 3</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>SurfaceHeights</code> 及其 UV1 通道已注释停用，顶点工厂只绑定<strong>一组</strong> UV。<code>ApplyEdit</code> 推渲染线程时做<strong>深拷贝</strong>，因为 CPU 侧那份还要继续编辑。</p>
+<hr />
+<h1 id="s20">噪声生成</h1>
+<h2 id="s21"><code>FVoxelGeneratorSettings</code></h2>
+<p><code>USTRUCT(BlueprintType)</code>，分类 <code>Voxel</code>。</p>
+<table>
+<thead>
+<tr>
+<th>属性</th>
+<th>类型</th>
+<th>默认</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BaseWorldZ</code></td>
+<td><code>float</code></td>
+<td><code>1600.f</code></td>
+<td>噪声为 0 时的地表 Z</td>
+</tr>
+<tr>
+<td><code>HillHeight</code></td>
+<td><code>float</code></td>
+<td><code>2000.f</code></td>
+<td>地表起伏振幅</td>
+</tr>
+<tr>
+<td><code>NoiseFreq</code></td>
+<td><code>float</code></td>
+<td><code>0.00035f</code></td>
+<td>基础空间频率（cm⁻¹），地形与洞穴共用</td>
+</tr>
+<tr>
+<td><code>Octaves</code></td>
+<td><code>int32</code></td>
+<td><code>5</code></td>
+<td>FBM 层数</td>
+</tr>
+<tr>
+<td><code>Lacunarity</code></td>
+<td><code>float</code></td>
+<td><code>2.0f</code></td>
+<td>每层频率倍率</td>
+</tr>
+<tr>
+<td><code>Persistence</code></td>
+<td><code>float</code></td>
+<td><code>0.5f</code></td>
+<td>每层振幅倍率</td>
+</tr>
+<tr>
+<td><code>Seed</code></td>
+<td><code>int32</code></td>
+<td><code>1337</code></td>
+<td>偏移采样位置</td>
+</tr>
+<tr>
+<td><code>CaveStrength</code></td>
+<td><code>float</code></td>
+<td><code>600.f</code></td>
+<td><strong>已声明但当前未使用</strong></td>
+</tr>
+<tr>
+<td><code>CaveThreshold</code></td>
+<td><code>float</code></td>
+<td><code>0.15f</code></td>
+<td>洞穴遮罩 smoothstep 中心</td>
+</tr>
+</tbody>
+</table>
+<p>某列地表高度 = <code>BaseWorldZ + TexFbm2D(XY) * HillHeight</code>。</p>
+<h2 id="s22"><code>UVoxelGenerator</code></h2>
+<p>可插拔密度提供者，通过组件的 <code>VoxelGeneratorClass</code> 替换实现。</p>
+<h3 id="s23">嵌套数据结构</h3>
+<ul>
+<li><strong><code>FNoiseLayerData</code></strong>：一层 2D 贴图噪声 —— <code>Data</code>(共享 float 数组)、<code>Size</code>、<code>Frequency</code>、<code>Amplitude</code>、<code>Offset</code>(FVector2D)。</li>
+<li><strong><code>FNoiseLayer3DData</code></strong>：一层 3D 体积噪声，字段相同，<code>Offset</code> 为 <code>FVector</code>。</li>
+</ul>
+<h3 id="s24">静态成员</h3>
+<table>
+<thead>
+<tr>
+<th>成员</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GlobalNoiseLayers</code></td>
+<td><code>LoadNoiseTextureData()</code> 在 <code>BeginPlay</code> 发布一次；工作线程只读，<strong>整体替换、勿就地修改</strong></td>
+</tr>
+<tr>
+<td><code>GlobalNoiseLayers3D</code></td>
+<td>同上，3D 层</td>
+</tr>
+</tbody>
+</table>
+<p><code>BeginPlay</code> 之前两者为空，生成器自动回退到解析式 Perlin。</p>
+<h3 id="s25">实例 API</h3>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GenerateChunk(ChunkX, ChunkY, ChunkZ, LOD, OutChunk)</code></td>
+<td>填满含 halo 的整块网格并写入每列地表高度；<strong>纯函数</strong>，任意线程可调用</td>
+</tr>
+<tr>
+<td><code>SampleDensityWithSurface(WorldPos, SurfaceZ)</code></td>
+<td>有符号密度（cm）。地表之上为 <code>SurfaceZ - Z</code>，再用两次 3D 贴图采样以 <code>SmoothMax</code> 挖洞</td>
+</tr>
+<tr>
+<td><code>Fbm(P)</code></td>
+<td>归一化 3D Perlin FBM（带 seed 偏移）</td>
+</tr>
+<tr>
+<td><code>Fbm2D(P)</code></td>
+<td>归一化 2D Perlin FBM</td>
+</tr>
+<tr>
+<td><code>TexFbm2D(WorldXY)</code></td>
+<td>按振幅加权混合所有 2D 层；无层时回退 <code>Fbm2D(WorldXY * NoiseFreq)</code></td>
+</tr>
+<tr>
+<td><code>TexFbm3D(WorldXYZ)</code></td>
+<td>同上，3D 层；回退 <code>Fbm</code></td>
+</tr>
+</tbody>
+</table>
+<p>全部为 <code>virtual</code>，重写 <code>SampleDensityWithSurface</code> 是改变世界形态的推荐方式。</p>
+<h3 id="s26"><code>VOXEL_USE_NOISE_TEXTURE</code></h3>
+<p><code>VoxelGenerator.h</code> 顶部定义为 <code>1</code>；改为 <code>0</code> 可整体编译掉贴图路径。</p>
+<hr />
+<h1 id="s27">网格化</h1>
+<h2 id="s28"><code>FTransvoxelMesher</code></h2>
+<p>无状态静态工具类。</p>
+<h3 id="s29"><code>GenerateRegular</code></h3>
+<pre><code class="language-cpp">static void GenerateRegular(const FVoxelChunkData&amp; Chunk, float VoxelSize,
+    int32 LOD, const FVector3f&amp; ChunkWorldOrigin, FVoxelMeshData&amp; Out);
+</code></pre>
+<p>对 chunk 全部 64³ 个 cell 执行改良 Marching Cubes（Transvoxel 规则单元部分）。</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Chunk</code></td>
+<td>必须已完整生成（含 halo）</td>
+</tr>
+<tr>
+<td><code>VoxelSize</code></td>
+<td>传 <code>VoxelConfig::VoxelSize</code>；<strong>不要</strong>自行乘 <code>1 &lt;&lt; LOD</code></td>
+</tr>
+<tr>
+<td><code>LOD</code></td>
+<td>当前只参与 <code>WorldStep</code> 记录，顶点间距仍为 <code>VoxelSize</code></td>
+</tr>
+<tr>
+<td><code>ChunkWorldOrigin</code></td>
+<td>加到每个局部位置上</td>
+</tr>
+<tr>
+<td><code>Out</code></td>
+<td>入口处 <code>Reset()</code>，随后填充</td>
+</tr>
+</tbody>
+</table>
+<p>实现要点：</p>
+<ul>
+<li><code>thread_local</code> 边缓存（65³×3）跨共享面复用顶点，相邻 cell 无缝焊接；每线程只分配一次。</li>
+<li>Case 位序按 Transvoxel 角点：bit0=(0,0,0)、bit1=(1,0,0) … bit7=(1,1,1)；<code>W = 0</code> 视为<strong>非实体</strong>。</li>
+<li>法线为中心差分，梯度为零时回退 <code>(0,0,1)</code>。</li>
+<li>三角形绕序 <code>I0, I2, I1</code> 匹配 UE 正面判定。</li>
+<li><strong>不写</strong> <code>Out.Bounds</code>，由组件在施加世界偏移后计算。</li>
+</ul>
+<h3 id="s30"><code>GenerateRegularPartial</code></h3>
+<pre><code class="language-cpp">static void GenerateRegularPartial(const FVoxelChunkData&amp; Chunk, float VoxelSize,
+    const FVector3f&amp; ChunkWorldOrigin, const FIntVector&amp; CellMin,
+    const FIntVector&amp; CellMax, FVoxelMeshData&amp; InOut);
+</code></pre>
+<p>编辑用增量重建：<strong>不重新网格化</strong>，而是就地过滤已有网格：</p>
+<ol>
+<li>三角形最小角 cell 落在 <code>[CellMin, CellMax]</code> 内的丢弃；</li>
+<li>存活顶点紧凑重排，索引经新旧映射表改写；</li>
+<li>存活顶点的法线、UV、颜色原样保留。</li>
+</ol>
+<p><code>CellMin/Max</code> 为 <strong>chunk 局部 cell 坐标</strong>，闭区间，须在 <code>0 … ChunkSize-1</code> 内。范围与真实脏区不一致会留下接缝。调用后 <code>InOut.Bounds</code> 失效，调用方须重算（<code>ApplyEdit</code> 会做）。</p>
+<hr />
+<h1 id="s31">地形组件</h1>
+<h2 id="s32"><code>FVoxelNoiseLayerInfo</code></h2>
+<p><code>USTRUCT</code>，分类 <code>Noise</code>：<code>Texture</code>(UTexture2D*)、<code>Frequency</code>(1.0)、<code>Amplitude</code>(1.0)、<code>Offset</code>(FVector2D)。贴图须正方形、≥4×4，支持 G8/BGRA8/RGBA8。</p>
+<h2 id="s33"><code>FVoxelNoiseLayer3DInfo</code></h2>
+<p>分类 <code>Noise3D</code>：<code>Texture</code>(UVolumeTexture*，立方、≥4³)、<code>Frequency</code>、<code>Amplitude</code>、<code>Offset</code>(FVector)。</p>
+<h2 id="s34"><code>FVoxelVegetationConfig</code></h2>
+<p><code>USTRUCT</code>，分类 <code>Vegetation</code>。</p>
+<table>
+<thead>
+<tr>
+<th>属性</th>
+<th>默认</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MinID</code> / <code>MaxID</code></td>
+<td><code>0</code> / <code>130</code></td>
+<td>接受的群系 ID 区间；多配置可共用区间混种</td>
+</tr>
+<tr>
+<td><code>Mesh</code></td>
+<td><code>nullptr</code></td>
+<td>每个实例使用的静态网格</td>
+</tr>
+<tr>
+<td><code>Density</code></td>
+<td><code>0.05</code></td>
+<td>候选顶点生成实例的概率</td>
+</tr>
+<tr>
+<td><code>PlaceRadius</code></td>
+<td><code>100</code></td>
+<td>防重叠半径（200 单位空间哈希网格）</td>
+</tr>
+<tr>
+<td><code>MinScale</code> / <code>MaxScale</code></td>
+<td><code>0.8</code> / <code>1.2</code></td>
+<td>每实例均匀缩放范围</td>
+</tr>
+</tbody>
+</table>
+<h2 id="s35"><code>UVoxelTerrainComponent</code></h2>
+<p><code>UCLASS(ClassGroup = Voxel, Blueprintable, BlueprintSpawnableComponent)</code>，继承 <code>UPrimitiveComponent</code>。</p>
+<h3 id="s36">配置属性</h3>
+<table>
+<thead>
+<tr>
+<th>属性</th>
+<th>分类</th>
+<th>默认</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TerrainMaterial</code></td>
+<td>Voxel</td>
+<td><code>nullptr</code></td>
+<td>所有 chunk 共用材质，为空用默认表面材质</td>
+</tr>
+<tr>
+<td>Voxel|LOD</td>
+<td><code>8</code></td>
+<td>XY 加载半径（LOD0 chunk 数，方形）</td>
+<td></td>
+</tr>
+<tr>
+<td>Voxel|LOD</td>
+<td><code>2</code></td>
+<td>Z 加载半径</td>
+<td></td>
+</tr>
+<tr>
+<td><code>UnloadDelay</code></td>
+<td>Voxel</td>
+<td><code>2.0</code></td>
+<td>离开卸载半径后需保持多久才回收（秒）</td>
+</tr>
+<tr>
+<td><code>bGenerateCollision</code></td>
+<td>Voxel</td>
+<td><code>true</code></td>
+<td>碰撞池总开关，关闭后下个碰撞 Tick 全释放</td>
+</tr>
+<tr>
+<td>Voxel|Collision</td>
+<td><code>(1,1,1)</code></td>
+<td>玩家周围可碰撞盒半长（chunk）</td>
+<td></td>
+</tr>
+<tr>
+<td>Voxel|Noise</td>
+<td>–</td>
+<td>2D 噪声层，仅 BeginPlay 采样一次</td>
+<td></td>
+</tr>
+<tr>
+<td>Voxel|Noise3D</td>
+<td>–</td>
+<td>3D 噪声层</td>
+<td></td>
+</tr>
+<tr>
+<td>Voxel|Vegetation</td>
+<td><code>nullptr</code></td>
+<td>R 通道编码群系 ID</td>
+<td></td>
+</tr>
+<tr>
+<td>Voxel|Vegetation</td>
+<td>–</td>
+<td>空数组关闭整套植被</td>
+<td></td>
+</tr>
+<tr>
+<td><code>VoxelGeneratorClass</code></td>
+<td>Voxel</td>
+<td>–</td>
+<td>指定生成器子类</td>
+</tr>
+</tbody>
+</table>
+<h3 id="s37">运行时状态（仅限游戏线程）</h3>
+<table>
+<thead>
+<tr>
+<th>成员</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ChunkMeshes</code></td>
+<td>已驻留并网格化的 chunk（<code>TMap&lt;FChunkKey, TSharedPtr&lt;FVoxelMeshData, ThreadSafe&gt;&gt;</code>）</td>
+</tr>
+<tr>
+<td><code>ChunkVoxelData</code></td>
+<td>密度缓存，供 <code>ApplyEdit</code> 读写原始权重</td>
+</tr>
+<tr>
+<td><code>ChunkLastActiveTime</code></td>
+<td>上次加载/编辑时间，驱动 <code>UnloadDelay</code></td>
+</tr>
+<tr>
+<td><code>ChunkVersions</code></td>
+<td>每次编辑自增，丢弃过期异步结果</td>
+</tr>
+<tr>
+<td><code>RequestedChunks</code></td>
+<td>在途请求的去重集合</td>
+</tr>
+<tr>
+<td><code>LocalBounds</code></td>
+<td>所有驻留 chunk 包围盒并集</td>
+</tr>
+</tbody>
+</table>
+<h3 id="s38">蓝图可调用 / 可重写</h3>
+<p><strong><code>ApplyEdit(const FVector&amp; WorldPos, float Radius, bool bIsAdd)</code></strong> — <code>BlueprintCallable, Voxel</code></p>
+<p>球形笔刷写入所有相交 chunk（含 26 邻居的一体素 halo）的缓存密度，然后<strong>同步</strong>重建受影响 chunk、推入场景代理、刷新碰撞。<code>bIsAdd</code> 为 true 增材，false 挖除。</p>
+<ul>
+<li>仅游戏线程，<strong>阻塞</strong>调用，半径务必克制；</li>
+<li>未驻留 chunk 静默跳过；</li>
+<li>受影响 chunk 先自增版本，编辑期间落地的异步结果被丢弃；</li>
+<li>推渲染线程的是深拷贝。</li>
+</ul>
+<p><strong><code>StreamTick()</code></strong> — <code>BlueprintNativeEvent, Voxel&amp;#124;Streaming</code>，可在蓝图重写并调用 Parent 保留默认行为。</p>
+<p>约 0.16 s 核心 Ticker 驱动（非逐帧 Tick），每次：</p>
+<ol>
+<li>枚举玩家周围 <code>(2·XY+1)×(2·Z+1)</code> 的 chunk 盒，已驻留的刷新时间戳；</li>
+<li>其余候选按距离平方排序，每 Tick 最多派发 <code>MaxRequestsPerTick</code> 个异步任务：<strong>8</strong>（默认）/ <strong>16</strong>（速度 &gt;20 m/s）/ <strong>24</strong>（&gt;~31.6 m/s）；</li>
+<li>卸载超出 <code>Radius + 1</code> 且空闲超过 <code>UnloadDelay</code> 的 chunk（网格、缓存、时间戳、版本、碰撞、RT 资源全部释放），并从幸存 chunk <strong>全量重建</strong> <code>LocalBounds</code>。</li>
+</ol>
+<h3 id="s39">组件重写</h3>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CreateSceneProxy()</code></td>
+<td><code>new FVoxelSceneProxy(this, TerrainMaterial)</code></td>
+</tr>
+<tr>
+<td><code>CalcBounds(LocalToWorld)</code></td>
+<td>返回 <code>LocalBounds</code>；无 chunk 时返回 ±100 000 cm 大盒，避免首块到达前被裁剪</td>
+</tr>
+<tr>
+<td><code>GetUsedMaterials(Out, bDebug)</code></td>
+<td>加入 <code>TerrainMaterial</code> 或默认材质</td>
+</tr>
+<tr>
+<td><code>BeginPlay()</code></td>
+<td>创建生成器、确保材质完成、<code>InitBiomeTexture()</code>、<code>LoadNoiseTextureData()</code>、预热 <strong>256</strong> 个碰撞组件与 <strong>256</strong> 个 HISM、各 Map 预留 1024、安装两个 Ticker</td>
+</tr>
+<tr>
+<td><code>EndPlay(Reason)</code></td>
+<td>移除两个 Ticker，<code>ClearAllCollisions()</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="s40">坐标转换助手</h3>
+<pre><code class="language-cpp">FIntVector WorldToBaseChunk(const FVector&amp; WorldPos) const;
+</code></pre>
+<p>以 <code>ChunkSize * VoxelSize</code>（6400）向下取整除法，负坐标亦正确。</p>
+<h3 id="s41">异步管线</h3>
+<p><strong><code>SpawnChunkAsyncTask(Key, CurrentVersion)</code></strong> — 派发到线程池。工作线程依次：<code>GenerateChunk</code> → <code>GenerateRegular</code> → 加世界原点、按 <code>UVScale = 400.f</code> 算平面 UV、累世界 <code>Bounds</code> → 体素数据移入共享指针 → <code>AsyncTask</code> 回游戏线程。捕获全为弱指针。</p>
+<p><strong><code>OnChunkGenerated(Key, Mesh, VoxelData, Version)</code></strong> — 游戏线程回调：清除 <code>RequestedChunks</code>；<strong>版本号不匹配则丢弃</strong>（编辑同步重建胜出）；存网格与缓存、刷新时间戳、合并 <code>LocalBounds</code>；入队 <code>AddChunk_RenderThread</code>。方法为 public，可自行注入 chunk，但须遵守版本检查。</p>
+<h3 id="s42">碰撞对象池</h3>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PrewarmCollisionPool(PoolSize)</code></td>
+<td>创建 <code>PoolSize</code> 个隐藏 PMC（<code>RF_Transient</code>、异步 cooking、复杂当简单碰撞、<code>ECC_WorldStatic</code>、Block All、无 Overlap 事件），初始无碰撞</td>
+</tr>
+<tr>
+<td><code>AcquireCollisionComponent()</code></td>
+<td>弹出一个并启用 <code>QueryAndPhysics</code>；池空返回 <code>nullptr</code></td>
+</tr>
+<tr>
+<td><code>ReturnCollisionComponent(PMC)</code></td>
+<td>关碰撞、清截面、回池</td>
+</tr>
+<tr>
+<td><code>ProcessCollisionQueue()</code></td>
+<td>~0.33 s Ticker：先回收超出 <code>CollisionRadius</code> 的，再为半径内每个已驻留 chunk 建碰撞；编辑不走这里</td>
+</tr>
+<tr>
+<td><code>RemoveCollisionForChunk(Key)</code></td>
+<td>归还单 chunk 的碰撞代理</td>
+</tr>
+<tr>
+<td><code>ClearAllCollisions()</code></td>
+<td>销毁全部在用与池内组件，<code>EndPlay</code> 调用</td>
+</tr>
+</tbody>
+</table>
+<h3 id="s43">噪声贴图加载</h3>
+<p><strong><code>LoadNoiseTextureData()</code></strong> — 把贴图读成线性 float 数组发布到生成器全局层。</p>
+<ul>
+<li>编辑器路径读 <code>Source.GetMipImage</code>；打包路径读平台 mip 0，仅 <code>PF_G8</code>/<code>PF_B8G8R8A8</code>/<code>PF_R8G8B8A8</code>；</li>
+<li>sRGB 自动线性化，两条路径结果一致；</li>
+<li>贴图须正方形（3D 为立方）、≥4×4，且 CPU 可读（关流送、关压缩）；运行时改动需重启组件生效。</li>
+</ul>
+<h3 id="s44">植被（均为 private）</h3>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>InitBiomeTexture()</code></td>
+<td>把 BiomeTexture R 通道归一化读入 <code>CachedBiomeData</code>（仅打包路径）</td>
+</tr>
+<tr>
+<td><code>DispatchVegetationTask(Key, Mesh)</code></td>
+<td>贴图/缓存/配置任一为空即返回；线程池计算。<strong>游戏线程回填 HISM 的回调目前为空，实际尚不生成实例</strong></td>
+</tr>
+<tr>
+<td><code>CalculateVegetationForChunk(Mesh, Key, LocalData, LocalSize, WorldSize, Configs)</code></td>
+<td>纯计算：按法线朝上筛选 → 双线性采样群系图 → 哈希密度判定 → 按 <code>PlaceRadius</code> 排序 + 200 单位空间哈希去重叠 → 随机缩放与 yaw；<code>PlantId</code> 即配置下标</td>
+</tr>
+</tbody>
+</table>
+<p>HISM 池：<code>PrewarmHISMPool</code>、<code>AcquireHISM</code>（池空兜底新建，永不失败）、<code>ReturnHISM</code>；池数组为 <code>UPROPERTY</code>，不被 GC。</p>
+<hr />
+<h1 id="s45">场景代理</h1>
+<h2 id="s46"><code>FVoxelSceneProxy</code></h2>
+<p>每组件一个，<strong>每个 chunk 独立 VB/IB/VF</strong>，可单独增删。</p>
+<h3 id="s47"><code>FChunkRender</code></h3>
+<p><code>PositionVB</code>、<code>StaticVB</code>（切线+UV0）、<code>ColorVB</code>、<code>IB</code>（32 位）、<code>VertexFactory</code>（FeatureLevel + <code>"FVoxelChunkVF"</code>）、<code>Bounds</code>、<code>bReady</code>。</p>
+<h3 id="s48">公开接口</h3>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>线程</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>构造函数</td>
+<td>游戏</td>
+<td>可受光、投动态阴影、双面阴影；无静态阴影；材质为空回退默认</td>
+</tr>
+<tr>
+<td><code>GetTypeHash()</code></td>
+<td>任意</td>
+<td>按类稳定哈希</td>
+</tr>
+<tr>
+<td><code>CreateRenderThreadResources()</code></td>
+<td>渲染</td>
+<td>空实现（资源按 chunk）</td>
+</tr>
+<tr>
+<td><code>DestroyRenderThreadResources()</code></td>
+<td>渲染</td>
+<td>释放全部 chunk</td>
+</tr>
+<tr>
+<td><code>AddChunk_RenderThread(RHICmdList, Key, Mesh)</code></td>
+<td><strong>仅渲染线程</strong></td>
+<td>建 GPU 缓冲；Key 已存在先释放；空网格走删除分支；切线 <code>Cross(Z, N)</code>，退化回退 <code>(1,0,0)</code>；Bounds 无效则放宽到 <code>HALF_WORLD_MAX</code></td>
+</tr>
+<tr>
+<td><code>RemoveChunk_RenderThread(RHICmdList, Key)</code></td>
+<td><strong>仅渲染线程</strong></td>
+<td>释放单 chunk</td>
+</tr>
+<tr>
+<td><code>GetDynamicMeshElements(...)</code></td>
+<td>渲染</td>
+<td>每 chunk 每可见视图一个 <code>FMeshBatch</code>；阴影通道用阴影视锥剔除，否则视图视锥；<code>SDPG_World</code></td>
+</tr>
+<tr>
+<td><code>GetViewRelevance(View)</code></td>
+<td>渲染</td>
+<td>动态、不透明、可绘制+投影；非静态相关（全动态光照）</td>
+</tr>
+<tr>
+<td><code>GetMemoryFootprint()</code></td>
+<td>任意</td>
+<td>汇总缓冲体积（StaticVB 按 32 B/顶点）</td>
+</tr>
+</tbody>
+</table>
+<p><code>ChunkRenders</code> 只在渲染线程访问，<strong>故意不加锁</strong>。</p>
+<pre><code class="language-cpp">if (FVoxelSceneProxy* Proxy = static_cast&lt;FVoxelSceneProxy*&gt;(SceneProxy))
+{
+    TSharedPtr&lt;FVoxelMeshData, ESPMode::ThreadSafe&gt; MeshCopy = Mesh;
+    ENQUEUE_RENDER_COMMAND(AddVoxelChunk)(
+        [Proxy, Key, MeshCopy](FRHICommandListImmediate&amp; RHICmdList)
+        { Proxy-&gt;AddChunk_RenderThread(RHICmdList, Key, MeshCopy); });
+}
+</code></pre>
+<hr />
+<h1 id="s49">交互 Actor</h1>
+<h3 id="s50"><code>AVoxelInteractionActor</code></h3>
+<p>演示用，放进关卡即可点击。</p>
+<table>
+<thead>
+<tr>
+<th>属性</th>
+<th>默认</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MaxTraceDistance</code></td>
+<td><code>1000.f</code></td>
+<td>视线检测距离</td>
+</tr>
+<tr>
+<td><code>EditRadius</code></td>
+<td><code>150.f</code></td>
+<td>笔刷半径（cm）</td>
+</tr>
+<tr>
+<td><code>EditCooldown</code></td>
+<td><code>0.1f</code></td>
+<td>左右键各自的最小间隔（秒）</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BeginPlay()</code></td>
+<td>缓存 PlayerController 0</td>
+</tr>
+<tr>
+<td><code>Tick(DeltaTime)</code></td>
+<td>轮询左右键，冷却结束触发</td>
+</tr>
+<tr>
+<td><code>HandleMouseClick(bIsAdd)</code></td>
+<td>private；以 <code>ECC_Visibility</code> 从视角检测，忽略 Pawn，在命中 Actor 上找组件并 <code>ApplyEdit</code></td>
+</tr>
+</tbody>
+</table>
+<p>编辑点从命中位置沿视线前推 <code>max(EditRadius * 0.5, 50)</code> cm，使小笔刷能穿透刚命中的表面。自定义输入直接调 <code>ApplyEdit</code> 即可，无需此类。</p>
+<hr />
+<h1 id="s51">模块</h1>
+<h2 id="s52"><code>FVoxelTerrainModule</code></h2>
+<p><code>IModuleInterface</code>，<code>IMPLEMENT_MODULE(FVoxelTerrainModule, VoxelTerrain)</code>。</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>StartupModule()</code></td>
+<td>引用 <code>sizeof(regularCellClass)</code>，确保 Transvoxel 表被链入</td>
+</tr>
+<tr>
+<td><code>ShutdownModule()</code></td>
+<td>无操作</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="s53">典型用法</h1>
+<h2 id="s54">从武器命中点变形地形</h2>
+<pre><code class="language-cpp">FHitResult Hit;
+if (TraceWeapon(Hit))
+{
+    if (UVoxelTerrainComponent* Terrain =
+            Hit.GetActor()-&gt;FindComponentByClass&lt;UVoxelTerrainComponent&gt;())
+    {
+        Terrain-&gt;ApplyEdit(Hit.Location, 200.f, false); // 弹坑
+    }
+}
+</code></pre>
+<p><code>ApplyEdit</code> 同步阻塞，务必限频。</p>
+<h2 id="s55">替换为自定义密度函数</h2>
+<pre><code class="language-cpp">UCLASS()
+class UMyGenerator : public UVoxelGenerator
+{
+    GENERATED_BODY()
+public:
+    virtual float SampleDensityWithSurface(const FVector&amp; P, float SurfaceZ) const override
+    {
+        return FMath::Sin(P.X * 0.001f) * 300.f + (SurfaceZ - P.Z) * 0.5f; // 负=实体
+    }
+};
+</code></pre>
+<p>组件上设 <code>Voxel Generator Class = UMyGenerator</code> 即可。</p>
+<h2 id="s56">在 CPU 侧读取网格</h2>
+<pre><code class="language-cpp">if (const auto* M = Terrain-&gt;ChunkMeshes.Find(Key))
+{
+    const FVoxelMeshData&amp; Data = **M;
+    const int32 Tris = Data.NumTriangles();
+    const FBox&amp; Box  = Data.Bounds;   // 已是世界空间
+}
+</code></pre>
+<p>顶点为 chunk 局部坐标，加 <code>FVector(Key.X, Key.Y, Key.Z) * 6400.f</code> 得世界坐标。</p>
+<h2 id="s57">完全关闭碰撞</h2>
+<p><code>BeginPlay</code> 前置 <code>bGenerateCollision = false</code>，或运行时切换——≤0.33 s 内 <code>ProcessCollisionQueue</code> 回收全部池组件。</p>
+<pre><code class="language-cpp">if (FVoxelSceneProxy* Proxy = static_cast&lt;FVoxelSceneProxy*&gt;(SceneProxy))
+{
+    TSharedPtr&lt;FVoxelMeshData, ESPMode::ThreadSafe&gt; MeshCopy = Mesh;
+    ENQUEUE_RENDER_COMMAND(AddVoxelChunk)(
+        [Proxy, Key, MeshCopy](FRHICommandListImmediate&amp; RHICmdList)
+        { Proxy-&gt;AddChunk_RenderThread(RHICmdList, Key, MeshCopy); });
+}
+</code></pre>
+<p>⚠️ 直接调用 <code>AddChunk_RenderThread</code> / <code>RemoveChunk_RenderThread</code> 属于未定义行为——必须像上面这样经渲染命令入队。</p></div>
+  </main>
+</div>
+<footer class="foot">
+  <strong>VoxelTerrain API Reference</strong> · English (default) / 简体中文<br>
+  Generated from the module's public headers and implementation. API-only: usage essentials are covered in
+  <a href="#getting-started">Getting Started</a> / <a href="#getting-started">快速开始</a>.
+</footer>
+<script>
+const IDX = [{"id": "s1", "en": "API Reference", "zh": "API Reference", "bodyEn": "API Reference This reference covers every public type exposed by the VoxelTerrain module: the data structs that flow through the pipeline, the CPU noise generator, the Transvoxel mesher, the streaming terrain component, the custom scene proxy, the demo interaction actor and the module bootstrap. Reading guide. Types are listed from low-level data upwards. If you only want to get terrain on screen, read Getting Started first, then UVoxelTerrainComponent .", "bodyZh": "API Reference 本参考覆盖 VoxelTerrain 模块全部公开类型：贯穿管线的数据结构体、CPU 噪声生成器、Transvoxel 网格化器、流式地形组件、自定义场景代理、演示用交互 Actor，以及模块入口。 阅读顺序 ：类型从底层数据向上排列。若只想在场景里看到地形，先读 快速开始 ，再看 UVoxelTerrainComponent 。"}, {"id": "s2", "en": "Design Conventions", "zh": "设计约定", "bodyEn": "Design Conventions The whole module is built on three conventions. Understanding them makes every signature below predictable.", "bodyZh": "设计约定 三条约定理解之后，下面每个签名都可预测。"}, {"id": "s3", "en": "Coordinate spaces", "zh": "坐标空间", "bodyEn": "Coordinate spaces Space Unit Meaning Chunk coordinate chunk FChunkKey.X/Y/Z , integer chunk index. Multiply by ChunkSize * VoxelSize (6400 cm at LOD0) to get world units. Voxel (local) coordinate voxel Integer sample index inside a chunk. Valid range is -1 … ChunkSize+1 because of the halo. Local mesh space cm Vertex positions produced by the mesher, relative to the chunk origin. World space cm Local mesh space plus the chunk world origin. This is what the GPU receives.", "bodyZh": "坐标空间 空间 单位 含义 Chunk 坐标 chunk FChunkKey.X/Y/Z 整型索引；乘以 ChunkSize * VoxelSize （LOD0 为 6400 cm）得到世界单位 体素（局部）坐标 体素 chunk 内采样下标，因 halo 存在，有效范围 -1 … ChunkSize+1 局部网格空间 cm 网格化器输出、相对 chunk 原点的顶点位置 世界空间 cm 局部位置 + chunk 世界原点， GPU 实际收到的就是它"}, {"id": "s4", "en": "Weight convention", "zh": "权重约定", "bodyEn": "Weight convention Density is stored as FVoxelWeight ( int8 ) in the range [-128, 127] . A voxel is solid when its weight is negative ( FVoxel::IsSolid() ). The mesher interpolates the zero crossing on every edge, so the sign — not the magnitude — decides the surface. Magnitude only controls where along the edge the vertex lands.", "bodyZh": "权重约定 密度存为 FVoxelWeight （ int8 ），范围 [-128, 127] ， 负数为实体 （ FVoxel::IsSolid() ）。网格化器在每条边的零值处插值，因此决定表面的是符号；数值大小只影响顶点在边上的位置。"}, {"id": "s5", "en": "Threading contract", "zh": "线程契约", "bodyEn": "Threading contract Member family Owning thread Rule Every TMap / TSet on the component ( ChunkMeshes , ChunkVoxelData , ChunkVersions , RequestedChunks , …) Game thread Never touch from a worker task. UVoxelTerrainComponent::StreamTick , OnChunkGenerated , ApplyEdit , ProcessCollisionQueue Game thread Driven by core tickers or Blueprint. UVoxelGenerator::GenerateChunk , FTransvoxelMesher::GenerateRegular Any worker thread Pure functions, no UObject mutation. FVoxelSceneProxy::AddChunk_RenderThread / RemoveChunk_RenderThread Render thread Must be reached through ENQUEUE_RENDER_COMMAND . UVoxelGenerator::GlobalNoiseLayers / GlobalNoiseLayers3D Written once in BeginPlay , read-only afterwards Safe to read concurrently. Background tasks capture TWeakObjectPtr only , so an in-flight task silently becomes a no-op if the component or the generator is destroyed first. Results are marshalled back with AsyncTask(ENamedThreads::GameThread, ...) .", "bodyZh": "线程契约 成员 归属线程 规则 组件上的 TMap / TSet （ ChunkMeshes 、 ChunkVoxelData 、 ChunkVersions 、 RequestedChunks …） 游戏线程 后台任务不得访问 StreamTick 、 OnChunkGenerated 、 ApplyEdit 、 ProcessCollisionQueue 游戏线程 由核心 Ticker 或蓝图驱动 UVoxelGenerator::GenerateChunk 、 FTransvoxelMesher::GenerateRegular 任意工作线程 纯函数，不改动 UObject AddChunk_RenderThread / RemoveChunk_RenderThread 渲染线程 必须经 ENQUEUE_RENDER_COMMAND 到达 GlobalNoiseLayers / GlobalNoiseLayers3D BeginPlay 写一次，之后只读 可并发读 后台任务只捕获 TWeakObjectPtr ，组件或生成器先销毁时任务自动变为空操作；结果通过 AsyncTask(ENamedThreads::GameThread, ...) 送回。"}, {"id": "s6", "en": "Getting Started", "zh": "快速开始", "bodyEn": "Getting Started", "bodyZh": "快速开始"}, {"id": "s7", "en": "1. Module dependency", "zh": "1. 添加模块依赖", "bodyEn": "1. Module dependency Add the module to your game project's *.Build.cs . Every public header is exported with VOXELTERRAIN_API , so no further include path tweaks are needed. PublicDependencyModuleNames.AddRange(new string[] { \"VoxelTerrain\", \"ProceduralMeshComponent\", // collision pool }); TransvoxelMesher.cpp includes Transvoxel.h , which is a header-only table file (the Lengyel Transvoxel lookup tables). The module startup touches sizeof(regularCellClass) purely to force the tables to be linked in — no runtime cost beyond that.", "bodyZh": "1. 添加模块依赖 PublicDependencyModuleNames.AddRange(new string[] { \"VoxelTerrain\", \"ProceduralMeshComponent\", // 碰撞对象池 }); Transvoxel.h 是纯头文件查找表（Lengyel Transvoxel 表）；模块启动读一次 sizeof(regularCellClass) 只为把表链入，无额外运行时开销。"}, {"id": "s8", "en": "2. Drop a component on an Actor", "zh": "2. 把组件挂到 Actor 上", "bodyEn": "2. Drop a component on an Actor // In any AActor subclass, or simply add it in the Blueprint editor. UVoxelTerrainComponent* Terrain = CreateDefaultSubobject<UVoxelTerrainComponent>(TEXT(\"Terrain\")); Terrain->SetMobility(EComponentMobility::Movable); Then in the Details panel assign Terrain Material . Any opaque surface-domain material works; the mesh supplies position, normal, tangent, one UV channel and vertex colour. If you leave it empty the engine default surface material is used.", "bodyZh": "2. 把组件挂到 Actor 上 UVoxelTerrainComponent* Terrain = CreateDefaultSubobject<UVoxelTerrainComponent>(TEXT(\"Terrain\")); Terrain->SetMobility(EComponentMobility::Movable); 在细节面板指定 Terrain Material （任意不透明表面材质；为空则用引擎默认材质）。网格提供位置、法线、切线、一组 UV 和顶点色。"}, {"id": "s9", "en": "3. Minimal terrain with noise textures", "zh": "3. 用噪声贴图生成地形", "bodyEn": "3. Minimal terrain with noise textures Create two square, power-of-two, uncompressed textures ( G8 , BGRA8 or RGBA8 ), at least 4×4. Disable mip maps and set them not to be texture-streamed — the CPU reads mip 0 on BeginPlay . Add them to Noise Layers (2D) and/or Noise Layers 3D (cubic UVolumeTexture ). Tune Frequency / Amplitude . The 2D layers shape the surface height; the 3D layers carve caves. // C++ equivalent FVoxelNoiseLayerInfo Layer; Layer.Texture = LoadObject<UTexture2D>(nullptr, TEXT(\"/Game/Noise/T_Continental\")); Layer.Frequency = 1.0f; Layer.Amplitude = 1.0f; Layer.Offset = FVector2D(0.f, 0.f); Terrain->NoiseLayers.Add(Layer);", "bodyZh": "3. 用噪声贴图生成地形 准备 正方形、边长 2 的幂、不压缩 的贴图（ G8 / BGRA8 / RGBA8 ，≥4×4），关闭 mipmap 与流送—— BeginPlay 在 CPU 上读 mip 0。 加入 Noise Layers （2D）和/或 Noise Layers 3D （立方 UVolumeTexture ）。 调 Frequency / Amplitude ：2D 层决定地表高度，3D 层挖洞穴。 FVoxelNoiseLayerInfo Layer; Layer.Texture = LoadObject<UTexture2D>(nullptr, TEXT(\"/Game/Noise/T_Continental\")); Layer.Frequency = 1.0f; Layer.Amplitude = 1.0f; Layer.Offset = FVector2D(0.f, 0.f); Terrain->NoiseLayers.Add(Layer);"}, {"id": "s10", "en": "4. Choose streaming radii", "zh": "4. 选定流式半径", "bodyEn": "4. Choose streaming radii LOD0 Radius XY (Chunks) and LOD0 Radius Z (Chunks) are chunk counts, not metres . At LOD0 one chunk spans 6400 cm, so the defaults (8, 8, 2) cover roughly ±512 m horizontally and ±128 m vertically — 17×17×5 = 1445 chunks. Raise them only after you have measured FTransvoxelMesher::GenerateRegular , because generation cost grows with the cube of the radius.", "bodyZh": "4. 选定流式半径 LOD0 Radius XY/Z (Chunks) 单位是 chunk，不是米 。LOD0 一个 chunk 为 6400 cm，默认 (8, 8, 2) 即水平约 ±512 m、垂直约 ±128 m，共 17×17×5 = 1445 个 chunk。生成开销随半径立方增长，调大前先测 GenerateRegular 耗时。"}, {"id": "s11", "en": "5. Dig and fill", "zh": "5. 挖与填", "bodyEn": "5. Dig and fill // BlueprintCallable — safe to call from a line trace result. Terrain->ApplyEdit(Hit.Location, 150.f, /*bIsAdd=*/false); // carve Terrain->ApplyEdit(Hit.Location, 150.f, /*bIsAdd=*/true); // raise Or place an AVoxelInteractionActor in the level: left mouse carves, right mouse fills , driven by a cooldown and a visibility-channel line trace.", "bodyZh": "5. 挖与填 Terrain->ApplyEdit(Hit.Location, 150.f, false); // 挖 Terrain->ApplyEdit(Hit.Location, 150.f, true); // 填 或在关卡放一个 AVoxelInteractionActor ： 左键挖、右键填 。"}, {"id": "s12", "en": "6. Recommended starting values", "zh": "6. 推荐起步参数", "bodyEn": "6. Recommended starting values Setting Value Why LOD0 Radius XY (Chunks) 4–8 17³ → 1445 chunks is already a lot of CPU mesh data. LOD0 Radius Z (Chunks) 1–2 Terrain is usually a thin slab. Unload Delay 2.0 s Prevents thrashing when the player walks back and forth across a boundary. Collision Radius (1,1,1) 27 UProceduralMeshComponent s. Each one cooks a collision mesh — this is the single most expensive part of streaming. bGenerate Collision false while prototyping Removes the whole collision pool from the profile. Edit Cooldown (interaction actor) 0.1 s ApplyEdit is synchronous.", "bodyZh": "6. 推荐起步参数 设置 值 原因 LOD0 Radius XY (Chunks) 4–8 1445 个 chunk 已是很大的 CPU 网格量 LOD0 Radius Z (Chunks) 1–2 地形通常是薄层 Unload Delay 2.0 s 防止边界来回走时反复加载/卸载 Collision Radius (1,1,1) 27 个 PMC，每个都要 cook 碰撞，是流式最贵的一环 bGenerate Collision 原型阶段关掉 直接从性能剖析里移除碰撞池 Edit Cooldown 0.1 s ApplyEdit 是同步调用"}, {"id": "s13", "en": "Data Types", "zh": "数据类型", "bodyEn": "Data Types", "bodyZh": "数据类型"}, {"id": "s14", "en": "FVoxel", "zh": "FVoxel", "bodyEn": "FVoxel One sample of the scalar density field. Defined in VoxelTypes.h . Field Type Description Weight FVoxelWeight ( int8 ) Signed density. Negative = solid, positive = air, zero = exactly on the isosurface. Material uint8 Reserved surface material id. Currently written but not read by the mesher. FORCEINLINE bool IsSolid() const; // Weight < 0", "bodyZh": "FVoxel 密度场的一个采样点（ VoxelTypes.h ）。 字段 类型 说明 Weight FVoxelWeight ( int8 ) 有符号密度：负=实体，正=空气，零=等值面 Material uint8 预留材质 ID，目前 只写不读 FORCEINLINE bool IsSolid() const; // Weight < 0"}, {"id": "s15", "en": "VoxelConfig", "zh": "VoxelConfig", "bodyEn": "VoxelConfig Compile-time constants. Changing ChunkSize or VoxelSize invalidates saved data and the halo maths — treat them as fixed. Constant Value Description ChunkSize 64 Cells per chunk per axis. ChunkStride 65 ChunkSize + 1 — sample points per axis inside a chunk. PaddedStride 67 ChunkStride + 2 — includes the ±1 halo. PaddedOffset 1 Index shift so that local coordinate -1 maps to slot 0 . VoxelSize 100.f World size of one voxel, in cm. Derived numbers worth memorising: one LOD0 chunk is 6400 cm across; the padded voxel grid holds 67³ = 300 763 samples; the surface grid holds 67² = 4489 columns.", "bodyZh": "VoxelConfig 编译期常量， 视为不可变 （改动会让存档与 halo 计算失效）。 常量 值 说明 ChunkSize 64 每 chunk 每轴的 cell 数 ChunkStride 65 ChunkSize + 1 ，chunk 内每轴采样点数 PaddedStride 67 ChunkStride + 2 ，含 ±1 halo PaddedOffset 1 索引偏移，局部坐标 -1 映射到槽 0 VoxelSize 100.f 单个体素的世界尺寸（cm） 派生值：LOD0 chunk 边长 6400 cm ；带 halo 体素数 67³ = 300 763 ；地表高度网格 67² = 4489 。"}, {"id": "s16", "en": "FChunkKey", "zh": "FChunkKey", "bodyEn": "FChunkKey Identity of a chunk. Four int32 fields: X , Y , Z , LOD . Provides operator== and a free GetTypeHash , so it can be used directly as a TMap / TSet key. FChunkKey Key(3, -1, 0, 0); // LOD defaults to 0 LOD scaling rule: a chunk at LOD N covers 1 << N LOD0 chunks per axis, and its world size is ChunkSize * VoxelSize * (1 << N) . Only LOD 0 is currently generated by the streaming loop; the LOD fields and the shift maths are already in place ( SpawnChunkAsyncTask computes LODChunkWorldSize correctly), but StreamTick never requests LOD > 0 . FVoxelEditTask ( WorldPos , Radius , bIsAdd ) and FVoxelModificationMap ( TMap<FIntVector, FVoxelWeight> ) are declared in the same header. Both are currently unused — the modification-map pipeline is commented out, and ApplyEdit writes straight into the cached voxel data.", "bodyZh": "FChunkKey chunk 标识： int32 X, Y, Z, LOD ，提供 operator== 与 GetTypeHash ，可直接作 TMap / TSet 键。 FChunkKey Key(3, -1, 0, 0); // LOD 默认 0 LOD N 的 chunk 每轴覆盖 1 << N 个 LOD0 chunk，世界尺寸为 ChunkSize * VoxelSize * (1 << N) 。当前 StreamTick 只请求 LOD 0，但 LOD 位移计算已就位。 FVoxelEditTask 与 FVoxelModificationMap （ TMap<FIntVector, FVoxelWeight> ） 目前未使用 ——修改记录管线已注释掉。"}, {"id": "s17", "en": "FVegetationInstanceData", "zh": "FVegetationInstanceData", "bodyEn": "FVegetationInstanceData Plain output record of the scatter pass. Field Type Description Location FVector World-space spawn position. Rotation FRotator Random yaw, zero pitch/roll. Scale FVector Uniform scale, per instance. PlantId int32 Index into VegetationConfigs .", "bodyZh": "FVegetationInstanceData 植被散布的输出记录： FVector Location （世界坐标）、 FRotator Rotation （随机 yaw）、 FVector Scale （均匀缩放）、 int32 PlantId （ VegetationConfigs 下标）。"}, {"id": "s18", "en": "FVoxelChunkData", "zh": "FVoxelChunkData", "bodyEn": "FVoxelChunkData CPU-side storage for one chunk: the padded density cube plus a per-column surface height. Field / Method Description TArray<FVoxel> Voxels PaddedStride³ samples, zero-initialised by the constructor. TArray<float> SurfaceGrid PaddedStride² heights, one per (ix, iy) column. Not initialised by the constructor — every reader must overwrite it (the generator does). int32 Index(x, y, z) Flat index. Equivalent to ((x+1)*N + (y+1))*N + (z+1) . FVoxel& At(x, y, z) Mutable access. Valid range -1 … ChunkSize+1 . const FVoxel& At(x, y, z) Const overload. float& SurfaceAt(ix, iy) Mutable surface height. The index maths uses ix * PaddedStride + iy . float SurfaceAt(ix, iy) Const overload. FVoxelChunkData Chunk; Chunk.At(0, 0, 0).Weight = -127; // solid Chunk.SurfaceAt(4, 9) = 1234.5f; SurfaceAt(ix, iy) is not bounds-checked and ix is multiplied by PaddedStride , not by PaddedStride² — pass padded-local indices ( 0 … 66 ), never chunk-local ones.", "bodyZh": "FVoxelChunkData 一个 chunk 的 CPU 存储：带 halo 的密度立方 + 每列地表高度。 成员 说明 TArray<FVoxel> Voxels PaddedStride³ 个采样，构造时清零 TArray<float> SurfaceGrid PaddedStride² 个高度，构造时 不 初始化，读取前必须由生成器写入 int32 Index(x, y, z) 一维下标： ((x+1)*N + (y+1))*N + (z+1) FVoxel& At(x, y, z) / const 版 访问体素，有效范围 -1 … ChunkSize+1 float& SurfaceAt(ix, iy) / const 版 访问地表高度，下标为 ix * PaddedStride + iy FVoxelChunkData Chunk; Chunk.At(0, 0, 0).Weight = -127; // 实体 Chunk.SurfaceAt(4, 9) = 1234.5f; SurfaceAt 不做越界检查 ，请传带 halo 的下标（ 0 … 66 ）。"}, {"id": "s19", "en": "FVoxelMeshData", "zh": "FVoxelMeshData", "bodyEn": "FVoxelMeshData The interchange struct between the mesher, the game thread and the render thread. Field Type Description Positions TArray<FVector3f> Local-space vertex positions (chunk origin subtracted). Normals TArray<FVector3f> Central-difference gradient of the density field. UVs TArray<FVector2f> Planar XY / 400.f , filled by the component after meshing. Colors TArray<FColor> Biome/height vertex colour, see ComputeColor . Indices TArray<uint32> Triangle list, always 32-bit. Bounds FBox World-space bounds, precomputed off-thread so the main thread only merges. Method Description void Reset() Empties every array ( Reset , capacity kept) and re-inits Bounds . int32 NumTriangles() const Indices.Num() / 3 . SurfaceHeights still exists as a commented-out field, together with the UV1 channel that used to carry it. The vertex factory is therefore bound to one UV channel. Copy cost: ApplyEdit pushes a deep copy ( MakeShared<FVoxelMeshData>(MeshData) ) to the render thread, because the game-thread copy stays editable.", "bodyZh": "FVoxelMeshData 网格化器、游戏线程、渲染线程之间的交换结构。 字段 类型 说明 Positions TArray<FVector3f> 局部空间 位置（已减 chunk 原点） Normals TArray<FVector3f> 密度中心差分梯度 UVs TArray<FVector2f> 平面 XY / 400.f ，由组件在网格化后填充 Colors TArray<FColor> 按群系与深度着色的顶点色 Indices TArray<uint32> 三角形列表，固定 32 位 Bounds FBox 世界空间包围盒，后台预计算 方法 说明 void Reset() 清空所有数组（保留容量）并重置 Bounds int32 NumTriangles() const Indices.Num() / 3 SurfaceHeights 及其 UV1 通道已注释停用，顶点工厂只绑定 一组 UV。 ApplyEdit 推渲染线程时做 深拷贝 ，因为 CPU 侧那份还要继续编辑。"}, {"id": "s20", "en": "Noise Generation", "zh": "噪声生成", "bodyEn": "Noise Generation", "bodyZh": "噪声生成"}, {"id": "s21", "en": "FVoxelGeneratorSettings", "zh": "FVoxelGeneratorSettings", "bodyEn": "FVoxelGeneratorSettings USTRUCT(BlueprintType) , all fields EditAnywhere, BlueprintReadWrite , category Voxel . Property Type Default Effect BaseWorldZ float 1600.f World Z of the zero-noise surface. HillHeight float 2000.f Amplitude of the 2D surface displacement. NoiseFreq float 0.00035f Base spatial frequency, in cm⁻¹. Drives both terrain and caves. Octaves int32 5 FBM octaves. Lacunarity float 2.0f Frequency multiplier per octave. Persistence float 0.5f Amplitude multiplier per octave. Seed int32 1337 Offsets the perlin sample position. CaveStrength float 600.f Declared but not read by the current density function. CaveThreshold float 0.15f Centre of the cave mask smoothstep window. Surface height for a column is BaseWorldZ + TexFbm2D(XY) * HillHeight .", "bodyZh": "FVoxelGeneratorSettings USTRUCT(BlueprintType) ，分类 Voxel 。 属性 类型 默认 作用 BaseWorldZ float 1600.f 噪声为 0 时的地表 Z HillHeight float 2000.f 地表起伏振幅 NoiseFreq float 0.00035f 基础空间频率（cm⁻¹），地形与洞穴共用 Octaves int32 5 FBM 层数 Lacunarity float 2.0f 每层频率倍率 Persistence float 0.5f 每层振幅倍率 Seed int32 1337 偏移采样位置 CaveStrength float 600.f 已声明但当前未使用 CaveThreshold float 0.15f 洞穴遮罩 smoothstep 中心 某列地表高度 = BaseWorldZ + TexFbm2D(XY) * HillHeight 。"}, {"id": "s22", "en": "UVoxelGenerator", "zh": "UVoxelGenerator", "bodyEn": "UVoxelGenerator UCLASS , the pluggable density provider. Swap implementations by assigning VoxelGeneratorClass on the component.", "bodyZh": "UVoxelGenerator 可插拔密度提供者，通过组件的 VoxelGeneratorClass 替换实现。"}, {"id": "s23", "en": "Nested types", "zh": "嵌套数据结构", "bodyEn": "Nested types FNoiseLayerData — one baked 2D layer: TSharedPtr<TArray<float>> Data , int32 Size , float Frequency , float Amplitude , FVector2D Offset . FNoiseLayer3DData — one baked 3D layer: same fields but FVector Offset .", "bodyZh": "嵌套数据结构 FNoiseLayerData ：一层 2D 贴图噪声 —— Data (共享 float 数组)、 Size 、 Frequency 、 Amplitude 、 Offset (FVector2D)。 FNoiseLayer3DData ：一层 3D 体积噪声，字段相同， Offset 为 FVector 。"}, {"id": "s24", "en": "Static members", "zh": "静态成员", "bodyEn": "Static members Member Description static TSharedPtr<TArray<FNoiseLayerData>> GlobalNoiseLayers Published once by UVoxelTerrainComponent::LoadNoiseTextureData() . Read concurrently by worker threads — replace, never mutate . static TSharedPtr<TArray<FNoiseLayer3DData>> GlobalNoiseLayers3D Same for volume layers. Both are null until BeginPlay , so calling the generator before that silently falls back to analytic Perlin.", "bodyZh": "静态成员 成员 说明 GlobalNoiseLayers LoadNoiseTextureData() 在 BeginPlay 发布一次；工作线程只读， 整体替换、勿就地修改 GlobalNoiseLayers3D 同上，3D 层 BeginPlay 之前两者为空，生成器自动回退到解析式 Perlin。"}, {"id": "s25", "en": "Instance API", "zh": "实例 API", "bodyEn": "Instance API Method Description void GenerateChunk(int32 ChunkX, int32 ChunkY, int32 ChunkZ, int32 LOD, FVoxelChunkData& OutChunk) const Fills the whole padded grid, including the halo, and writes every column's surface height. Pure — safe on any thread. Cost is dominated by one TexFbm2D per column plus one density sample per voxel. virtual float SampleDensityWithSurface(const FVector& WorldPos, float SurfaceZ) const Signed density in cm. Above the surface it returns SurfaceZ - WorldPos.Z , then carves caves with SmoothMax over two 3D texture lookups and converts noise distance to world units via 1 / (NoiseFreq * 0.7) . virtual float Fbm(const FVector& P) const Normalised 3D Perlin FBM, seed-offset. virtual float Fbm2D(const FVector2D& P) const Normalised 2D Perlin FBM, seed-offset. virtual float TexFbm2D(const FVector2D& WorldXY) const Amplitude-weighted blend of GlobalNoiseLayers ; falls back to Fbm2D(WorldXY * NoiseFreq) when no layers are loaded. virtual float TexFbm3D(const FVector& WorldXYZ) const Same for GlobalNoiseLayers3D ; falls back to Fbm . Every method is virtual , so subclassing UVoxelGenerator and overriding SampleDensityWithSurface is the supported way to change world shape without touching the mesher.", "bodyZh": "实例 API 方法 说明 GenerateChunk(ChunkX, ChunkY, ChunkZ, LOD, OutChunk) 填满含 halo 的整块网格并写入每列地表高度； 纯函数 ，任意线程可调用 SampleDensityWithSurface(WorldPos, SurfaceZ) 有符号密度（cm）。地表之上为 SurfaceZ - Z ，再用两次 3D 贴图采样以 SmoothMax 挖洞 Fbm(P) 归一化 3D Perlin FBM（带 seed 偏移） Fbm2D(P) 归一化 2D Perlin FBM TexFbm2D(WorldXY) 按振幅加权混合所有 2D 层；无层时回退 Fbm2D(WorldXY * NoiseFreq) TexFbm3D(WorldXYZ) 同上，3D 层；回退 Fbm 全部为 virtual ，重写 SampleDensityWithSurface 是改变世界形态的推荐方式。"}, {"id": "s26", "en": "VOXEL_USE_NOISE_TEXTURE", "zh": "VOXEL_USE_NOISE_TEXTURE", "bodyEn": "VOXEL_USE_NOISE_TEXTURE Defined to 1 at the top of VoxelGenerator.h . Set it to 0 (or add a project-level definition) to compile the texture path out entirely and run on analytic Perlin only.", "bodyZh": "VOXEL_USE_NOISE_TEXTURE VoxelGenerator.h 顶部定义为 1 ；改为 0 可整体编译掉贴图路径。"}, {"id": "s27", "en": "Meshing", "zh": "网格化", "bodyEn": "Meshing", "bodyZh": "网格化"}, {"id": "s28", "en": "FTransvoxelMesher", "zh": "FTransvoxelMesher", "bodyEn": "FTransvoxelMesher Stateless utility, VOXELTERRAIN_API . Both entry points are static .", "bodyZh": "FTransvoxelMesher 无状态静态工具类。"}, {"id": "s29", "en": "GenerateRegular", "zh": "GenerateRegular", "bodyEn": "GenerateRegular static void GenerateRegular(const FVoxelChunkData& Chunk, float VoxelSize, int32 LOD, const FVector3f& ChunkWorldOrigin, FVoxelMeshData& Out); Runs the modified Marching Cubes (regular-cell part of the Transvoxel algorithm) over all 64³ cells of one chunk. Parameter Direction Notes Chunk in Must be fully generated, halo included. VoxelSize in Pass VoxelConfig::VoxelSize (100). Not multiplied by 1 << LOD — LOD scaling is applied to the world origin only. LOD in Currently only affects WorldStep bookkeeping; vertex spacing stays VoxelSize . ChunkWorldOrigin in Added to every local position. Out in/out Reset() at entry, then filled. Behaviour details worth knowing: A thread_local edge cache (size 65³ × 3 ) deduplicates vertices across the six shared cell faces, so adjacent cells weld seamlessly. It is memset to -1 per call and grown on demand — one allocation per worker thread, ever . Case bits follow the Transvoxel corner order: bit 0 = (0,0,0) , bit 1 = (1,0,0) , … bit 7 = (1,1,1) . Weight W = 0 counts as not solid . Normals come from central differences on the raw int8 weights, so they are blocky near flat regions and fall back to (0,0,1) when the gradient vanishes. Output triangles are wound I0, I2, I1 to match UE's front-face convention. Out.Bounds is not written here; the component computes it after applying the world offset.", "bodyZh": "GenerateRegular static void GenerateRegular(const FVoxelChunkData& Chunk, float VoxelSize, int32 LOD, const FVector3f& ChunkWorldOrigin, FVoxelMeshData& Out); 对 chunk 全部 64³ 个 cell 执行改良 Marching Cubes（Transvoxel 规则单元部分）。 参数 说明 Chunk 必须已完整生成（含 halo） VoxelSize 传 VoxelConfig::VoxelSize ； 不要 自行乘 1 << LOD LOD 当前只参与 WorldStep 记录，顶点间距仍为 VoxelSize ChunkWorldOrigin 加到每个局部位置上 Out 入口处 Reset() ，随后填充 实现要点： thread_local 边缓存（65³×3）跨共享面复用顶点，相邻 cell 无缝焊接；每线程只分配一次。 Case 位序按 Transvoxel 角点：bit0=(0,0,0)、bit1=(1,0,0) … bit7=(1,1,1)； W = 0 视为 非实体 。 法线为中心差分，梯度为零时回退 (0,0,1) 。 三角形绕序 I0, I2, I1 匹配 UE 正面判定。 不写 Out.Bounds ，由组件在施加世界偏移后计算。"}, {"id": "s30", "en": "GenerateRegularPartial", "zh": "GenerateRegularPartial", "bodyEn": "GenerateRegularPartial static void GenerateRegularPartial(const FVoxelChunkData& Chunk, float VoxelSize, const FVector3f& ChunkWorldOrigin, const FIntVector& CellMin, const FIntVector& CellMax, FVoxelMeshData& InOut); Incremental rebuild used by terrain editing. Instead of re-meshing, it filters the existing mesh in place : Every triangle whose floor-space minimum cell falls inside [CellMin, CellMax] is dropped. Surviving vertices are compacted, remapped through an old-to-new index table, and all arrays are shrunk. Colors , Normals , UVs and Positions are preserved for surviving vertices. CellMin / CellMax are chunk-local cell coordinates , inclusive, and must stay within 0 … ChunkSize-1 . InOut is modified; if it has no indices the function resets it and returns. Because triangles are discarded by their own cell only, calling this with a box that does not exactly match the dirty region will leave seams — always derive the box from the same SDF bounds the component uses. InOut.Bounds is stale afterwards; the caller must recompute it ( ApplyEdit does).", "bodyZh": "GenerateRegularPartial static void GenerateRegularPartial(const FVoxelChunkData& Chunk, float VoxelSize, const FVector3f& ChunkWorldOrigin, const FIntVector& CellMin, const FIntVector& CellMax, FVoxelMeshData& InOut); 编辑用增量重建： 不重新网格化 ，而是就地过滤已有网格： 三角形最小角 cell 落在 [CellMin, CellMax] 内的丢弃； 存活顶点紧凑重排，索引经新旧映射表改写； 存活顶点的法线、UV、颜色原样保留。 CellMin/Max 为 chunk 局部 cell 坐标 ，闭区间，须在 0 … ChunkSize-1 内。范围与真实脏区不一致会留下接缝。调用后 InOut.Bounds 失效，调用方须重算（ ApplyEdit 会做）。"}, {"id": "s31", "en": "Terrain Component", "zh": "地形组件", "bodyEn": "Terrain Component", "bodyZh": "地形组件"}, {"id": "s32", "en": "FVoxelNoiseLayerInfo", "zh": "FVoxelNoiseLayerInfo", "bodyEn": "FVoxelNoiseLayerInfo USTRUCT(BlueprintType) , category Noise . Property Type Default Description Texture UTexture2D* nullptr Square, ≥ 4×4. G8 , BGRA8 , RGBA8 supported. Frequency float 1.0f Repeat count over the noise domain. Amplitude float 1.0f Weight in the normalised blend. Offset FVector2D Zero UV offset, used to de-correlate layers.", "bodyZh": "FVoxelNoiseLayerInfo USTRUCT ，分类 Noise ： Texture (UTexture2D*)、 Frequency (1.0)、 Amplitude (1.0)、 Offset (FVector2D)。贴图须正方形、≥4×4，支持 G8/BGRA8/RGBA8。"}, {"id": "s33", "en": "FVoxelNoiseLayer3DInfo", "zh": "FVoxelNoiseLayer3DInfo", "bodyEn": "FVoxelNoiseLayer3DInfo Same shape, category Noise3D . Texture is a cubic UVolumeTexture (≥ 4³), Offset is an FVector .", "bodyZh": "FVoxelNoiseLayer3DInfo 分类 Noise3D ： Texture (UVolumeTexture*，立方、≥4³)、 Frequency 、 Amplitude 、 Offset (FVector)。"}, {"id": "s34", "en": "FVoxelVegetationConfig", "zh": "FVoxelVegetationConfig", "bodyEn": "FVoxelVegetationConfig USTRUCT(BlueprintType) , category Vegetation . Property Type Default Description MinID / MaxID float 0.f / 130.f Biome ID window this species accepts. Several configs may share a window to mix species. Mesh UStaticMesh* nullptr Spawned per accepted instance. Density float 0.05f Probability that a candidate vertex actually spawns. PlaceRadius float 100.f Overlap rejection radius (spatial-hash grid, 200-unit cells). MinScale / MaxScale float 0.8f / 1.2f Per-instance uniform scale range.", "bodyZh": "FVoxelVegetationConfig USTRUCT ，分类 Vegetation 。 属性 默认 说明 MinID / MaxID 0 / 130 接受的群系 ID 区间；多配置可共用区间混种 Mesh nullptr 每个实例使用的静态网格 Density 0.05 候选顶点生成实例的概率 PlaceRadius 100 防重叠半径（200 单位空间哈希网格） MinScale / MaxScale 0.8 / 1.2 每实例均匀缩放范围"}, {"id": "s35", "en": "UVoxelTerrainComponent", "zh": "UVoxelTerrainComponent", "bodyEn": "UVoxelTerrainComponent UCLASS(ClassGroup = Voxel, Blueprintable, BlueprintSpawnableComponent) , derives from UPrimitiveComponent .", "bodyZh": "UVoxelTerrainComponent UCLASS(ClassGroup = Voxel, Blueprintable, BlueprintSpawnableComponent) ，继承 UPrimitiveComponent 。"}, {"id": "s36", "en": "Configuration properties", "zh": "配置属性", "bodyEn": "Configuration properties Property Category Default Description TerrainMaterial Voxel nullptr Material used for every chunk. Falls back to UMaterial::GetDefaultMaterial(MD_Surface) . Voxel\\|LOD 8 Load radius along X/Y, in LOD0 chunks (square footprint). Voxel\\|LOD 2 Load radius along Z, in LOD0 chunks. UnloadDelay Voxel 2.0f Seconds a chunk must stay outside the unload radius before eviction. bGenerateCollision Voxel true Master switch for the collision pool. Turning it off releases everything on the next collision tick. Voxel\\|Collision (1,1,1) Half-extent in chunks of the collidable box around the pawn. Voxel\\|Noise – 2D layers, sampled once in BeginPlay . Voxel\\|Noise3D – 3D layers. Voxel\\|Vegetation nullptr R channel encodes the biome ID. Voxel\\|Vegetation – Rules; an empty array disables vegetation. VoxelGeneratorClass Voxel – TSubclassOf<UVoxelGenerator> . Assign to swap generation strategies.", "bodyZh": "配置属性 属性 分类 默认 说明 TerrainMaterial Voxel nullptr 所有 chunk 共用材质，为空用默认表面材质 Voxel|LOD 8 XY 加载半径（LOD0 chunk 数，方形） Voxel|LOD 2 Z 加载半径 UnloadDelay Voxel 2.0 离开卸载半径后需保持多久才回收（秒） bGenerateCollision Voxel true 碰撞池总开关，关闭后下个碰撞 Tick 全释放 Voxel|Collision (1,1,1) 玩家周围可碰撞盒半长（chunk） Voxel|Noise – 2D 噪声层，仅 BeginPlay 采样一次 Voxel|Noise3D – 3D 噪声层 Voxel|Vegetation nullptr R 通道编码群系 ID Voxel|Vegetation – 空数组关闭整套植被 VoxelGeneratorClass Voxel – 指定生成器子类"}, {"id": "s37", "en": "Runtime state (game thread only)", "zh": "运行时状态（仅限游戏线程）", "bodyEn": "Runtime state (game thread only) Member Description TMap<FChunkKey, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe>> ChunkMeshes Resident, meshed chunks. TMap<FChunkKey, TSharedPtr<FVoxelChunkData>> ChunkVoxelData Density cache, kept so ApplyEdit can read and rewrite raw weights. TMap<FChunkKey, double> ChunkLastActiveTime FPlatformTime::Seconds() of last load/edit; drives UnloadDelay . TMap<FChunkKey, int32> ChunkVersions Bumped on every edit so stale async results are rejected. TSet<FChunkKey> RequestedChunks In-flight guard for StreamTick . FBox LocalBounds Union of resident chunk bounds; returned by CalcBounds .", "bodyZh": "运行时状态（仅限游戏线程） 成员 说明 ChunkMeshes 已驻留并网格化的 chunk（ TMap<FChunkKey, TSharedPtr<FVoxelMeshData, ThreadSafe>> ） ChunkVoxelData 密度缓存，供 ApplyEdit 读写原始权重 ChunkLastActiveTime 上次加载/编辑时间，驱动 UnloadDelay ChunkVersions 每次编辑自增，丢弃过期异步结果 RequestedChunks 在途请求的去重集合 LocalBounds 所有驻留 chunk 包围盒并集"}, {"id": "s38", "en": "Blueprint-callable / overridable", "zh": "蓝图可调用 / 可重写", "bodyEn": "Blueprint-callable / overridable void ApplyEdit(const FVector& WorldPos, float Radius, bool bIsAdd) — BlueprintCallable, Category = \"Voxel\" . Stamps a spherical brush into the cached density of every overlapping chunk, plus a one-voxel halo in all 26 neighbours, then synchronously re-meshes the touched chunks, pushes them to the scene proxy and refreshes their collision section. bIsAdd == true adds material, false carves. Contract notes: Game-thread only, and blocking : the whole touched set is rebuilt before the call returns. Keep the radius modest. Chunks that are not resident are skipped silently — editing outside the streaming radius is a no-op. Every touched chunk's version is incremented first, so an async result that lands during the rebuild is discarded. The mesh deep-copies into the render command, so the CPU copy stays mutable. void StreamTick() — BlueprintNativeEvent, Category = \"Voxel&#124;Streaming\" . Override in Blueprint and call Parent: StreamTick to keep the default behaviour. Streaming heartbeat, driven by a ~0.16 s core ticker rather than per-frame tick. Each call: Enumerates the (2·XY+1) × (2·Z+1) chunk box around the local pawn; already-resident chunks just have their activity timestamp refreshed. Sorts the remaining candidates by squared distance and dispatches up to MaxRequestsPerTick async tasks — 8 by default, 16 above 20 m/s, 24 above ~31.6 m/s. Evicts chunks outside Radius + 1 whose idle time exceeds UnloadDelay , dropping mesh, voxel cache, timestamps, version, collision proxy and render-thread resource, then rebuilds LocalBounds from the survivors. Note that LocalBounds is rebuilt from scratch every tick from the surviving chunks, so it never suffers from bounds drift after eviction.", "bodyZh": "蓝图可调用 / 可重写 ApplyEdit(const FVector& WorldPos, float Radius, bool bIsAdd) — BlueprintCallable, Voxel 球形笔刷写入所有相交 chunk（含 26 邻居的一体素 halo）的缓存密度，然后 同步 重建受影响 chunk、推入场景代理、刷新碰撞。 bIsAdd 为 true 增材，false 挖除。 仅游戏线程， 阻塞 调用，半径务必克制； 未驻留 chunk 静默跳过； 受影响 chunk 先自增版本，编辑期间落地的异步结果被丢弃； 推渲染线程的是深拷贝。 StreamTick() — BlueprintNativeEvent, Voxel&#124;Streaming ，可在蓝图重写并调用 Parent 保留默认行为。 约 0.16 s 核心 Ticker 驱动（非逐帧 Tick），每次： 枚举玩家周围 (2·XY+1)×(2·Z+1) 的 chunk 盒，已驻留的刷新时间戳； 其余候选按距离平方排序，每 Tick 最多派发 MaxRequestsPerTick 个异步任务： 8 （默认）/ 16 （速度 >20 m/s）/ 24 （>~31.6 m/s）； 卸载超出 Radius + 1 且空闲超过 UnloadDelay 的 chunk（网格、缓存、时间戳、版本、碰撞、RT 资源全部释放），并从幸存 chunk 全量重建 LocalBounds 。"}, {"id": "s39", "en": "Component overrides", "zh": "组件重写", "bodyEn": "Component overrides Method Behaviour virtual FPrimitiveSceneProxy* CreateSceneProxy() override Returns new FVoxelSceneProxy(this, TerrainMaterial) . virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override Returns LocalBounds . If no chunk is resident yet it returns a ±100 000 cm box so the component is never culled before the first chunk arrives. virtual void GetUsedMaterials(TArray<UMaterialInterface*>& Out, bool bGetDebugMaterials = false) const override Adds TerrainMaterial , or the default surface material. virtual void BeginPlay() override Creates the generator from VoxelGeneratorClass , ensures the material is complete, calls InitBiomeTexture() and LoadNoiseTextureData() , prewarms 256 collision components and 256 HISM components, reserves 1024 slots in every map, and installs the two core tickers. virtual void EndPlay(const EEndPlayReason::Type) override Removes both tickers and calls ClearAllCollisions() .", "bodyZh": "组件重写 方法 行为 CreateSceneProxy() new FVoxelSceneProxy(this, TerrainMaterial) CalcBounds(LocalToWorld) 返回 LocalBounds ；无 chunk 时返回 ±100 000 cm 大盒，避免首块到达前被裁剪 GetUsedMaterials(Out, bDebug) 加入 TerrainMaterial 或默认材质 BeginPlay() 创建生成器、确保材质完成、 InitBiomeTexture() 、 LoadNoiseTextureData() 、预热 256 个碰撞组件与 256 个 HISM、各 Map 预留 1024、安装两个 Ticker EndPlay(Reason) 移除两个 Ticker， ClearAllCollisions()"}, {"id": "s40", "en": "Coordinate helper", "zh": "坐标转换助手", "bodyEn": "Coordinate helper FIntVector WorldToBaseChunk(const FVector& WorldPos) const; Floor-divides by ChunkSize * VoxelSize (6400 at LOD0), so negative coordinates map correctly. This is the only place chunk size is turned into world size — always route through it.", "bodyZh": "坐标转换助手 FIntVector WorldToBaseChunk(const FVector& WorldPos) const; 以 ChunkSize * VoxelSize （6400）向下取整除法，负坐标亦正确。"}, {"id": "s41", "en": "Async pipeline", "zh": "异步管线", "bodyEn": "Async pipeline void SpawnChunkAsyncTask(const FChunkKey& Key, int32 CurrentVersion) Dispatches one chunk to EAsyncExecution::ThreadPool . The worker: Calls GenerateChunk into a stack FVoxelChunkData . Runs FTransvoxelMesher::GenerateRegular into a new FVoxelMeshData . Offsets every position by the chunk world origin, computes planar UVs with UVScale = 400.f , and accumulates world Bounds . Moves the voxel data into a shared pointer and hops back to the game thread via AsyncTask . Captures are weak ( TWeakObjectPtr<UVoxelTerrainComponent> and TWeakObjectPtr<UVoxelGenerator> ); a destroyed component makes the task a no-op at both checkpoints. void OnChunkGenerated(FChunkKey Key, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> Mesh, TSharedPtr<FVoxelChunkData> VoxelData, int32 Version) Game-thread completion handler. Clears RequestedChunks . Drops the payload if Version != ChunkVersions.FindRef(Key) — an edit happened while the task was in flight, and the synchronous rebuild wins. Stores mesh and voxel cache, stamps ChunkLastActiveTime , merges Bounds into LocalBounds . Enqueues AddChunk_RenderThread on the render thread. This method is public, so you can call it yourself to inject a procedurally built chunk — as long as you respect the version check.", "bodyZh": "异步管线 SpawnChunkAsyncTask(Key, CurrentVersion) — 派发到线程池。工作线程依次： GenerateChunk → GenerateRegular → 加世界原点、按 UVScale = 400.f 算平面 UV、累世界 Bounds → 体素数据移入共享指针 → AsyncTask 回游戏线程。捕获全为弱指针。 OnChunkGenerated(Key, Mesh, VoxelData, Version) — 游戏线程回调：清除 RequestedChunks ； 版本号不匹配则丢弃 （编辑同步重建胜出）；存网格与缓存、刷新时间戳、合并 LocalBounds ；入队 AddChunk_RenderThread 。方法为 public，可自行注入 chunk，但须遵守版本检查。"}, {"id": "s42", "en": "Collision pool", "zh": "碰撞对象池", "bodyEn": "Collision pool Method Description void PrewarmCollisionPool(int32 PoolSize) Creates PoolSize hidden UProceduralMeshComponent s ( RF_Transient , async cooking on, complex-as-simple, ECC_WorldStatic , block all, no overlap events) and registers them with collision disabled. UProceduralMeshComponent* AcquireCollisionComponent() Pops one, enables QueryAndPhysics . Returns nullptr when the pool is empty. void ReturnCollisionComponent(UProceduralMeshComponent* PMC) Disables collision, clears sections, pushes it back. void ProcessCollisionQueue() ~0.33 s ticker. Releases proxies outside CollisionRadius , then creates proxies for every resident chunk inside it. Editing never goes through here. void RemoveCollisionForChunk(const FChunkKey& Key) Returns one chunk's proxy to the pool. void ClearAllCollisions() Destroys every active proxy and every pooled component. Called from EndPlay .", "bodyZh": "碰撞对象池 方法 说明 PrewarmCollisionPool(PoolSize) 创建 PoolSize 个隐藏 PMC（ RF_Transient 、异步 cooking、复杂当简单碰撞、 ECC_WorldStatic 、Block All、无 Overlap 事件），初始无碰撞 AcquireCollisionComponent() 弹出一个并启用 QueryAndPhysics ；池空返回 nullptr ReturnCollisionComponent(PMC) 关碰撞、清截面、回池 ProcessCollisionQueue() ~0.33 s Ticker：先回收超出 CollisionRadius 的，再为半径内每个已驻留 chunk 建碰撞；编辑不走这里 RemoveCollisionForChunk(Key) 归还单 chunk 的碰撞代理 ClearAllCollisions() 销毁全部在用与池内组件， EndPlay 调用"}, {"id": "s43", "en": "Noise texture loading", "zh": "噪声贴图加载", "bodyEn": "Noise texture loading void LoadNoiseTextureData() Reads every NoiseLayers / NoiseLayers3D texture into linear float arrays and publishes them to the generator's global layer arrays. Editor path ( WITH_EDITORONLY_DATA ): reads Texture->Source.GetMipImage . Packaged path : reads cooked platform mip 0 — PF_G8 , PF_B8G8R8A8 , PF_R8G8B8A8 only. Anything else is logged and skipped. sRGB textures are linearised so both paths agree. Textures must be square (cubic for 3D) and at least 4×4, and the bulk data must be CPU-readable — disable texture streaming and compression on them. Changing the arrays at runtime has no effect until the component restarts.", "bodyZh": "噪声贴图加载 LoadNoiseTextureData() — 把贴图读成线性 float 数组发布到生成器全局层。 编辑器路径读 Source.GetMipImage ；打包路径读平台 mip 0，仅 PF_G8 / PF_B8G8R8A8 / PF_R8G8B8A8 ； sRGB 自动线性化，两条路径结果一致； 贴图须正方形（3D 为立方）、≥4×4，且 CPU 可读（关流送、关压缩）；运行时改动需重启组件生效。"}, {"id": "s44", "en": "Vegetation (all private)", "zh": "植被（均为 private）", "bodyEn": "Vegetation (all private) All vegetation members are private . Method Description void InitBiomeTexture() Reads BiomeTexture into CachedBiomeData as normalised R-channel floats. Packaged path only. void DispatchVegetationTask(FChunkKey Key, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> Mesh) No-op unless the texture, cache and config list are all non-empty. Runs the scatter on the thread pool. The game-thread callback that would push instances into the HISM is currently empty, so nothing is spawned yet. TArray<FVegetationInstanceData> CalculateVegetationForChunk(const FVoxelMeshData& Mesh, const FChunkKey& Key, const TArray<float>& LocalData, int32 LocalSize, float WorldSize, const TArray<FVoxelVegetationConfig>& Configs) const Pure, side-effect-free. Filters vertices to upward-facing ones, bilinearly samples the biome map, tests each matching config against Density with a keyed hash, sorts candidates by PlaceRadius and rejects overlaps through a 200-unit spatial hash, then assigns scale and yaw. PlantId is the config index. HISM pool: PrewarmHISMPool , AcquireHISM (falls back to creating a new component when the pool is empty, so it never fails), ReturnHISM . Both pool arrays are UPROPERTY() so the components are not garbage-collected.", "bodyZh": "植被（均为 private） 方法 说明 InitBiomeTexture() 把 BiomeTexture R 通道归一化读入 CachedBiomeData （仅打包路径） DispatchVegetationTask(Key, Mesh) 贴图/缓存/配置任一为空即返回；线程池计算。 游戏线程回填 HISM 的回调目前为空，实际尚不生成实例 CalculateVegetationForChunk(Mesh, Key, LocalData, LocalSize, WorldSize, Configs) 纯计算：按法线朝上筛选 → 双线性采样群系图 → 哈希密度判定 → 按 PlaceRadius 排序 + 200 单位空间哈希去重叠 → 随机缩放与 yaw； PlantId 即配置下标 HISM 池： PrewarmHISMPool 、 AcquireHISM （池空兜底新建，永不失败）、 ReturnHISM ；池数组为 UPROPERTY ，不被 GC。"}, {"id": "s45", "en": "Scene Proxy", "zh": "场景代理", "bodyEn": "Scene Proxy", "bodyZh": "场景代理"}, {"id": "s46", "en": "FVoxelSceneProxy", "zh": "FVoxelSceneProxy", "bodyEn": "FVoxelSceneProxy FPrimitiveSceneProxy subclass, one per component. There is exactly one vertex factory / index buffer / vertex buffer set per chunk , so a chunk can be added or removed without touching the others.", "bodyZh": "FVoxelSceneProxy 每组件一个， 每个 chunk 独立 VB/IB/VF ，可单独增删。"}, {"id": "s47", "en": "FChunkRender", "zh": "FChunkRender", "bodyEn": "FChunkRender Member Description FPositionVertexBuffer PositionVB Positions. FStaticMeshVertexBuffer StaticVB Tangents + UV0. FColorVertexBuffer ColorVB Vertex colours. FRawStaticIndexBuffer IB 32-bit indices. FLocalVertexFactory VertexFactory Constructed with the scene feature level and the debug name \"FVoxelChunkVF\" . FBox Bounds World-space, used for frustum and shadow culling. bool bReady Guards partially built chunks.", "bodyZh": "FChunkRender PositionVB 、 StaticVB （切线+UV0）、 ColorVB 、 IB （32 位）、 VertexFactory （FeatureLevel + \"FVoxelChunkVF\" ）、 Bounds 、 bReady 。"}, {"id": "s48", "en": "Public API", "zh": "公开接口", "bodyEn": "Public API Method Thread Description FVoxelSceneProxy(const UVoxelTerrainComponent* InComponent, UMaterialInterface* InMaterial) Game Sets bWillEverBeLit , bCastDynamicShadow , bCastShadowAsTwoSided ; disables static shadowing. Falls back to the default surface material. virtual ~FVoxelSceneProxy() Render Resources are released in DestroyRenderThreadResources . virtual SIZE_T GetTypeHash() const Any Stable per-class hash (address of a function-local static). virtual void CreateRenderThreadResources(FRHICommandListBase&) Render Intentionally empty — resources are per chunk. virtual void DestroyRenderThreadResources() Render Releases and empties every chunk. void AddChunk_RenderThread(FRHICommandListBase& RHICmdList, const FChunkKey& Key, TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> Mesh) Render only Builds GPU buffers for one chunk. Releases and replaces an existing key first. An empty mesh (or zero indices) removes the chunk instead of allocating. Tangents are derived as Cross(Z, N) with an (1,0,0) fallback for degenerate normals. Invalid bounds widen to HALF_WORLD_MAX so the chunk is never wrongly culled. void RemoveChunk_RenderThread(FRHICommandListBase& RHICmdList, const FChunkKey& Key) Render only Releases one chunk's resources. virtual void GetDynamicMeshElements(...) Render Issues one FMeshBatch per chunk per visible view. Uses GetDynamicMeshElementsShadowCullFrustum() when present so shadow passes cull correctly, otherwise the view frustum. Reverse culling follows the component's determinant; depth group SDPG_World . virtual FPrimitiveViewRelevance GetViewRelevance(const FSceneView*) const Render Dynamic, opaque, draw + shadow relevant. Not static-relevant — lighting is fully dynamic. virtual uint32 GetMemoryFootprint() const Any Sums buffer sizes (static vertex buffer counted at 32 bytes/vertex). ChunkRenders is a plain TMap touched only on the render thread — deliberately not thread-safe. if (FVoxelSceneProxy* Proxy = static_cast<FVoxelSceneProxy*>(SceneProxy)) { TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> MeshCopy = Mesh; ENQUEUE_RENDER_COMMAND(AddVoxelChunk)( [Proxy, Key, MeshCopy](FRHICommandListImmediate& RHICmdList) { Proxy->AddChunk_RenderThread(RHICmdList, Key, MeshCopy); }); }", "bodyZh": "公开接口 方法 线程 说明 构造函数 游戏 可受光、投动态阴影、双面阴影；无静态阴影；材质为空回退默认 GetTypeHash() 任意 按类稳定哈希 CreateRenderThreadResources() 渲染 空实现（资源按 chunk） DestroyRenderThreadResources() 渲染 释放全部 chunk AddChunk_RenderThread(RHICmdList, Key, Mesh) 仅渲染线程 建 GPU 缓冲；Key 已存在先释放；空网格走删除分支；切线 Cross(Z, N) ，退化回退 (1,0,0) ；Bounds 无效则放宽到 HALF_WORLD_MAX RemoveChunk_RenderThread(RHICmdList, Key) 仅渲染线程 释放单 chunk GetDynamicMeshElements(...) 渲染 每 chunk 每可见视图一个 FMeshBatch ；阴影通道用阴影视锥剔除，否则视图视锥； SDPG_World GetViewRelevance(View) 渲染 动态、不透明、可绘制+投影；非静态相关（全动态光照） GetMemoryFootprint() 任意 汇总缓冲体积（StaticVB 按 32 B/顶点） ChunkRenders 只在渲染线程访问， 故意不加锁 。 if (FVoxelSceneProxy* Proxy = static_cast<FVoxelSceneProxy*>(SceneProxy)) { TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> MeshCopy = Mesh; ENQUEUE_RENDER_COMMAND(AddVoxelChunk)( [Proxy, Key, MeshCopy](FRHICommandListImmediate& RHICmdList) { Proxy->AddChunk_RenderThread(RHICmdList, Key, MeshCopy); }); }"}, {"id": "s49", "en": "Interaction Actor", "zh": "交互 Actor", "bodyEn": "Interaction Actor", "bodyZh": "交互 Actor"}, {"id": "s50", "en": "AVoxelInteractionActor", "zh": "AVoxelInteractionActor", "bodyEn": "AVoxelInteractionActor UCLASS , a ready-to-use demo driver. Place one in the level and click. Property Category Default Description MaxTraceDistance Voxel Interaction 1000.f Camera line-trace length. EditRadius Voxel Interaction 150.f Brush radius in cm. EditCooldown Voxel Interaction 0.1f Minimum seconds between edits, per mouse button. Method Description virtual void BeginPlay() override Caches UGameplayStatics::GetPlayerController(this, 0) . virtual void Tick(float DeltaTime) override Polls the left/right mouse buttons and calls HandleMouseClick when the cooldown has elapsed. void HandleMouseClick(bool bIsAdd) private . Traces from the player viewpoint on ECC_Visibility , ignoring the pawn, finds a UVoxelTerrainComponent on the hit actor, and calls ApplyEdit . The edit location is pushed along the view direction by max(EditRadius * 0.5, 50) cm from the hit point. That offset is what lets a small brush punch through the surface it just hit instead of doing nothing. To drive editing from your own input code, skip this actor entirely and call ApplyEdit — that is the only entry point that matters.", "bodyZh": "AVoxelInteractionActor 演示用，放进关卡即可点击。 属性 默认 说明 MaxTraceDistance 1000.f 视线检测距离 EditRadius 150.f 笔刷半径（cm） EditCooldown 0.1f 左右键各自的最小间隔（秒） 方法 说明 BeginPlay() 缓存 PlayerController 0 Tick(DeltaTime) 轮询左右键，冷却结束触发 HandleMouseClick(bIsAdd) private；以 ECC_Visibility 从视角检测，忽略 Pawn，在命中 Actor 上找组件并 ApplyEdit 编辑点从命中位置沿视线前推 max(EditRadius * 0.5, 50) cm，使小笔刷能穿透刚命中的表面。自定义输入直接调 ApplyEdit 即可，无需此类。"}, {"id": "s51", "en": "Module", "zh": "模块", "bodyEn": "Module", "bodyZh": "模块"}, {"id": "s52", "en": "FVoxelTerrainModule", "zh": "FVoxelTerrainModule", "bodyEn": "FVoxelTerrainModule IModuleInterface implementation, registered with IMPLEMENT_MODULE(FVoxelTerrainModule, VoxelTerrain) . Method Description virtual void StartupModule() override References sizeof(regularCellClass) so the Transvoxel table TU is pulled into the link. virtual void ShutdownModule() override Nothing to release.", "bodyZh": "FVoxelTerrainModule IModuleInterface ， IMPLEMENT_MODULE(FVoxelTerrainModule, VoxelTerrain) 。 方法 说明 StartupModule() 引用 sizeof(regularCellClass) ，确保 Transvoxel 表被链入 ShutdownModule() 无操作"}, {"id": "s53", "en": "Usage Recipes", "zh": "典型用法", "bodyEn": "Usage Recipes", "bodyZh": "典型用法"}, {"id": "s54", "en": "From a weapon hit", "zh": "从武器命中点变形地形", "bodyEn": "From a weapon hit // On the server / in a single-player BlueprintCallable FHitResult Hit; if (TraceWeapon(Hit)) { if (UVoxelTerrainComponent* Terrain = Hit.GetActor()->FindComponentByClass<UVoxelTerrainComponent>()) { // carve a crater, then let the collision tick catch up Terrain->ApplyEdit(Hit.Location, 200.f, false); } } ApplyEdit is synchronous, so spamming it every frame will stall the game thread. Rate-limit it the way AVoxelInteractionActor does.", "bodyZh": "从武器命中点变形地形 FHitResult Hit; if (TraceWeapon(Hit)) { if (UVoxelTerrainComponent* Terrain = Hit.GetActor()->FindComponentByClass<UVoxelTerrainComponent>()) { Terrain->ApplyEdit(Hit.Location, 200.f, false); // 弹坑 } } ApplyEdit 同步阻塞，务必限频。"}, {"id": "s55", "en": "Custom density function", "zh": "替换为自定义密度函数", "bodyEn": "Custom density function UCLASS() class UMyGenerator : public UVoxelGenerator { GENERATED_BODY() public: virtual float SampleDensityWithSurface(const FVector& P, float SurfaceZ) const override { // negative = solid return FMath::Sin(P.X * 0.001f) * 300.f + (SurfaceZ - P.Z) * 0.5f; } }; Then set Voxel Generator Class = UMyGenerator on the component. BeginPlay will NewObject it for you.", "bodyZh": "替换为自定义密度函数 UCLASS() class UMyGenerator : public UVoxelGenerator { GENERATED_BODY() public: virtual float SampleDensityWithSurface(const FVector& P, float SurfaceZ) const override { return FMath::Sin(P.X * 0.001f) * 300.f + (SurfaceZ - P.Z) * 0.5f; // 负=实体 } }; 组件上设 Voxel Generator Class = UMyGenerator 即可。"}, {"id": "s56", "en": "Reading the mesh on CPU", "zh": "在 CPU 侧读取网格", "bodyEn": "Reading the mesh on CPU if (const TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe>* M = Terrain->ChunkMeshes.Find(Key)) { const FVoxelMeshData& Data = **M; const int32 Tris = Data.NumTriangles(); const FBox& Box = Data.Bounds; // already world-space } Positions are local to the chunk origin ; add FVector(Key.X, Key.Y, Key.Z) * 6400.f to get world space.", "bodyZh": "在 CPU 侧读取网格 if (const auto* M = Terrain->ChunkMeshes.Find(Key)) { const FVoxelMeshData& Data = **M; const int32 Tris = Data.NumTriangles(); const FBox& Box = Data.Bounds; // 已是世界空间 } 顶点为 chunk 局部坐标，加 FVector(Key.X, Key.Y, Key.Z) * 6400.f 得世界坐标。"}, {"id": "s57", "en": "Disabling collision", "zh": "完全关闭碰撞", "bodyEn": "Disabling collision Set bGenerateCollision = false before BeginPlay , or toggle it at runtime — the next ProcessCollisionQueue tick (≤0.33 s) returns every pooled component.", "bodyZh": "完全关闭碰撞 BeginPlay 前置 bGenerateCollision = false ，或运行时切换——≤0.33 s 内 ProcessCollisionQueue 回收全部池组件。 if (FVoxelSceneProxy* Proxy = static_cast<FVoxelSceneProxy*>(SceneProxy)) { TSharedPtr<FVoxelMeshData, ESPMode::ThreadSafe> MeshCopy = Mesh; ENQUEUE_RENDER_COMMAND(AddVoxelChunk)( [Proxy, Key, MeshCopy](FRHICommandListImmediate& RHICmdList) { Proxy->AddChunk_RenderThread(RHICmdList, Key, MeshCopy); }); } ⚠️ 直接调用 AddChunk_RenderThread / RemoveChunk_RenderThread 属于未定义行为——必须像上面这样经渲染命令入队。"}];
+const TOC = [{"id": "s1", "text": "API Reference", "level": 1}, {"id": "s2", "text": "Design Conventions", "level": 2}, {"id": "s3", "text": "Coordinate spaces", "level": 3}, {"id": "s4", "text": "Weight convention", "level": 3}, {"id": "s5", "text": "Threading contract", "level": 3}, {"id": "s6", "text": "Getting Started", "level": 1}, {"id": "s7", "text": "1. Module dependency", "level": 2}, {"id": "s8", "text": "2. Drop a component on an Actor", "level": 2}, {"id": "s9", "text": "3. Minimal terrain with noise textures", "level": 2}, {"id": "s10", "text": "4. Choose streaming radii", "level": 2}, {"id": "s11", "text": "5. Dig and fill", "level": 2}, {"id": "s12", "text": "6. Recommended starting values", "level": 2}, {"id": "s13", "text": "Data Types", "level": 1}, {"id": "s14", "text": "FVoxel", "level": 2}, {"id": "s15", "text": "VoxelConfig", "level": 2}, {"id": "s16", "text": "FChunkKey", "level": 2}, {"id": "s17", "text": "FVegetationInstanceData", "level": 2}, {"id": "s18", "text": "FVoxelChunkData", "level": 2}, {"id": "s19", "text": "FVoxelMeshData", "level": 2}, {"id": "s20", "text": "Noise Generation", "level": 1}, {"id": "s21", "text": "FVoxelGeneratorSettings", "level": 2}, {"id": "s22", "text": "UVoxelGenerator", "level": 2}, {"id": "s23", "text": "Nested types", "level": 3}, {"id": "s24", "text": "Static members", "level": 3}, {"id": "s25", "text": "Instance API", "level": 3}, {"id": "s26", "text": "VOXEL_USE_NOISE_TEXTURE", "level": 3}, {"id": "s27", "text": "Meshing", "level": 1}, {"id": "s28", "text": "FTransvoxelMesher", "level": 2}, {"id": "s29", "text": "GenerateRegular", "level": 3}, {"id": "s30", "text": "GenerateRegularPartial", "level": 3}, {"id": "s31", "text": "Terrain Component", "level": 1}, {"id": "s32", "text": "FVoxelNoiseLayerInfo", "level": 2}, {"id": "s33", "text": "FVoxelNoiseLayer3DInfo", "level": 2}, {"id": "s34", "text": "FVoxelVegetationConfig", "level": 2}, {"id": "s35", "text": "UVoxelTerrainComponent", "level": 2}, {"id": "s36", "text": "Configuration properties", "level": 3}, {"id": "s37", "text": "Runtime state (game thread only)", "level": 3}, {"id": "s38", "text": "Blueprint-callable / overridable", "level": 3}, {"id": "s39", "text": "Component overrides", "level": 3}, {"id": "s40", "text": "Coordinate helper", "level": 3}, {"id": "s41", "text": "Async pipeline", "level": 3}, {"id": "s42", "text": "Collision pool", "level": 3}, {"id": "s43", "text": "Noise texture loading", "level": 3}, {"id": "s44", "text": "Vegetation (all private)", "level": 3}, {"id": "s45", "text": "Scene Proxy", "level": 1}, {"id": "s46", "text": "FVoxelSceneProxy", "level": 2}, {"id": "s47", "text": "FChunkRender", "level": 3}, {"id": "s48", "text": "Public API", "level": 3}, {"id": "s49", "text": "Interaction Actor", "level": 1}, {"id": "s50", "text": "AVoxelInteractionActor", "level": 3}, {"id": "s51", "text": "Module", "level": 1}, {"id": "s52", "text": "FVoxelTerrainModule", "level": 2}, {"id": "s53", "text": "Usage Recipes", "level": 1}, {"id": "s54", "text": "From a weapon hit", "level": 2}, {"id": "s55", "text": "Custom density function", "level": 2}, {"id": "s56", "text": "Reading the mesh on CPU", "level": 2}, {"id": "s57", "text": "Disabling collision", "level": 2}];
+const $ = s => document.querySelector(s);
+const langBtns = document.querySelectorAll('.lang button');
+const panes = {en: $('#pane-en'), zh: $('#pane-zh')};
+let lang = localStorage.getItem('voxdoc-lang') || 'en';
+
+function setLang(l){
+  lang = l;
+  localStorage.setItem('voxdoc-lang', l);
+  panes.en.classList.toggle('on', l==='en');
+  panes.zh.classList.toggle('on', l==='zh');
+  langBtns.forEach(b => b.classList.toggle('on', b.dataset.lang===l));
+  document.documentElement.lang = (l==='zh' ? 'zh-CN' : 'en');
+  document.querySelectorAll('.sidebar a[data-target]').forEach(a=>{
+    const t = TOC.find(x=>x.id===a.dataset.target);
+    if (!t) return;
+    const live = panes[l] && panes[l].querySelector('#'+a.dataset.target);
+    a.textContent = (live && live.textContent.trim()) ? live.textContent.trim() : t.text;
+  });
+  clearHits();
+  doSearch($('#q').value);
+  if (window.__lastId) flash(window.__lastId);
+  spy();
+}
+langBtns.forEach(b => b.onclick = () => setLang(b.dataset.lang));
+
+/* ---------- scrollspy ---------- */
+const links = () => document.querySelectorAll('.sidebar a[data-target]');
+function spy(){
+  let cur = null;
+  document.querySelectorAll('.pane.on h1[id],.pane.on h2[id],.pane.on h3[id]').forEach(h=>{
+    if (h.getBoundingClientRect().top <= 130) cur = h.id;
+  });
+  links().forEach(a => a.classList.toggle('active', a.dataset.target===cur));
+}
+window.addEventListener('scroll', spy, {passive:true});
+
+/* ---------- mobile ---------- */
+$('#mtoggle').onclick = () => { $('.sidebar').classList.toggle('open'); $('.scrim').classList.toggle('on'); };
+$('.scrim').onclick = () => { $('.sidebar').classList.remove('open'); $('.scrim').classList.remove('on'); };
+links().forEach(a => a.onclick = () => { $('.sidebar').classList.remove('open'); $('.scrim').classList.remove('on'); });
+
+/* ---------- search ---------- */
+const box = $('#q'), res = $('#results');
+let sel = -1;
+
+function esc(s){ return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function snippet(text, q){
+  const i = text.toLowerCase().indexOf(q.toLowerCase());
+  if (i < 0) return text.slice(0,150) + (text.length>150?' …':'');
+  const a = Math.max(0, i-70), b = Math.min(text.length, i+q.length+90);
+  return (a>0?'…':'') + esc(text.slice(a,i)) + '<em>' + esc(text.substr(i,q.length)) + '</em>'
+       + esc(text.slice(i+q.length,b)) + (b<text.length?'…':'');
+}
+function pathOf(item){
+  const i = IDX.indexOf(item);
+  const part = []; let lvl = TOC[i].level;
+  for (let j=i-1; j>=0 && lvl>1; j--){
+    if (TOC[j].level < lvl){ part.unshift(TOC[j]); lvl = TOC[j].level; }
+  }
+  return part.map(t => lang==='zh' ? t.zh : t.en).join(' › ');
+}
+function doSearch(raw){
+  const q = (raw||'').trim();
+  if (!q){ res.classList.remove('on'); res.innerHTML=''; sel=-1; return; }
+  const lq = q.toLowerCase();
+  const out = [];
+  IDX.forEach(item=>{
+    const title = lang==='zh' ? item.zh : item.en;
+    const body  = lang==='zh' ? item.bodyZh : item.bodyEn;
+    const titleL = title.toLowerCase(), bodyL = body.toLowerCase();
+    let ti = titleL.indexOf(lq), bi = bodyL.indexOf(lq);
+    if (ti<0 && bi<0) return;
+    let score = ti===0 ? 100 : (ti>0 ? 72 : 0);
+    if (bi>=0) score = Math.max(score, bi===0 ? 56 : 42);
+    if ((item.en + ' ' + item.zh).toLowerCase().includes(lq)) score += 6;
+    out.push({item, title, body, score, at: ti>=0?ti:bi});
+  });
+  out.sort((a,b)=> b.score-a.score || a.at-b.at);
+  const top = out.slice(0,24);
+  if (!top.length){
+    res.innerHTML = '<div class="no-res">No match for “'+esc(q)+'”<br>未找到匹配项</div>';
+    res.classList.add('on'); sel=-1; return;
+  }
+  res.innerHTML = '<div class="res-head">'+top.length+' result'+(top.length>1?'s':'')+' · 结果</div>' +
+    top.map(r=>{
+      const other = r.item.en===r.title ? r.item.zh : r.item.en;
+      const pair = (!other || other===r.title) ? '' : ' <span class="pair">/ '+esc(other)+'</span>';
+      return '<a class="res" href="#'+r.item.id+'" data-id="'+r.item.id+'">'+
+        '<div class="t">'+esc(r.title)+pair+'</div>'+
+        '<div class="s">'+snippet(r.body,q)+'</div>'+
+        '<div class="path">'+esc(pathOf(r.item))+'</div></a>';
+    }).join('');
+  res.classList.add('on'); sel=-1;
+}
+box.oninput = () => doSearch(box.value);
+box.onkeydown = e => {
+  const items = [...res.querySelectorAll('.res')];
+  if (e.key==='Escape'){ res.classList.remove('on'); if(box.value){box.value='';doSearch('');} return; }
+  if (e.key==='ArrowDown'||e.key==='ArrowUp'){
+    if (!items.length) return;
+    e.preventDefault();
+    sel = (e.key==='ArrowDown') ? Math.min(sel+1, items.length-1) : Math.max(sel-1, 0);
+    items.forEach((a,i)=>a.classList.toggle('sel', i===sel));
+    items[sel].scrollIntoView({block:'nearest'});
+  }
+  if (e.key==='Enter' && sel>=0 && items[sel]){ items[sel].click(); res.classList.remove('on'); box.blur(); }
+};
+res.onclick = e => { if (e.target.closest('.res')) setTimeout(()=>res.classList.remove('on'),0); };
+document.addEventListener('click', e => { if (!e.target.closest('.search-wrap')) res.classList.remove('on'); });
+
+/* ---------- hit highlighting ---------- */
+function clearHits(){
+  document.querySelectorAll('mark.hit').forEach(m=>{
+    const p = m.parentNode; p.replaceChild(document.createTextNode(m.textContent), m); p.normalize();
+  });
+}
+function highlight(root, q){
+  const lq = q.toLowerCase();
+  const walk = n => {
+    if (n.nodeType===3){
+      const t = n.nodeValue, low = t.toLowerCase();
+      let i = low.indexOf(lq);
+      if (i<0) return;
+      const frag = document.createDocumentFragment(); let p = 0;
+      while (i>=0){
+        frag.appendChild(document.createTextNode(t.slice(p,i)));
+        const mk = document.createElement('mark'); mk.className='hit';
+        mk.textContent = t.substr(i,q.length); frag.appendChild(mk);
+        p = i+q.length; i = low.indexOf(lq,p);
+      }
+      frag.appendChild(document.createTextNode(t.slice(p)));
+      n.parentNode.replaceChild(frag,n);
+    } else if (n.nodeType===1 && !/^(SCRIPT|STYLE|CODE|PRE|A)$/.test(n.tagName)){
+      [...n.childNodes].forEach(walk);
+    }
+  };
+  let el = root.nextElementSibling, n = 0;
+  while (el && n<8 && !/^H[1-4]$/.test(el.tagName)){ walk(el); el = el.nextElementSibling; n++; }
+}
+function flash(id){
+  const h = document.querySelector('.pane.on #'+id);
+  if (!h) return;
+  h.scrollIntoView({block:'start'});
+  h.animate([{backgroundColor:'rgba(91,157,255,.24)'},{backgroundColor:'transparent'}],
+            {duration:1500, easing:'ease-out'});
+}
+function goTo(id){
+  clearHits();
+  window.__lastId = id;
+  const h = document.querySelector('.pane.on #'+id);
+  if (!h) return;
+  const q = (box.value||'').trim();
+  if (q) highlight(h, q);
+  flash(id);
+  spy();
+}
+window.addEventListener('hashchange', ()=>{
+  const id = decodeURIComponent(location.hash||'').slice(1);
+  if (id) goTo(id);
+});
+
+/* ---------- shortcuts ---------- */
+document.addEventListener('keydown', e=>{
+  if ((e.ctrlKey||e.metaKey) && e.key==='f'){ e.preventDefault(); box.focus(); box.select(); }
+  if (e.key==='/' && document.activeElement!==box){ e.preventDefault(); box.focus(); }
+});
+
+setLang(lang);
+if (location.hash) goTo(decodeURIComponent(location.hash).slice(1));
+</script>
+</body>
+</html>

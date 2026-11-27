@@ -3,8 +3,8 @@
 // ============================================================
 // 全局静态数据定义
 // ============================================================
-TSharedPtr<TArray<FVoxelGenerator::FNoiseLayerData>> FVoxelGenerator::GlobalNoiseLayers = nullptr;
-TSharedPtr<TArray<FVoxelGenerator::FNoiseLayer3DData>> FVoxelGenerator::GlobalNoiseLayers3D = nullptr;
+TSharedPtr<TArray<UVoxelGenerator::FNoiseLayerData>> UVoxelGenerator::GlobalNoiseLayers = nullptr;
+TSharedPtr<TArray<UVoxelGenerator::FNoiseLayer3DData>> UVoxelGenerator::GlobalNoiseLayers3D = nullptr;
 
 namespace
 {
@@ -80,7 +80,7 @@ namespace
 // ============================================================
 // 基础原生噪声
 // ============================================================
-float FVoxelGenerator::Fbm(const FVector& P) const
+float UVoxelGenerator::Fbm(const FVector& P) const
 {
     float Sum = 0.f;
     float Amp = 1.f;
@@ -98,7 +98,7 @@ float FVoxelGenerator::Fbm(const FVector& P) const
     return Norm > 0.f ? Sum / Norm : 0.f;
 }
 
-float FVoxelGenerator::Fbm2D(const FVector2D& P) const
+float UVoxelGenerator::Fbm2D(const FVector2D& P) const
 {
     float Sum = 0.f;
     float Amp = 1.f;
@@ -119,7 +119,7 @@ float FVoxelGenerator::Fbm2D(const FVector2D& P) const
 // ============================================================
 // 多层贴图噪声叠加
 // ============================================================
-float FVoxelGenerator::TexFbm2D(const FVector2D& WorldXY) const
+float UVoxelGenerator::TexFbm2D(const FVector2D& WorldXY) const
 {
 #if VOXEL_USE_NOISE_TEXTURE
     const TSharedPtr<TArray<FNoiseLayerData>>& Layers = GlobalNoiseLayers;
@@ -147,7 +147,7 @@ float FVoxelGenerator::TexFbm2D(const FVector2D& WorldXY) const
     return Fbm2D(WorldXY * Settings.NoiseFreq);
 }
 
-float FVoxelGenerator::TexFbm3D(const FVector& WorldXYZ) const
+float UVoxelGenerator::TexFbm3D(const FVector& WorldXYZ) const
 {
 #if VOXEL_USE_NOISE_TEXTURE
     const TSharedPtr<TArray<FNoiseLayer3DData>>& Layers = GlobalNoiseLayers3D;
@@ -175,19 +175,8 @@ float FVoxelGenerator::TexFbm3D(const FVector& WorldXYZ) const
     return Fbm(WorldXYZ);
 }
 
-// ============================================================
-// ⭐ 密度计算（拆分：SampleDensity / SampleDensityWithSurface）
-// ============================================================
-float FVoxelGenerator::SampleDensity(const FVector& WorldPos) const
-{
-    // 外部调用（ApplyEdit）：自己算一次 SurfaceZ
-    const FVector2D P2D(WorldPos.X, WorldPos.Y);
-    const float SurfaceNoise = TexFbm2D(P2D);
-    const float SurfaceZ = Settings.BaseWorldZ + SurfaceNoise * Settings.HillHeight;
-    return SampleDensityWithSurface(WorldPos, SurfaceZ);
-}
 
-float FVoxelGenerator::SampleDensityWithSurface(const FVector& WorldPos, float SurfaceZ) const
+float UVoxelGenerator::SampleDensityWithSurface(const FVector& WorldPos, float SurfaceZ) const
 {
     const float SurfaceDensity = SurfaceZ - WorldPos.Z;
     if (SurfaceDensity <= 0.f) return SurfaceDensity;
@@ -226,7 +215,7 @@ float FVoxelGenerator::SampleDensityWithSurface(const FVector& WorldPos, float S
 // ============================================================
 // 体素数据生成（⭐ 2D 噪声缓存优化版）
 // ============================================================
-void FVoxelGenerator::GenerateChunk(
+void UVoxelGenerator::GenerateChunk(
     int32 ChunkX, int32 ChunkY, int32 ChunkZ,
     int32 LOD,
     FVoxelChunkData& OutChunk) const
