@@ -1,6 +1,3 @@
-
-
-#pragma once
 // ==============================================
 //
 // Transvoxel Algorithm Data Tables
@@ -9,6 +6,9 @@
 // Copyright 2009 by Eric Lengyel
 //
 // ==============================================
+
+#pragma once
+
 
 
 // The RegularCellData structure holds information about the triangulation

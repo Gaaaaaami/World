@@ -1,4 +1,6 @@
-﻿#pragma once
+﻿// Copyright 2026 GlimmerWorks Studio. All Rights Reserved.
+
+#pragma once
 #include "CoreMinimal.h"
 #include "VoxelChunkData.h"      // ⭐ 必须有这行
 #include "VoxelMeshData.h"

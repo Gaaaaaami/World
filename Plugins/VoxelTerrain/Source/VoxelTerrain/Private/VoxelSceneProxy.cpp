@@ -1,4 +1,6 @@
-﻿#include "VoxelSceneProxy.h"
+﻿// Copyright 2026 GlimmerWorks Studio. All Rights Reserved.
+
+#include "VoxelSceneProxy.h"
 #include "VoxelTerrainComponent.h"
 #include "MaterialDomain.h"
 #include "Materials/Material.h"

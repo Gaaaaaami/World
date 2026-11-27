@@ -1,4 +1,6 @@
-﻿#include "VoxelTerrainComponent.h"
+﻿// Copyright 2026 GlimmerWorks Studio. All Rights Reserved.
+
+#include "VoxelTerrainComponent.h"
 #include "VoxelSceneProxy.h"
 #include "VoxelGenerator.h"
 #include "VoxelChunkData.h"

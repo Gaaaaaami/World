@@ -1,3 +1,5 @@
+// Copyright 2026 GlimmerWorks Studio. All Rights Reserved.
+
 using UnrealBuildTool;
 
 public class VoxelTerrain : ModuleRules

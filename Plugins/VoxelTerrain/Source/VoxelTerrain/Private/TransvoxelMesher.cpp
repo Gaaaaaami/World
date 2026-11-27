@@ -1,4 +1,6 @@
-﻿#include "TransvoxelMesher.h"
+﻿// Copyright 2026 GlimmerWorks Studio. All Rights Reserved.
+
+#include "TransvoxelMesher.h"
 #include "Transvoxel.h"
 
 namespace

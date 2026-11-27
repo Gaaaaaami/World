@@ -1,4 +1,6 @@
-﻿#include "VoxelInteractionActor.h"
+﻿// Copyright 2026 GlimmerWorks Studio. All Rights Reserved.
+
+#include "VoxelInteractionActor.h"
 #include "VoxelTerrainComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"

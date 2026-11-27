@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright 2026 GlimmerWorks Studio. All Rights Reserved.
 
 #pragma once
 

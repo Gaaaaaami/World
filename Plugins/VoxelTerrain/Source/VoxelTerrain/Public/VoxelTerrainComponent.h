@@ -1,4 +1,6 @@
-﻿#pragma once
+﻿// Copyright 2026 GlimmerWorks Studio. All Rights Reserved.
+
+#pragma once
 #include "CoreMinimal.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"

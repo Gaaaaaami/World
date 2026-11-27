@@ -3,7 +3,7 @@
 	"Version": 1,
 	"VersionName": "1.0",
 	"FriendlyName": "VoxelTerrain",
-	"Description": "A dynamic voxel terrain system with infinite streaming, seamless LOD transitions, and destructible/editable terrain support.",
+	"Description": "voxel terrain system",
 	"Category": "Other",
 	"CreatedBy": "GlimmerWorks Studio",
 	"CreatedByURL": "",
