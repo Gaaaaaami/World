@@ -13,6 +13,10 @@
 #include "HAL/PlatformTime.h"
 #include "Engine/Texture2D.h"
 #include "ImageUtils.h"
+#include "TextureResource.h"              // FTexture2DMipMap
+#include "Engine/World.h"                 // UWorld
+#include "GameFramework/PlayerController.h"  // APlayerController
+#include "GameFramework/Pawn.h"           // GetPawn()
 
 #if 0
 void DebugFBoxTest()

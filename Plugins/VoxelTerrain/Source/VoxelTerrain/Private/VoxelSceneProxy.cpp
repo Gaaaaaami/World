@@ -3,7 +3,8 @@
 #include "MaterialDomain.h"
 #include "Materials/Material.h"
 #include "SceneManagement.h"
-
+#include "SceneInterface.h"   // FSceneInterface 的完整定义
+#include "SceneView.h"        // FSceneView 的完整定义
 // ============================================================
 // 构造 / 析构
 // ============================================================

@@ -4,7 +4,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
 #include "Engine/World.h"
-
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
 AVoxelInteractionActor::AVoxelInteractionActor()
 {
     PrimaryActorTick.bCanEverTick = true;
